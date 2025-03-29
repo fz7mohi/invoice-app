@@ -1,5 +1,5 @@
 import { useGlobalContext } from '../App/context';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { 
     StyledClients,
     Header,
@@ -22,6 +22,7 @@ import {
 } from './ClientsStyles';
 import Icon from '../shared/Icon/Icon';
 import ConfirmModal from '../shared/ConfirmModal/ConfirmModal';
+import { clientsVariants } from '../../utilities/framerVariants';
 
 const Clients = () => {
     const { 
@@ -32,15 +33,32 @@ const Clients = () => {
     } = useGlobalContext();
     
     const { clients, isModalOpen } = clientState;
+    const shouldReduceMotion = useReducedMotion();
+    
+    const variant = (element, index) => {
+        if (typeof clientsVariants[element] === 'function') {
+            return shouldReduceMotion
+                ? clientsVariants.reduced
+                : clientsVariants[element](index);
+        }
+        
+        return shouldReduceMotion
+            ? clientsVariants.reduced
+            : clientsVariants[element];
+    };
     
     return (
         <StyledClients
             as={motion.main}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={variant('container')}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
         >
-            <Header>
+            <Header
+                as={motion.div}
+                variants={variant('header')}
+            >
                 <TitleContainer>
                     <Title>Clients</Title>
                     <ClientCount>
@@ -59,7 +77,10 @@ const Clients = () => {
             </Header>
             
             {clients.length === 0 ? (
-                <EmptyState>
+                <EmptyState
+                    as={motion.div}
+                    variants={variant('emptyState')}
+                >
                     <img 
                         src={require('../../assets/images/illustration-empty.svg')} 
                         alt="No clients" 
@@ -72,8 +93,16 @@ const Clients = () => {
                 </EmptyState>
             ) : (
                 <ClientList>
-                    {clients.map((client) => (
-                        <ClientItem key={client.id}>
+                    {clients.map((client, index) => (
+                        <ClientItem 
+                            key={client.id}
+                            as={motion.div}
+                            variants={variant('clientItem', index)}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            layout
+                        >
                             <CompanyName>{client.companyName}</CompanyName>
                             <ClientInfo>
                                 <InfoItem>
