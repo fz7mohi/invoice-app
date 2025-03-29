@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import Provider from '../shared/Provider/Provider';
 import useThemeToggle from '../../hooks/useThemeToggle';
 import useManageInvoices from '../../hooks/useManageInvoices';
+import useManageClients from '../../hooks/useManageClients';
 import useFilter from '../../hooks/useFilter';
 
 const AppContext = React.createContext();
@@ -25,6 +26,17 @@ const AppProvider = ({ children }) => {
         discard,
         toggleModal,
     } = useManageInvoices();
+    const {
+        state: clientState,
+        client,
+        handleClientChange,
+        handleSubmit: handleClientSubmit,
+        editClient,
+        deleteClient,
+        toggleForm,
+        toggleModal: toggleClientModal,
+        setErrors
+    } = useManageClients();
     const { filteredInvoices, filterType, changeFilterType } = useFilter(state);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
@@ -69,6 +81,16 @@ const AppProvider = ({ children }) => {
                 filteredInvoices,
                 filterType,
                 changeFilterType,
+                // Client related values
+                clientState,
+                client,
+                handleClientChange,
+                handleClientSubmit,
+                editClient,
+                deleteClient,
+                toggleForm,
+                toggleClientModal,
+                setErrors
             }}
         >
             <Provider themeColor={theme}>{children}</Provider>
