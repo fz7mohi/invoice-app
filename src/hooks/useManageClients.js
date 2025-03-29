@@ -1,11 +1,28 @@
 import { useState, useEffect, useReducer } from 'react';
+import { 
+    collection, 
+    addDoc, 
+    updateDoc, 
+    deleteDoc, 
+    getDocs, 
+    doc, 
+    orderBy, 
+    query 
+} from 'firebase/firestore';
+import { db } from '../firebase/firebase';
 
 /**
  * Function to get clients array from localStorage.
  * @return   {object}    Array containing clients
  */
 const getClientsFromLocalStorage = () => {
-    return JSON.parse(localStorage.getItem('clients')) || [];
+    try {
+        const storedClients = localStorage.getItem('clients');
+        return storedClients ? JSON.parse(storedClients) : [];
+    } catch (error) {
+        console.error('Error getting clients from localStorage:', error);
+        return [];
+    }
 };
 
 /**
@@ -13,7 +30,11 @@ const getClientsFromLocalStorage = () => {
  * @param   {object} clients Array with clients
  */
 const postClientsToLocalStorage = (clients) => {
-    localStorage.setItem('clients', JSON.stringify(clients));
+    try {
+        localStorage.setItem('clients', JSON.stringify(clients));
+    } catch (error) {
+        console.error('Error posting clients to localStorage:', error);
+    }
 };
 
 // Initial state values
@@ -29,12 +50,14 @@ const initialClient = {
 };
 
 const initialState = {
-    clients: getClientsFromLocalStorage(),
+    clients: [],
     isFormOpen: false,
     isModalOpen: { status: false, name: '' },
     isClientEdited: false,
     currClientIndex: null,
     errors: { err: {}, msg: [] },
+    isLoading: false,
+    firebaseError: false
 };
 
 // Simple client reducer
@@ -42,6 +65,10 @@ const clientsReducer = (state, action) => {
     switch (action.type) {
         case 'SET_CLIENTS':
             return { ...state, clients: action.payload };
+        case 'SET_LOADING':
+            return { ...state, isLoading: action.payload };
+        case 'SET_FIREBASE_ERROR':
+            return { ...state, firebaseError: action.payload };
         case 'ADD_CLIENT':
             return { 
                 ...state, 
@@ -100,15 +127,70 @@ const clientsReducer = (state, action) => {
 };
 
 /**
- * Custom hook to handle managing clients and forms.
+ * Custom hook to handle managing clients and forms using Firebase.
  */
 const useManageClients = () => {
     const [state, dispatch] = useReducer(clientsReducer, initialState);
     const [client, setClient] = useState(initialClient);
 
-    // Call postClientsToLocalStorage fn every time clients state has changed
+    // Load clients from Firestore when the component mounts
     useEffect(() => {
-        postClientsToLocalStorage(state.clients);
+        let isMounted = true;
+        
+        const fetchClients = async () => {
+            if (!isMounted) return;
+            
+            try {
+                dispatch({ type: 'SET_LOADING', payload: true });
+                
+                // First try to get data from Firestore
+                try {
+                    const clientsCollection = collection(db, 'clients');
+                    const clientsQuery = query(clientsCollection, orderBy('companyName'));
+                    const querySnapshot = await getDocs(clientsQuery);
+                    
+                    if (!isMounted) return;
+                    
+                    const clientsList = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    
+                    dispatch({ type: 'SET_CLIENTS', payload: clientsList });
+                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: false });
+                } catch (firebaseError) {
+                    console.error('Firebase error, falling back to localStorage:', firebaseError);
+                    
+                    if (!isMounted) return;
+                    
+                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+                    
+                    // Fallback to localStorage if Firebase fails
+                    const localClients = getClientsFromLocalStorage();
+                    dispatch({ type: 'SET_CLIENTS', payload: localClients });
+                }
+            } catch (error) {
+                console.error('Error loading clients:', error);
+            } finally {
+                if (isMounted) {
+                    dispatch({ type: 'SET_LOADING', payload: false });
+                }
+            }
+        };
+        
+        fetchClients();
+        
+        // Cleanup function
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    // Save to localStorage as a backup when clients change
+    useEffect(() => {
+        if (state.clients.length > 0) {
+            postClientsToLocalStorage(state.clients);
+        }
     }, [state.clients]);
 
     // HANDLERS
@@ -196,19 +278,71 @@ const useManageClients = () => {
      * @param {object} event - The form submit event
      * @param {string} type - The type of submission ('add' or 'edit')
      */
-    const handleSubmit = (event, type) => {
+    const handleSubmit = async (event, type) => {
         event.preventDefault();
         
         if (type === 'add' && validateClient(client)) {
-            const newClient = {
-                ...client,
-                id: generateId()
-            };
-            dispatch({ type: 'ADD_CLIENT', payload: newClient });
-            resetForm();
+            try {
+                dispatch({ type: 'SET_LOADING', payload: true });
+                
+                // Create a new client object
+                let newClient = { ...client };
+                
+                // Try to add to Firebase if not in error state
+                if (!state.firebaseError) {
+                    try {
+                        const { id, ...clientData } = client;
+                        const docRef = await addDoc(collection(db, 'clients'), clientData);
+                        newClient = {
+                            ...clientData,
+                            id: docRef.id
+                        };
+                    } catch (firebaseError) {
+                        console.error('Firebase add error, using local ID:', firebaseError);
+                        dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+                        newClient = {
+                            ...client,
+                            id: generateId()
+                        };
+                    }
+                } else {
+                    // If Firebase is in error state, use local ID
+                    newClient = {
+                        ...client,
+                        id: generateId()
+                    };
+                }
+                
+                dispatch({ type: 'ADD_CLIENT', payload: newClient });
+                resetForm();
+            } catch (error) {
+                console.error('Error adding client:', error);
+            } finally {
+                dispatch({ type: 'SET_LOADING', payload: false });
+            }
         } else if (type === 'edit' && validateClient(client)) {
-            dispatch({ type: 'UPDATE_CLIENT', payload: client });
-            resetForm();
+            try {
+                dispatch({ type: 'SET_LOADING', payload: true });
+                
+                // Try to update in Firebase if not in error state
+                if (!state.firebaseError) {
+                    try {
+                        const { id, ...clientData } = client;
+                        const clientRef = doc(db, 'clients', id);
+                        await updateDoc(clientRef, clientData);
+                    } catch (firebaseError) {
+                        console.error('Firebase update error:', firebaseError);
+                        dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+                    }
+                }
+                
+                dispatch({ type: 'UPDATE_CLIENT', payload: client });
+                resetForm();
+            } catch (error) {
+                console.error('Error updating client:', error);
+            } finally {
+                dispatch({ type: 'SET_LOADING', payload: false });
+            }
         }
     };
 
@@ -235,8 +369,29 @@ const useManageClients = () => {
     /**
      * Delete a client
      */
-    const deleteClient = () => {
-        dispatch({ type: 'DELETE_CLIENT', payload: state.currClientIndex });
+    const deleteClient = async () => {
+        try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            
+            const clientId = state.currClientIndex;
+            
+            // Try to delete from Firebase if not in error state
+            if (!state.firebaseError) {
+                try {
+                    const clientRef = doc(db, 'clients', clientId);
+                    await deleteDoc(clientRef);
+                } catch (firebaseError) {
+                    console.error('Firebase delete error:', firebaseError);
+                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+                }
+            }
+            
+            dispatch({ type: 'DELETE_CLIENT', payload: clientId });
+        } catch (error) {
+            console.error('Error deleting client:', error);
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: false });
+        }
     };
 
     /**

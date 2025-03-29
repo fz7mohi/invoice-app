@@ -19,16 +19,23 @@ import {
     TotalPrice,
 } from './ListStyles';
 
-const List = () => {
+const List = ({ isLoading }) => {
     const { colors } = useTheme();
     const { windowWidth, filterType, filteredInvoices } = useGlobalContext();
     const isDesktop = windowWidth >= 768;
     const isEmpty = filteredInvoices.length === 0;
     const shouldReduceMotion = useReducedMotion();
     const variant = (element, index) => {
-        return shouldReduceMotion
-            ? invoicesVariants.reduced
-            : invoicesVariants[element](index);
+        if (shouldReduceMotion) {
+            return invoicesVariants.reduced;
+        }
+        
+        // Check if the variant is a function or direct object
+        if (typeof invoicesVariants[element] === 'function') {
+            return invoicesVariants[element](index);
+        } else {
+            return invoicesVariants[element];
+        }
     };
 
     // Running an effect on filteredInvoices change and shift document title.
@@ -39,6 +46,30 @@ const List = () => {
             document.title = `Invoices | ${filterType} (${filteredInvoices.length})`;
         }
     }, [filteredInvoices]);
+
+    if (isLoading) {
+        return (
+            <StyledList
+                variants={variant('container')}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+            >
+                <Item
+                    layout
+                    variants={variant('list', 0)}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    style={{ justifyContent: 'center' }}
+                >
+                    <p style={{ textAlign: 'center', padding: '2rem' }}>
+                        Loading invoices...
+                    </p>
+                </Item>
+            </StyledList>
+        );
+    }
 
     return (
         <>

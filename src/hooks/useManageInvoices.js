@@ -3,14 +3,32 @@ import { invoicesReducer } from '../store/reducers/invoicesReducer';
 import * as ACTIONS from '../store/actions/invoicesActions';
 import allowOnlyNumbers from '../utilities/allowOnlyNumbers';
 import formValidation from '../utilities/formValidation';
-import data from '../data/data.json';
+import { 
+    collection, 
+    addDoc, 
+    updateDoc, 
+    deleteDoc, 
+    getDocs, 
+    doc, 
+    orderBy, 
+    query,
+    where,
+    Timestamp 
+} from 'firebase/firestore';
+import { db } from '../firebase/firebase';
 
 /**
  * Function to get invoices array from localStorage.
  * @return   {object}    Array containing invoices
  */
 const getInvoicesFromLocalStorage = () => {
-    return JSON.parse(localStorage.getItem('invoices'));
+    try {
+        const storedInvoices = localStorage.getItem('invoices');
+        return storedInvoices ? JSON.parse(storedInvoices) : [];
+    } catch (error) {
+        console.error('Error getting invoices from localStorage:', error);
+        return [];
+    }
 };
 
 /**
@@ -18,7 +36,11 @@ const getInvoicesFromLocalStorage = () => {
  * @param   {object} invoices Array with invoices
  */
 const postInvoicesToLocalStorage = (invoices) => {
-    localStorage.setItem('invoices', JSON.stringify(invoices));
+    try {
+        localStorage.setItem('invoices', JSON.stringify(invoices));
+    } catch (error) {
+        console.error('Error posting invoices to localStorage:', error);
+    }
 };
 
 // Initial state values
@@ -50,16 +72,26 @@ const initialInvoice = {
 };
 
 const initialState = {
-    invoices: getInvoicesFromLocalStorage() || data,
+    invoices: [],
     isFormOpen: false,
     isModalOpen: { status: false, name: '' },
     isInvoiceEdited: false,
     currInvoiceIndex: null,
     errors: { err: {}, msg: [] },
+    isLoading: false,
+    firebaseError: false
 };
 
 /**
- * Custom hook to handle managing invoices and forms.
+ * Generate a unique invoice ID
+ * @returns {string} A unique ID
+ */
+const generateId = () => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
+
+/**
+ * Custom hook to handle managing invoices and forms using Firebase.
  */
 const useManageInvoices = () => {
     const [state, dispatch] = useReducer(invoicesReducer, initialState);
@@ -75,9 +107,73 @@ const useManageInvoices = () => {
         });
     }, [senderAddress, clientAddress, items]);
 
-    // Call postInvoicesToLocalStorage fn every time dependency array has changed.
+    // Load invoices from Firestore when the component mounts
     useEffect(() => {
-        postInvoicesToLocalStorage(state.invoices);
+        let isMounted = true;
+        
+        const fetchInvoices = async () => {
+            if (!isMounted) return;
+            
+            try {
+                dispatch({ type: 'SET_LOADING', payload: true });
+                
+                // First try to get data from Firestore
+                try {
+                    const invoicesCollection = collection(db, 'invoices');
+                    const invoicesQuery = query(invoicesCollection);
+                    const querySnapshot = await getDocs(invoicesQuery);
+                    
+                    if (!isMounted) return;
+                    
+                    const invoicesList = querySnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        // Convert Firestore Timestamp back to Date object
+                        const createdAt = data.createdAt?.toDate() || new Date();
+                        const paymentDue = data.paymentDue?.toDate() || new Date();
+                        
+                        return {
+                            id: doc.id,
+                            ...data,
+                            createdAt,
+                            paymentDue
+                        };
+                    });
+                    
+                    dispatch({ type: 'SET_INVOICES', payload: invoicesList });
+                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: false });
+                } catch (firebaseError) {
+                    console.error('Firebase error, falling back to localStorage:', firebaseError);
+                    
+                    if (!isMounted) return;
+                    
+                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+                    
+                    // Fallback to localStorage if Firebase fails
+                    const localInvoices = getInvoicesFromLocalStorage();
+                    dispatch({ type: 'SET_INVOICES', payload: localInvoices });
+                }
+            } catch (error) {
+                console.error('Error loading invoices:', error);
+            } finally {
+                if (isMounted) {
+                    dispatch({ type: 'SET_LOADING', payload: false });
+                }
+            }
+        };
+        
+        fetchInvoices();
+        
+        // Cleanup function
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+    
+    // Save to localStorage as a backup when invoices change
+    useEffect(() => {
+        if (state.invoices.length > 0) {
+            postInvoicesToLocalStorage(state.invoices);
+        }
     }, [state.invoices]);
 
     // HANDLERS
@@ -147,17 +243,17 @@ const useManageInvoices = () => {
      * @param    {object} event    Event
      * @param    {string} type    String with type of preffered action. (available: 'new', 'save', 'change')
      */
-    const handleSubmit = (event, type) => {
+    const handleSubmit = async (event, type) => {
         event.preventDefault();
 
         if (type === 'add' && formValidation(invoice, setErrors)) {
-            addInvoice(invoice, state, 'new');
+            await addInvoice(invoice, state, 'new');
             restoreToInitial();
         } else if (type === 'save') {
-            addInvoice(invoice, state, 'draft');
+            await addInvoice(invoice, state, 'draft');
             restoreToInitial();
         } else if (type === 'change' && formValidation(invoice, setErrors)) {
-            changeInvoice(invoice);
+            await changeInvoice(invoice);
             restoreToInitial();
         }
     };
@@ -169,10 +265,12 @@ const useManageInvoices = () => {
      */
     const setEditedInvoice = (index) => {
         const invoice = state.invoices.find((item) => item.id === index);
-        setInvoice(invoice);
-        setClientAddress(invoice.clientAddress);
-        setSenderAddress(invoice.senderAddress);
-        setItems(invoice.items);
+        if (invoice) {
+            setInvoice(invoice);
+            setClientAddress(invoice.clientAddress || initialAddress);
+            setSenderAddress(invoice.senderAddress || initialAddress);
+            setItems(invoice.items || []);
+        }
     };
 
     /**
@@ -193,16 +291,86 @@ const useManageInvoices = () => {
      * @param    {string} state    Object of state
      * @param    {string} type    String with type of invoice. (available: 'new' or 'draft')
      */
-    const addInvoice = (invoice, state, type) => {
-        dispatch(ACTIONS.add(invoice, state, type));
+    const addInvoice = async (invoice, state, type) => {
+        try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            
+            // Create a new invoice object
+            let newInvoice = { 
+                ...invoice,
+                status: type === 'new' ? 'pending' : 'draft',
+                id: generateId() // Default ID in case Firebase fails
+            };
+            
+            // Try to add to Firebase if not in error state
+            if (!state.firebaseError) {
+                try {
+                    const { id, ...invoiceData } = invoice;
+                    
+                    // Convert Date objects to Firestore Timestamps
+                    const firestoreInvoice = {
+                        ...invoiceData,
+                        createdAt: Timestamp.fromDate(invoice.createdAt || new Date()),
+                        paymentDue: invoice.paymentDue ? Timestamp.fromDate(new Date(invoice.paymentDue)) : null,
+                        status: type === 'new' ? 'pending' : 'draft'
+                    };
+                    
+                    const docRef = await addDoc(collection(db, 'invoices'), firestoreInvoice);
+                    
+                    newInvoice = {
+                        ...invoice,
+                        id: docRef.id,
+                        status: type === 'new' ? 'pending' : 'draft'
+                    };
+                } catch (firebaseError) {
+                    console.error('Firebase add error:', firebaseError);
+                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+                    // Continue with the default newInvoice with generated ID
+                }
+            }
+            
+            dispatch(ACTIONS.add(newInvoice, state, type));
+        } catch (error) {
+            console.error('Error adding invoice:', error);
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: false });
+        }
     };
 
     /**
      * Function to save changes on editing invoice.
      * @param    {object} invoice    Object of edited invoice
      */
-    const changeInvoice = (invoice) => {
-        dispatch(ACTIONS.change(invoice));
+    const changeInvoice = async (invoice) => {
+        try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            
+            // Try to update in Firebase if not in error state
+            if (!state.firebaseError) {
+                try {
+                    const { id, ...invoiceData } = invoice;
+                    
+                    // Convert Date objects to Firestore Timestamps
+                    const firestoreInvoice = {
+                        ...invoiceData,
+                        createdAt: Timestamp.fromDate(invoice.createdAt || new Date()),
+                        paymentDue: invoice.paymentDue ? Timestamp.fromDate(new Date(invoice.paymentDue)) : null
+                    };
+                    
+                    const invoiceRef = doc(db, 'invoices', id);
+                    await updateDoc(invoiceRef, firestoreInvoice);
+                } catch (firebaseError) {
+                    console.error('Firebase update error:', firebaseError);
+                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+                }
+            }
+            
+            dispatch(ACTIONS.change(invoice));
+        } catch (error) {
+            console.error('Error updating invoice:', error);
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: false });
+        }
     };
 
     /**
@@ -217,15 +385,57 @@ const useManageInvoices = () => {
     /**
      * Function to delete invoice.
      */
-    const deleteInvoice = () => {
-        dispatch(ACTIONS.remove());
+    const deleteInvoice = async () => {
+        try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            
+            const invoiceId = state.currInvoiceIndex;
+            
+            // Try to delete from Firebase if not in error state
+            if (!state.firebaseError) {
+                try {
+                    const invoiceRef = doc(db, 'invoices', invoiceId);
+                    await deleteDoc(invoiceRef);
+                } catch (firebaseError) {
+                    console.error('Firebase delete error:', firebaseError);
+                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+                }
+            }
+            
+            dispatch(ACTIONS.remove());
+        } catch (error) {
+            console.error('Error deleting invoice:', error);
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: false });
+        }
     };
 
     /**
      * Function to change status of invoice to 'paid'.
      */
-    const markInvoiceAsPaid = () => {
-        dispatch(ACTIONS.paid());
+    const markInvoiceAsPaid = async () => {
+        try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            
+            const invoiceId = state.currInvoiceIndex;
+            
+            // Try to update status in Firebase if not in error state
+            if (!state.firebaseError) {
+                try {
+                    const invoiceRef = doc(db, 'invoices', invoiceId);
+                    await updateDoc(invoiceRef, { status: 'paid' });
+                } catch (firebaseError) {
+                    console.error('Firebase mark as paid error:', firebaseError);
+                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+                }
+            }
+            
+            dispatch(ACTIONS.paid());
+        } catch (error) {
+            console.error('Error marking invoice as paid:', error);
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: false });
+        }
     };
 
     /**
@@ -248,14 +458,14 @@ const useManageInvoices = () => {
      * @param    {string} index    String with invoice index
      * @param    {string} name    String with name of modal (available: 'delete' or 'status')
      */
-    const toggleModal = (index, name) => {
+    const toggleModal = (index = null, name = '') => {
         dispatch(ACTIONS.modal(index, name));
     };
 
     /**
-     * Function to set errors state.
+     * Function to set form errors.
      * @param    {object} err    Object with errors
-     * @param    {object} msg    Array with error messages
+     * @param    {array} msg    Array with error messages
      */
     const setErrors = (err, msg) => {
         dispatch(ACTIONS.errors(err, msg));

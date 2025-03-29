@@ -22,6 +22,11 @@ export const buttonDefault = css`
         outline-offset: 3px;
     }
 
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
     ${({ $small }) =>
         $small &&
         css`
@@ -39,7 +44,7 @@ export const buttonPrimary = css`
     color: ${({ theme }) => theme.colors.white};
 
     @media (min-width: 768px) {
-        &:hover {
+        &:hover:not(:disabled) {
             background-color: ${({ theme }) => theme.colors.btnPrimaryHover};
         }
     }
@@ -51,7 +56,7 @@ export const buttonSecondary = css`
     color: ${({ theme }) => theme.colors.textSecondary};
 
     @media (min-width: 768px) {
-        &:hover {
+        &:hover:not(:disabled) {
             background-color: ${({ theme }) => theme.colors.btnSecondaryHover};
         }
     }
@@ -63,7 +68,7 @@ export const buttonDelete = css`
     color: ${({ theme }) => theme.colors.white};
 
     @media (min-width: 768px) {
-        &:hover {
+        &:hover:not(:disabled) {
             background-color: ${({ theme }) => theme.colors.btnDeleteHover};
         }
     }
@@ -75,7 +80,7 @@ export const buttonSave = css`
     color: ${({ theme }) => theme.colors.textTertiary};
 
     @media (min-width: 768px) {
-        &:hover {
+        &:hover:not(:disabled) {
             background-color: ${({ theme }) => theme.colors.btnSaveHover};
         }
     }
@@ -103,6 +108,10 @@ const buttonNewInvoice = css`
         @media (min-width: 768px) {
             left: 8px;
         }
+    }
+
+    &:disabled::before {
+        opacity: 0.7;
     }
 
     @media (min-width: 768px) {

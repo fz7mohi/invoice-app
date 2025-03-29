@@ -32,7 +32,7 @@ const Clients = () => {
         toggleClientModal 
     } = useGlobalContext();
     
-    const { clients, isModalOpen } = clientState;
+    const { clients, isModalOpen, isLoading } = clientState;
     const shouldReduceMotion = useReducedMotion();
     
     const variant = (element, index) => {
@@ -62,21 +62,32 @@ const Clients = () => {
                 <TitleContainer>
                     <Title>Clients</Title>
                     <ClientCount>
-                        {clients.length > 0
-                            ? `${clients.length} client${clients.length !== 1 ? 's' : ''}`
-                            : 'No clients'}
+                        {isLoading ? 'Loading...' : 
+                            clients.length > 0
+                                ? `${clients.length} client${clients.length !== 1 ? 's' : ''}`
+                                : 'No clients'}
                     </ClientCount>
                 </TitleContainer>
                 
                 <ButtonContainer>
-                    <NewClientButton onClick={toggleForm}>
+                    <NewClientButton onClick={toggleForm} disabled={isLoading}>
                         <Icon name="plus" size={15} color="#FFF" />
                         New Client
                     </NewClientButton>
                 </ButtonContainer>
             </Header>
             
-            {clients.length === 0 ? (
+            {isLoading ? (
+                <EmptyState
+                    as={motion.div}
+                    variants={variant('emptyState')}
+                >
+                    <EmptyHeading>Loading clients...</EmptyHeading>
+                    <EmptyText>
+                        Please wait while we fetch your client data.
+                    </EmptyText>
+                </EmptyState>
+            ) : clients.length === 0 ? (
                 <EmptyState
                     as={motion.div}
                     variants={variant('emptyState')}
@@ -123,12 +134,17 @@ const Clients = () => {
                                         <strong>Country:</strong> {client.country}
                                     </InfoItem>
                                 )}
+                                {client.trnNumber && (
+                                    <InfoItem>
+                                        <strong>TRN:</strong> {client.trnNumber}
+                                    </InfoItem>
+                                )}
                             </ClientInfo>
                             <ActionButtons>
-                                <EditButton onClick={() => editClient(client.id)}>
+                                <EditButton onClick={() => editClient(client.id)} disabled={isLoading}>
                                     Edit
                                 </EditButton>
-                                <DeleteButton onClick={() => toggleClientModal(client.id)}>
+                                <DeleteButton onClick={() => toggleClientModal(client.id)} disabled={isLoading}>
                                     Delete
                                 </DeleteButton>
                             </ActionButtons>

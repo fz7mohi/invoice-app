@@ -8,7 +8,7 @@ import { invoicesVariants } from '../../utilities/framerVariants';
 import { Container, Header, Info, Title, Text } from './InvoicesStyles';
 
 const Invoices = () => {
-    const { windowWidth, createInvoice, filteredInvoices, filterType } =
+    const { windowWidth, createInvoice, filteredInvoices, filterType, state } =
         useGlobalContext();
     const isDesktop = windowWidth >= 768;
     const shouldReduceMotion = useReducedMotion();
@@ -29,19 +29,27 @@ const Invoices = () => {
                 <Info>
                     <Title>Invoices</Title>
                     <Text>
-                        {invoicesLengthMessage(
-                            filteredInvoices,
-                            filterType,
-                            windowWidth
-                        )}
+                        {state.isLoading 
+                            ? "Loading invoices..."
+                            : invoicesLengthMessage(
+                                filteredInvoices,
+                                filterType,
+                                windowWidth
+                            )
+                        }
                     </Text>
                 </Info>
                 <Filter isDesktop={isDesktop} />
-                <Button type="button" $newInvoice onClick={createInvoice}>
+                <Button 
+                    type="button" 
+                    $newInvoice 
+                    onClick={createInvoice}
+                    disabled={state.isLoading}
+                >
                     New {isDesktop && 'Invoice'}
                 </Button>
             </Header>
-            <List />
+            <List isLoading={state.isLoading} />
         </Container>
     );
 };

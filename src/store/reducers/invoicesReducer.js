@@ -1,6 +1,27 @@
 import * as ACTION_TYPES from '../actions/action_type';
 
 export const invoicesReducer = (state, action) => {
+    if (action.type === 'SET_LOADING') {
+        return {
+            ...state,
+            isLoading: action.payload
+        };
+    }
+    
+    if (action.type === 'SET_INVOICES') {
+        return {
+            ...state,
+            invoices: action.payload
+        };
+    }
+    
+    if (action.type === 'SET_FIREBASE_ERROR') {
+        return {
+            ...state,
+            firebaseError: action.payload
+        };
+    }
+
     if (action.type === ACTION_TYPES.ADD_INVOICE) {
         const newList = [
             {

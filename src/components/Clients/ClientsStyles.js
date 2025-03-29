@@ -70,6 +70,12 @@ export const NewClientButton = styled.button`
         background-color: ${({ theme }) => theme.colors.purpleLight};
     }
     
+    &:disabled {
+        background-color: ${({ theme }) => theme.colors.purpleLight};
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
     @media (min-width: 768px) {
         padding: 8px 16px;
         font-size: 14px;
@@ -183,6 +189,11 @@ export const Button = styled.button`
     font-weight: 700;
     cursor: pointer;
     transition: background-color 0.2s;
+    
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
 `;
 
 export const EditButton = styled(Button)`
@@ -190,7 +201,7 @@ export const EditButton = styled(Button)`
     color: ${({ theme }) => theme.colors.btnEditText};
     border: none;
     
-    &:hover {
+    &:hover:not(:disabled) {
         background-color: ${({ theme }) => theme.colors.btnEditHover};
     }
 `;
@@ -200,7 +211,7 @@ export const DeleteButton = styled(Button)`
     color: white;
     border: none;
     
-    &:hover {
+    &:hover:not(:disabled) {
         background-color: ${({ theme }) => theme.colors.redLight};
     }
 `; 
