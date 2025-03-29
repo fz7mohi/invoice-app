@@ -10,10 +10,10 @@ import { Backdrop, StyledFormController, Link } from './FormControllerStyles';
 import Form from './Form/Form';
 
 const FormController = () => {
-    const { state, windowWidth, discard } = useGlobalContext();
+    const { invoiceState, windowWidth, discardChanges } = useGlobalContext();
     const { colors } = useTheme();
     const isTablet = windowWidth >= 768;
-    const [isFormEdited] = useState(state.isFormOpen && state.isInvoiceEdited);
+    const [isFormEdited] = useState(invoiceState.isFormOpen && invoiceState.isInvoiceEdited);
     const formRef = useRef();
     const backdropRef = useRef();
     const hasScroll = window.innerWidth > document.documentElement.clientWidth;
@@ -46,14 +46,14 @@ const FormController = () => {
      */
     const handleClickOutsideForm = (event) => {
         const target = event.target;
-        if (target === backdropRef.current) discard();
+        if (target === backdropRef.current) discardChanges();
     };
 
     /**
      * Function to trap user focus within component.
      */
     const focusTrap = (event) => {
-        if (event.key === 'Escape') discard();
+        if (event.key === 'Escape') discardChanges();
         if (event.key !== 'Tab') return;
 
         const formElements =
@@ -95,7 +95,7 @@ const FormController = () => {
                 exit="exit"
             >
                 {!isTablet && (
-                    <Link to="/" onClick={discard}>
+                    <Link to="/" onClick={discardChanges}>
                         <Icon
                             name={'arrow-left'}
                             size={10}

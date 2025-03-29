@@ -3,6 +3,7 @@ import Provider from '../shared/Provider/Provider';
 import useThemeToggle from '../../hooks/useThemeToggle';
 import useManageInvoices from '../../hooks/useManageInvoices';
 import useManageClients from '../../hooks/useManageClients';
+import useManageQuotations from '../../hooks/useManageQuotations';
 import useFilter from '../../hooks/useFilter';
 
 const AppContext = React.createContext();
@@ -10,34 +11,51 @@ const AppContext = React.createContext();
 const AppProvider = ({ children }) => {
     const { theme, toggleTheme } = useThemeToggle();
     const {
-        state,
+        state: invoiceState,
         invoice,
         senderAddress,
         clientAddress,
         items,
         handleInvoiceChange,
-        handleItemsAdd,
-        handleItemsRemove,
+        addItem,
+        removeItem,
         handleSubmit,
+        handleMarkAsPaid,
+        handleDelete,
         editInvoice,
-        deleteInvoice,
-        markInvoiceAsPaid,
-        createInvoice,
-        discard,
+        discardChanges,
         toggleModal,
+        createInvoice,
     } = useManageInvoices();
+
+    const {
+        state: quotationState,
+        quotation,
+        handleQuotationChange,
+        handleSubmit: handleQuotationSubmit,
+        handleApprove,
+        handleDelete: handleQuotationDelete,
+        editQuotation,
+        discardChanges: discardQuotationChanges,
+        toggleModal: toggleQuotationModal,
+        createQuotation,
+        addItem: addQuotationItem,
+        removeItem: removeQuotationItem,
+    } = useManageQuotations();
+
     const {
         state: clientState,
         client,
         handleClientChange,
         handleSubmit: handleClientSubmit,
         editClient,
-        deleteClient,
-        toggleForm,
-        toggleModal: toggleClientModal,
-        setErrors
+        discardClientChanges,
+        toggleClientModal,
+        createClient,
+        handleClientDelete,
     } = useManageClients();
-    const { filteredInvoices, filterType, changeFilterType } = useFilter(state);
+
+    const { filteredInvoices, filterType, changeFilterType } = useFilter(invoiceState);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     /**
@@ -63,34 +81,46 @@ const AppProvider = ({ children }) => {
                 theme,
                 toggleTheme,
                 windowWidth,
-                state,
+                setWindowWidth,
+                invoiceState,
                 invoice,
                 senderAddress,
                 clientAddress,
                 items,
                 handleInvoiceChange,
-                handleItemsAdd,
-                handleItemsRemove,
+                addItem,
+                removeItem,
                 handleSubmit,
+                handleMarkAsPaid,
+                handleDelete,
                 editInvoice,
-                deleteInvoice,
-                markInvoiceAsPaid,
-                createInvoice,
-                discard,
+                discardChanges,
                 toggleModal,
-                filteredInvoices,
-                filterType,
-                changeFilterType,
-                // Client related values
+                createInvoice,
+                quotationState,
+                quotation,
+                handleQuotationChange,
+                handleQuotationSubmit,
+                handleApprove,
+                handleQuotationDelete,
+                editQuotation,
+                discardQuotationChanges,
+                toggleQuotationModal,
+                createQuotation,
+                addQuotationItem,
+                removeQuotationItem,
                 clientState,
                 client,
                 handleClientChange,
                 handleClientSubmit,
                 editClient,
-                deleteClient,
-                toggleForm,
+                discardClientChanges,
                 toggleClientModal,
-                setErrors
+                createClient,
+                handleClientDelete,
+                filteredInvoices,
+                filterType,
+                changeFilterType,
             }}
         >
             <Provider themeColor={theme}>{children}</Provider>

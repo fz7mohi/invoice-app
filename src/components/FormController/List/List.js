@@ -18,7 +18,7 @@ import {
 const List = () => {
     const { colors } = useTheme();
     const {
-        state,
+        invoiceState,
         windowWidth,
         items,
         handleInvoiceChange,
@@ -26,7 +26,7 @@ const List = () => {
         handleItemsRemove,
     } = useGlobalContext();
     const errors =
-        state.errors.err?.items === undefined ? false : state.errors.err?.items;
+        invoiceState.errors.err?.items === undefined ? false : invoiceState.errors.err?.items;
     const isDesktop = windowWidth >= 768;
 
     return (

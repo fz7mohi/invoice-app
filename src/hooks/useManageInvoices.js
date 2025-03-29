@@ -448,7 +448,7 @@ const useManageInvoices = () => {
     /**
      * Function to discard/hide form.
      */
-    const discard = () => {
+    const discardChanges = () => {
         dispatch(ACTIONS.discard());
         restoreToInitial();
     };
@@ -485,7 +485,7 @@ const useManageInvoices = () => {
         deleteInvoice,
         markInvoiceAsPaid,
         createInvoice,
-        discard,
+        discardChanges,
         toggleModal,
     };
 };

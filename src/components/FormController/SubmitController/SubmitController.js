@@ -4,12 +4,12 @@ import { useGlobalContext } from '../../App/context';
 import { StyledSubmitController } from './SubmitControllerStyles';
 
 const SubmitController = () => {
-    const { state, handleSubmit, discard } = useGlobalContext();
-    const [isInvoiceEdited] = useState(state.isInvoiceEdited);
+    const { invoiceState, handleSubmit, discardChanges } = useGlobalContext();
+    const [isInvoiceEdited] = useState(invoiceState.isInvoiceEdited);
 
     return (
         <StyledSubmitController $isEdited={isInvoiceEdited}>
-            <Button $small type="button" $secondary onClick={discard}>
+            <Button $small type="button" $secondary onClick={discardChanges}>
                 Discard
             </Button>
             {!isInvoiceEdited && (

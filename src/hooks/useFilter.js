@@ -1,59 +1,36 @@
-import { useEffect, useState, useRef } from 'react';
+import { useMemo } from 'react';
 
-const initialFilterType = 'all';
+/**
+ * Custom hook to filter items based on filter type.
+ * @param   {object} state The state containing items to filter
+ * @param   {string} filterType The type of filter to apply
+ * @returns {object} The filtered items and filter type
+ */
+const useFilter = (state, customFilterType = null) => {
+    // Support for both invoices and quotations
+    const items = state.invoices || state.quotations || [];
+    const filterType = customFilterType || 'all';
 
-const useFilter = (callback) => {
-    const [filteredInvoices, setFilteredInvoices] = useState(callback.invoices);
-    const [filterType, setFilterType] = useState(initialFilterType);
-    const previousFilterType = useRef(initialFilterType);
-
-    /**
-     * Running an effect whenever callback changes and call handleFilter() with current type
-     */
-    useEffect(() => {
-        handleFilter(filterType);
-    }, [callback]);
-
-    /**
-     * Function to filter filteredInvoices based on filter type.
-     * @param    {String}  string - String with filter type
-     */
-    const handleFilter = (type) => {
-        if (type === initialFilterType) {
-            setFilteredInvoices(callback.invoices);
-            return false;
+    // Filter items based on filter type
+    const filteredItems = useMemo(() => {
+        switch (filterType) {
+            case 'draft':
+                return items.filter((item) => item.status === 'draft');
+            case 'pending':
+                return items.filter((item) => item.status === 'pending');
+            case 'paid':
+                return items.filter((item) => item.status === 'paid');
+            case 'approved':
+                return items.filter((item) => item.status === 'approved');
+            default:
+                return items;
         }
-
-        const newInvoices = callback.invoices.filter(
-            (item) => item.status === type
-        );
-        setFilteredInvoices(newInvoices);
-    };
-
-    /**
-     * Function to change filter type based on passed props.
-     * Call handleFilter function to change filteredInvoices based on that filter type.
-     * @param    {String}  event - String with filter type
-     */
-    const changeFilterType = (event) => {
-        const type = event.target.value;
-
-        if (previousFilterType.current === type) {
-            previousFilterType.current = initialFilterType;
-            handleFilter(initialFilterType);
-            setFilterType(initialFilterType);
-            return false;
-        }
-
-        previousFilterType.current = type;
-        handleFilter(type);
-        setFilterType(type);
-    };
+    }, [items, filterType]);
 
     return {
-        filteredInvoices,
+        filteredInvoices: state.invoices ? filteredItems : [],
+        filteredQuotations: state.quotations ? filteredItems : [],
         filterType,
-        changeFilterType,
     };
 };
 

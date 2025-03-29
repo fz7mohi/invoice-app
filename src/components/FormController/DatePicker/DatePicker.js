@@ -20,8 +20,8 @@ const CustomInput = forwardRef(({ isDisabled, value, onClick }, ref) => (
 ));
 
 const DatePicker = () => {
-    const { state, invoice, handleInvoiceChange } = useGlobalContext();
-    const isInvoiceEdited = state.isInvoiceEdited;
+    const { invoiceState, invoice, handleInvoiceChange } = useGlobalContext();
+    const isInvoiceEdited = invoiceState.isInvoiceEdited;
 
     return (
         <ReactDatePicker

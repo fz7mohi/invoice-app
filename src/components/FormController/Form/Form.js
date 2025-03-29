@@ -17,10 +17,10 @@ import {
 } from './FormStyles';
 
 const Form = ({ isEdited }) => {
-    const { state, invoice, handleInvoiceChange } = useGlobalContext();
-    const errors = state.errors.err;
-    const messages = state.errors.msg;
-    const invoiceId = state.currInvoiceIndex;
+    const { invoiceState, invoice, handleInvoiceChange } = useGlobalContext();
+    const errors = invoiceState.errors.err;
+    const messages = invoiceState.errors.msg;
+    const invoiceId = invoiceState.currInvoiceIndex;
 
     return (
         <>
