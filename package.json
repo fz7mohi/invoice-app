@@ -4,8 +4,9 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "build": "npx mix",
-        "mix-watch": "npx mix watch"
+        "build": "NODE_OPTIONS=--openssl-legacy-provider npx mix",
+        "mix-watch": "npx mix watch",
+        "dev": "serve dist"
     },
     "repository": {
         "type": "git",
@@ -20,7 +21,8 @@
     "homepage": "https://github.com/tediko/invoice-app#readme",
     "devDependencies": {
         "laravel-mix": "^6.0.25",
-        "prettier": "2.3.2"
+        "prettier": "2.3.2",
+        "serve": "^14.2.1"
     },
     "dependencies": {
         "@babel/preset-react": "^7.14.5",
