@@ -65,7 +65,6 @@ const initialQuotation = {
     paymentTerms: '30',
     clientName: '',
     clientEmail: '',
-    clientPhone: '',
     senderAddress: initialAddress,
     clientAddress: {
         street: '',
@@ -259,15 +258,21 @@ const useManageQuotations = () => {
     /**
      * Add new item to items array.
      */
-    const addItem = () => {
-        setItems((oldItems) => [...oldItems, initialItems]);
+    const addQuotationItem = () => {
+        console.log('addQuotationItem function called in useManageQuotations');
+        console.log('Current items:', items);
+        setItems((oldItems) => {
+            console.log('Setting items with:', [...oldItems, initialItems]);
+            return [...oldItems, initialItems];
+        });
+        console.log('Items after update (may not show changes yet due to state update):', items);
     };
 
     /**
      * Remove item from items array.
      * @param    {number} index    Index of item to delete
      */
-    const removeItem = (index) => {
+    const removeQuotationItem = (index) => {
         setItems(items.filter((item, i) => i !== index));
     };
 
@@ -505,7 +510,7 @@ const useManageQuotations = () => {
         setItems([]);
         
         // Add first blank item row
-        addItem();
+        addQuotationItem();
         
         dispatch({ type: 'CREATE_QUOTATION' });
         
@@ -516,6 +521,34 @@ const useManageQuotations = () => {
         });
     };
 
+    /**
+     * Add new item to items array - direct implementation for component use
+     */
+    const addNewItem = () => {
+        console.log('addNewItem function called in useManageQuotations');
+        console.log('Current items:', items);
+        try {
+            setItems(oldItems => [...oldItems, initialItems]);
+            console.log('Items updated successfully');
+        } catch (error) {
+            console.error('Error adding new item:', error);
+        }
+    };
+
+    /**
+     * Remove item from items array - direct implementation for component use
+     * @param {number} index Index of item to delete
+     */
+    const removeItemAtIndex = (index) => {
+        console.log('removeItemAtIndex function called for index:', index);
+        try {
+            setItems(oldItems => oldItems.filter((_, i) => i !== index));
+            console.log('Item removed successfully');
+        } catch (error) {
+            console.error('Error removing item:', error);
+        }
+    };
+
     return {
         state,
         quotation,
@@ -523,8 +556,8 @@ const useManageQuotations = () => {
         clientAddress,
         items,
         handleQuotationChange,
-        addItem,
-        removeItem,
+        addQuotationItem,
+        removeQuotationItem,
         handleSubmit,
         handleApprove,
         handleDelete,
@@ -536,7 +569,10 @@ const useManageQuotations = () => {
         setQuotation,
         setSenderAddress,
         setClientAddress,
-        setItems
+        setItems,
+        // Add the new direct functions
+        addNewItem,
+        removeItemAtIndex
     };
 };
 

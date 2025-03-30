@@ -39,8 +39,11 @@ const AppProvider = ({ children }) => {
         discardChanges: discardQuotationChanges,
         toggleModal: toggleQuotationModal,
         createQuotation,
-        addItem: addQuotationItem,
-        removeItem: removeQuotationItem,
+        addQuotationItem,
+        removeQuotationItem,
+        setItems,
+        addNewItem,
+        removeItemAtIndex,
     } = useManageQuotations();
 
     const {
@@ -109,6 +112,9 @@ const AppProvider = ({ children }) => {
                 createQuotation,
                 addQuotationItem,
                 removeQuotationItem,
+                setItems,
+                addNewItem,
+                removeItemAtIndex,
                 clientState,
                 client,
                 handleClientChange,

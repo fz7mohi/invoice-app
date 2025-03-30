@@ -4,6 +4,7 @@ import { useTheme } from 'styled-components';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import dateToString from '../../utilities/dateToString';
+import allowOnlyNumbers from '../../utilities/allowOnlyNumbers';
 import Icon from '../shared/Icon/Icon';
 import Button from '../shared/Button/Button';
 import styled from 'styled-components';
@@ -177,57 +178,55 @@ const TextArea = styled.textarea`
 
 // Create a styled card component for client details
 const ClientDetailsCard = styled.div`
-    margin-top: 24px;
-    padding: 20px;
-    border-radius: 8px;
-    background-color: ${({ theme }) => theme.colors.bgForm || theme.colors.formBackground || '#fff'};
+    margin-top: 12px;
+    padding: 16px;
+    border-radius: 4px;
+    background-color: ${({ theme }) => theme.colors.bgInput || '#f9fafe'};
     border: 1px solid ${({ theme }) => theme.colors.bgInputBorder};
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     
     ${({ $empty, theme }) => $empty && `
-        background-color: ${theme.colors.bgInput || '#f9fafe'};
         display: flex;
         align-items: center;
         justify-content: center;
         color: ${theme.colors.textTertiary || '#7e88c3'};
         font-style: italic;
-        min-height: 120px;
+        min-height: 80px;
     `}
 `;
 
 const CardTitle = styled.h3`
-    font-size: 13px;
-    font-weight: 700;
-    color: ${({ theme }) => theme.colors.purple};
-    margin: 0 0 12px 0;
+    font-size: 12px;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    margin: 0 0 10px 0;
+    font-weight: 500;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
 `;
 
 const ClientInfo = styled.div`
     display: grid;
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 6px;
 `;
 
 const InfoItem = styled.div`
     display: flex;
     align-items: center;
-    gap: 8px;
+    font-size: 12px;
 `;
 
-const InfoLabel = styled.span`
-    font-size: 11px;
-    font-weight: 600;
+const InfoIcon = styled.span`
+    margin-right: 8px;
     color: ${({ theme }) => theme.colors.textSecondary};
-    min-width: 60px;
+    display: flex;
+    align-items: center;
 `;
 
 const InfoValue = styled.span`
-    font-size: 13px;
-    font-weight: 500;
     color: ${({ theme }) => theme.colors.textPrimary};
     overflow-wrap: break-word;
     word-break: break-word;
+    line-height: 1.3;
 `;
 
 const QuotationFormContent = ({ isEdited }) => {
@@ -236,11 +235,14 @@ const QuotationFormContent = ({ isEdited }) => {
         quotation,
         quotationState,
         handleQuotationChange,
-        addItem,
-        removeItem,
+        addQuotationItem,
+        removeQuotationItem,
         items,
         windowWidth,
-        clientState, // Add clientState to get clients list
+        clientState,
+        setItems,
+        addNewItem,
+        removeItemAtIndex
     } = useGlobalContext();
     
     const [isDropdownExpanded, setIsDropdownExpanded] = useState(false);
@@ -251,6 +253,22 @@ const QuotationFormContent = ({ isEdited }) => {
     
     const errors = quotationState?.errors?.fields || {};
     const errorMessages = quotationState?.errors?.messages || [];
+    
+    // Add local state for items with useState
+    const [localItems, setLocalItems] = useState(items || []);
+
+    // Use useEffect to sync changes from global state to local state
+    useEffect(() => {
+        setLocalItems(items || []);
+    }, [items]);
+
+    // Use useEffect to sync changes from local state to global state
+    useEffect(() => {
+        if (localItems !== items && typeof setItems === 'function') {
+            console.log('Syncing local items to global state:', localItems);
+            setItems(localItems);
+        }
+    }, [localItems]);
     
     // Close select dropdown when clicking outside
     useEffect(() => {
@@ -284,13 +302,10 @@ const QuotationFormContent = ({ isEdited }) => {
     };
     
     const handleSelectClient = (client) => {
-        console.log('Client selected:', client);
-        
         // Reset dropdowns
         setIsClientDropdownExpanded(false);
 
-        // Update client name - this is the most important part
-        console.log('Setting client name to:', client.companyName);
+        // Update client name
         const clientNameEvent = {
             target: {
                 name: 'clientName',
@@ -303,7 +318,6 @@ const QuotationFormContent = ({ isEdited }) => {
         setTimeout(() => {
             // Update client email
             if (client.email) {
-                console.log('Setting client email to:', client.email);
                 const emailEvent = {
                     target: {
                         name: 'clientEmail',
@@ -313,19 +327,7 @@ const QuotationFormContent = ({ isEdited }) => {
                 handleQuotationChange(emailEvent, 'quotation');
             }
             
-            // Update client phone number
-            if (client.phone) {
-                console.log('Setting client phone to:', client.phone);
-                const phoneEvent = {
-                    target: {
-                        name: 'clientPhone',
-                        value: client.phone
-                    }
-                };
-                handleQuotationChange(phoneEvent, 'quotation');
-            }
-            
-            // Update client address fields with logging
+            // Update client address fields
             if (client.address) {
                 let street = client.address;
                 let city = '';
@@ -340,15 +342,13 @@ const QuotationFormContent = ({ isEdited }) => {
                     postCode = cityParts[1] ? cityParts[1].trim() : '';
                 }
                 
-                // Log and set street
-                console.log('Setting street to:', street);
+                // Set street
                 handleQuotationChange({
                     target: { name: 'street', value: street }
                 }, 'clientAddress');
                 
                 // City
                 if (city) {
-                    console.log('Setting city to:', city);
                     handleQuotationChange({
                         target: { name: 'city', value: city }
                     }, 'clientAddress');
@@ -356,7 +356,6 @@ const QuotationFormContent = ({ isEdited }) => {
                 
                 // Post Code
                 if (postCode) {
-                    console.log('Setting postCode to:', postCode);
                     handleQuotationChange({
                         target: { name: 'postCode', value: postCode }
                     }, 'clientAddress');
@@ -365,16 +364,10 @@ const QuotationFormContent = ({ isEdited }) => {
             
             // Country
             if (client.country) {
-                console.log('Setting country to:', client.country);
                 handleQuotationChange({
                     target: { name: 'country', value: client.country }
                 }, 'clientAddress');
             }
-            
-            // Force check if quotation has been updated
-            setTimeout(() => {
-                console.log('After all updates, quotation is:', quotation);
-            }, 100);
         }, 100);
     };
 
@@ -383,20 +376,45 @@ const QuotationFormContent = ({ isEdited }) => {
         return Boolean(quotation?.clientName);
     };
 
-    // Add a useEffect to log changes to client name and quotation
-    useEffect(() => {
-        if (quotation?.clientName) {
-            console.log('Client name detected in quotation:', quotation.clientName);
+    // Create a wrapper for handleQuotationChange to intercept 'items' updates
+    const handleItemChange = (event, type, date, index) => {
+        if (type === 'items') {
+            const name = event.target.name;
+            const value = event.target.value;
+            
+            // Update the item in the local state
+            setLocalItems(prevItems => {
+                const updatedItems = [...prevItems];
+                // Allow only numbers for quantity and price
+                const processedValue = 
+                    (name === 'quantity' || name === 'price') 
+                    ? allowOnlyNumbers(value) 
+                    : value;
+                    
+                updatedItems[index] = {
+                    ...updatedItems[index],
+                    [name]: processedValue
+                };
+                
+                // Update total if quantity or price changes
+                if (name === 'quantity' || name === 'price') {
+                    updatedItems[index].total =
+                        updatedItems[index].quantity * updatedItems[index].price;
+                }
+                
+                return updatedItems;
+            });
+        } else {
+            // For all other types, pass through to the original handler
+            handleQuotationChange(event, type, date, index);
         }
-        console.log('Full quotation state:', quotation);
-    }, [quotation]);
+    };
 
-    // Add a direct display of client info for debugging
-    useEffect(() => {
-        if (quotation?.clientName) {
-            console.log('%c CLIENT SELECTED: ' + quotation.clientName, 'background: green; color: white; padding: 4px;');
-        }
-    }, [quotation?.clientName]);
+    // Add back the findSelectedClient function that was accidentally removed
+    const findSelectedClient = () => {
+        if (!quotation?.clientName || !clientState?.clients) return null;
+        return clientState.clients.find(c => c.companyName === quotation.clientName);
+    };
 
     return (
         <>
@@ -462,31 +480,52 @@ const QuotationFormContent = ({ isEdited }) => {
                     {/* Client Details Card */}
                     {hasClientDetails() ? (
                         <ClientDetailsCard>
-                            <CardTitle>Client Details</CardTitle>
+                            <CardTitle>Client Information</CardTitle>
                             <ClientInfo>
                                 {quotation.clientEmail && (
                                     <InfoItem>
-                                        <InfoLabel>Email:</InfoLabel>
+                                        <InfoIcon>
+                                            <Icon name="invoice" size={12} color={colors.textSecondary} />
+                                        </InfoIcon>
                                         <InfoValue>{quotation.clientEmail}</InfoValue>
                                     </InfoItem>
                                 )}
                                 
-                                {quotation.clientPhone && (
+                                {findSelectedClient()?.phone && (
                                     <InfoItem>
-                                        <InfoLabel>Phone:</InfoLabel>
-                                        <InfoValue>{quotation.clientPhone}</InfoValue>
+                                        <InfoIcon>
+                                            <Icon name="settings" size={12} color={colors.textSecondary} />
+                                        </InfoIcon>
+                                        <InfoValue>{findSelectedClient().phone}</InfoValue>
+                                    </InfoItem>
+                                )}
+                                
+                                {findSelectedClient()?.trnNumber && (
+                                    <InfoItem>
+                                        <InfoIcon>
+                                            <Icon name="receipt" size={12} color={colors.textSecondary} />
+                                        </InfoIcon>
+                                        <InfoValue>TRN: {findSelectedClient().trnNumber}</InfoValue>
                                     </InfoItem>
                                 )}
                                 
                                 {quotation.clientAddress?.street && (
                                     <InfoItem>
-                                        <InfoLabel>Address:</InfoLabel>
+                                        <InfoIcon>
+                                            <Icon name="delivery" size={12} color={colors.textSecondary} />
+                                        </InfoIcon>
                                         <InfoValue>
                                             {quotation.clientAddress.street}
-                                            {(quotation.clientAddress.city || quotation.clientAddress.postCode) && 
-                                                `, ${quotation.clientAddress.city || ''} ${quotation.clientAddress.postCode || ''}`}
-                                            {quotation.clientAddress.country && 
-                                                `, ${quotation.clientAddress.country}`}
+                                            {(quotation.clientAddress.city || quotation.clientAddress.postCode) && (
+                                                <>
+                                                    {' '}{quotation.clientAddress.city || ''}
+                                                    {quotation.clientAddress.city && quotation.clientAddress.postCode && ', '}
+                                                    {quotation.clientAddress.postCode || ''}
+                                                </>
+                                            )}
+                                            {quotation.clientAddress.country && (
+                                                <>, {quotation.clientAddress.country}</>
+                                            )}
                                         </InfoValue>
                                     </InfoItem>
                                 )}
@@ -613,7 +652,7 @@ const QuotationFormContent = ({ isEdited }) => {
                 <Fieldset>
                     <Legend $lg>Item List</Legend>
                     <Wrapper>
-                        {items.map((item, index) => (
+                        {localItems.map((item, index) => (
                             <InputsGroup key={index}>
                                 <InputWrapper>
                                     <Label
@@ -632,7 +671,7 @@ const QuotationFormContent = ({ isEdited }) => {
                                         value={item.name || ''}
                                         $error={errors.items && errors.items[index]?.name}
                                         onChange={(event) =>
-                                            handleQuotationChange(
+                                            handleItemChange(
                                                 event,
                                                 'items',
                                                 null,
@@ -655,7 +694,7 @@ const QuotationFormContent = ({ isEdited }) => {
                                         value={item.quantity || ''}
                                         $error={errors.items && errors.items[index]?.quantity}
                                         onChange={(event) =>
-                                            handleQuotationChange(
+                                            handleItemChange(
                                                 event,
                                                 'items',
                                                 null,
@@ -679,7 +718,7 @@ const QuotationFormContent = ({ isEdited }) => {
                                         value={item.price || ''}
                                         $error={errors.items && errors.items[index]?.price}
                                         onChange={(event) =>
-                                            handleQuotationChange(
+                                            handleItemChange(
                                                 event,
                                                 'items',
                                                 null,
@@ -696,7 +735,11 @@ const QuotationFormContent = ({ isEdited }) => {
                                 </InputWrapper>
                                 <Delete
                                     type="button"
-                                    onClick={() => removeItem(index)}
+                                    onClick={() => {
+                                        setLocalItems(prevItems => 
+                                            prevItems.filter((_, i) => i !== index)
+                                        );
+                                    }}
                                 >
                                     <Icon
                                         name="delete"
@@ -706,7 +749,16 @@ const QuotationFormContent = ({ isEdited }) => {
                                 </Delete>
                             </InputsGroup>
                         ))}
-                        <Button type="button" $secondary onClick={addItem}>
+                        <Button 
+                            type="button" 
+                            $secondary 
+                            onClick={() => {
+                                setLocalItems(prevItems => [
+                                    ...prevItems, 
+                                    { name: '', quantity: 0, price: 0, total: 0 }
+                                ]);
+                            }}
+                        >
                             + Add New Item
                         </Button>
                     </Wrapper>
