@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Route, Switch, useLocation, Redirect } from 'react-router-dom';
 import Wrapper from '../Wrapper/Wrapper';
 import Header from '../Header/Header';
@@ -6,6 +7,7 @@ import Clients from '../Clients/Clients';
 import Quotations from '../Quotations/Quotations';
 import FormController from '../FormController/FormController';
 import ClientFormController from '../ClientFormController/ClientFormController';
+import QuotationFormController from '../QuotationFormController/QuotationFormController';
 import InvoiceView from '../InvoiceView/InvoiceView';
 import Modal from '../Modal/Modal';
 import RouteError from '../RouteError/RouteError';
@@ -41,7 +43,7 @@ const App = () => {
                 {isFormOpen && <FormController />}
                 {isClientFormOpen && <ClientFormController />}
                 {isModalOpen && <Modal />}
-                {isQuotationFormOpen && <div>Quotation Form</div>}
+                {isQuotationFormOpen && <QuotationFormController />}
             </AnimatePresence>
             <AnimatePresence exitBeforeEnter>
                 <Switch location={location} key={location.key}>

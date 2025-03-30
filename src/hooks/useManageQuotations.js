@@ -65,8 +65,14 @@ const initialQuotation = {
     paymentTerms: '30',
     clientName: '',
     clientEmail: '',
+    clientPhone: '',
     senderAddress: initialAddress,
-    clientAddress: initialAddress,
+    clientAddress: {
+        street: '',
+        city: '',
+        postCode: '',
+        country: ''
+    },
     items: [],
     total: 0,
 };
@@ -198,18 +204,37 @@ const useManageQuotations = () => {
         let name = event ? event.target.name : null;
         let value = event ? event.target.value : null;
 
+        console.log(`handleQuotationChange called with type: ${type}, name: ${name}, value:`, value);
+
         switch (type) {
             case 'quotation':
-                setQuotation({ ...quotation, [name]: value });
+                console.log('Updating quotation field:', name, 'to:', value);
+                setQuotation(prev => {
+                    const updated = { ...prev, [name]: value };
+                    console.log('Updated quotation:', updated);
+                    return updated;
+                });
                 break;
             case 'senderAddress':
                 setSenderAddress({ ...senderAddress, [name]: value });
                 break;
             case 'clientAddress':
-                setClientAddress({ ...clientAddress, [name]: value });
+                console.log('Updating clientAddress field:', name, 'to:', value);
+                setClientAddress(prev => {
+                    const updated = { ...prev, [name]: value };
+                    console.log('Updated clientAddress:', updated);
+                    return updated;
+                });
                 break;
             case 'date':
                 setQuotation({ ...quotation, createdAt: date });
+                break;
+            case 'fullQuotation':
+                // When updating the entire quotation object at once
+                setQuotation(event.target.value);
+                if (event.target.value.clientAddress) {
+                    setClientAddress(event.target.value.clientAddress);
+                }
                 break;
             case 'items':
                 const updatedItems = [...items];
@@ -461,9 +486,34 @@ const useManageQuotations = () => {
      * Function to create a new quotation.
      */
     const createQuotation = () => {
-        resetForm();
-        addItem(); // Add first blank item row
+        console.log('Creating new quotation with default values');
+        // Make sure we're starting with a proper client address structure
+        const properClientAddress = {
+            street: '',
+            city: '',
+            postCode: '',
+            country: ''
+        };
+        
+        // Reset form with guaranteed properly structured objects
+        setQuotation({
+            ...initialQuotation,
+            clientAddress: properClientAddress
+        });
+        setSenderAddress({...initialAddress});
+        setClientAddress(properClientAddress);
+        setItems([]);
+        
+        // Add first blank item row
+        addItem();
+        
         dispatch({ type: 'CREATE_QUOTATION' });
+        
+        // Log the initial state after creation
+        console.log('Initial quotation state:', {
+            quotation: initialQuotation,
+            clientAddress: properClientAddress
+        });
     };
 
     return {
@@ -482,6 +532,11 @@ const useManageQuotations = () => {
         discardChanges,
         toggleModal,
         createQuotation,
+        // Add direct state setters for component use
+        setQuotation,
+        setSenderAddress,
+        setClientAddress,
+        setItems
     };
 };
 
