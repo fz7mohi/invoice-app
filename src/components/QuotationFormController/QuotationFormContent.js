@@ -129,19 +129,33 @@ const Option = styled.button`
 const Wrapper = styled.div`
     display: flex;
     flex-flow: column;
-    gap: 48px;
+    gap: 16px;
+    width: 100%;
+    margin-right: 20px;
+    
+    @media (min-width: 768px) {
+        gap: 20px;
+        margin-right: 0;
+    }
 `;
 
 const TotalValue = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px 13px 16px 20px;
+    padding: 10px;
     border-radius: 4px;
     border: none;
     background-color: transparent;
     color: ${({ theme }) => theme.colors.textTertiary};
-    font-weight: 700;
+    font-weight: 500;
+    font-size: 13px;
+    
+    .currency {
+        margin-right: 4px;
+        font-size: 11px;
+        color: ${({ theme }) => theme.colors.textSecondary};
+    }
 `;
 
 const Delete = styled.button`
@@ -229,6 +243,206 @@ const InfoValue = styled.span`
     line-height: 1.3;
 `;
 
+// Add a styled component for the description field
+const DescriptionInput = styled.textarea`
+    ${defaultInput}
+    min-height: 50px;
+    resize: vertical;
+    font-size: 12px;
+    margin-top: 4px;
+    padding: 10px;
+    
+    ${({ $error }) =>
+        $error &&
+        `border: 1px solid ${props => props.theme.colors.red};`}
+`;
+
+// Update the styled component for the InputsGroup to support the new layout
+const ItemInputsGroup = styled(InputsGroup)`
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px 12px;
+    background-color: ${({ theme }) => theme.colors.bgInput || '#f9fafe'};
+    border-radius: 6px;
+    width: 100%;
+    border: 1px solid ${({ theme }) => theme.colors.bgInputBorder || '#DFE3FA'};
+    
+    /* On mobile, we'll use a different grid layout */
+    display: grid;
+    grid-template-areas:
+        "name"
+        "desc"
+        "qty-price"
+        "vat-total"
+        "delete";
+    
+    /* For the qty-price and vat-total rows */
+    .qty-price-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        grid-area: qty-price;
+    }
+    
+    .vat-total-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        grid-area: vat-total;
+    }
+    
+    @media (min-width: 768px) {
+        grid-template-columns: repeat(5, 1fr) auto;
+        grid-template-areas:
+            "name name name name name delete"
+            "desc desc desc desc desc desc"
+            "qty price vat total total total";
+        align-items: flex-start;
+        gap: 10px;
+        padding: 16px 14px;
+        
+        /* Remove the wrapper divs on desktop */
+        .qty-price-row, .vat-total-row {
+            display: contents;
+        }
+    }
+`;
+
+const ItemName = styled(InputWrapper)`
+    margin-bottom: 0;
+    
+    @media (min-width: 768px) {
+        grid-area: name;
+    }
+`;
+
+const ItemDescription = styled(InputWrapper)`
+    margin-bottom: 0;
+    
+    @media (min-width: 768px) {
+        grid-area: desc;
+    }
+`;
+
+const ItemQty = styled(InputWrapper)`
+    margin-bottom: 0;
+    
+    @media (min-width: 768px) {
+        grid-area: qty;
+    }
+`;
+
+const ItemPrice = styled(InputWrapper)`
+    margin-bottom: 0;
+    
+    @media (min-width: 768px) {
+        grid-area: price;
+    }
+`;
+
+const ItemVat = styled(InputWrapper)`
+    margin-bottom: 0;
+    
+    @media (min-width: 768px) {
+        grid-area: vat;
+    }
+`;
+
+const ItemTotal = styled(InputWrapper)`
+    margin-bottom: 0;
+    
+    @media (min-width: 768px) {
+        grid-area: total;
+    }
+`;
+
+const ItemDelete = styled.button`
+    width: 18px;
+    height: 16px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: ${({ theme }) => theme.colors.btnTheme};
+    align-self: flex-start;
+    justify-self: flex-end;
+    
+    @media (min-width: 768px) {
+        grid-area: delete;
+    }
+    
+    &:hover {
+        color: ${({ theme }) => theme.colors.red};
+    }
+`;
+
+// Update the VAT display value
+const VatValue = styled(TotalValue)`
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 12px;
+    font-weight: 400;
+`;
+
+// Add a custom styled form that extends StyledForm
+const QuotationForm = styled(StyledForm)`
+    width: 100%;
+    padding-right: 20px; /* Add padding to prevent horizontal overflow */
+    
+    @media (min-width: 768px) {
+        max-width: 100%;
+    }
+    
+    @media (min-width: 1024px) {
+        padding-right: 10px;
+    }
+`;
+
+// Add the MinimalLabel styled component
+const MinimalLabel = styled(Label)`
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 4px;
+`;
+
+// Add the MinimalInput styled component
+const MinimalInput = styled(Input)`
+    padding: 10px;
+    font-size: 12px;
+    height: auto;
+`;
+
+// Add this currency utility function before the QuotationFormContent component
+const getCurrencySymbol = (country) => {
+    if (!country) return '';
+    
+    const countryLower = country.toLowerCase();
+    if (countryLower.includes('emirates') || countryLower.includes('uae') || countryLower.includes('united arab')) {
+        return 'AED';
+    } else if (countryLower.includes('qatar')) {
+        return 'QAR';
+    } else if (countryLower.includes('saudi') || countryLower.includes('ksa')) {
+        return 'SAR';
+    }
+    return '';
+};
+
+// Add a number formatting utility function
+const formatNumber = (value) => {
+    if (!value && value !== 0) return '0.00';
+    
+    // Ensure value is a number and has 2 decimal places
+    const numberValue = parseFloat(value);
+    if (isNaN(numberValue)) return '0.00';
+    
+    // Format with commas and 2 decimal places
+    return numberValue.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+};
+
 const QuotationFormContent = ({ isEdited }) => {
     const { colors } = useTheme();
     const {
@@ -247,8 +461,10 @@ const QuotationFormContent = ({ isEdited }) => {
     
     const [isDropdownExpanded, setIsDropdownExpanded] = useState(false);
     const [isClientDropdownExpanded, setIsClientDropdownExpanded] = useState(false);
+    const [isCurrencyDropdownExpanded, setIsCurrencyDropdownExpanded] = useState(false);
     const selectRef = useRef();
     const clientSelectRef = useRef();
+    const currencySelectRef = useRef();
     const isDesktop = windowWidth >= 768;
     
     const errors = quotationState?.errors?.fields || {};
@@ -264,11 +480,24 @@ const QuotationFormContent = ({ isEdited }) => {
 
     // Use useEffect to sync changes from local state to global state
     useEffect(() => {
-        if (localItems !== items && typeof setItems === 'function') {
+        if (JSON.stringify(localItems) !== JSON.stringify(items) && typeof setItems === 'function') {
             console.log('Syncing local items to global state:', localItems);
-            setItems(localItems);
+            console.log('Current global items:', items);
+            console.log('Are they different?', localItems !== items);
+            
+            // Ensure items have proper numeric values for calculations
+            const processedItems = localItems.map(item => ({
+                ...item,
+                quantity: parseFloat(item.quantity) || 0,
+                price: parseFloat(item.price) || 0,
+                total: parseFloat(item.total) || 0,
+                vat: parseFloat(item.vat) || 0
+            }));
+            
+            setItems(processedItems);
+            console.log('Processed items sent to global state:', processedItems);
         }
-    }, [localItems]);
+    }, [localItems, items, setItems]);
     
     // Close select dropdown when clicking outside
     useEffect(() => {
@@ -280,13 +509,16 @@ const QuotationFormContent = ({ isEdited }) => {
             if (isClientDropdownExpanded && clientSelectRef.current && !clientSelectRef.current.contains(target)) {
                 setIsClientDropdownExpanded(false);
             }
+            if (isCurrencyDropdownExpanded && currencySelectRef.current && !currencySelectRef.current.contains(target)) {
+                setIsCurrencyDropdownExpanded(false);
+            }
         };
         document.addEventListener('click', checkIfClickedOutside);
 
         return () => {
             document.removeEventListener('click', checkIfClickedOutside);
         };
-    }, [isDropdownExpanded, isClientDropdownExpanded]);
+    }, [isDropdownExpanded, isClientDropdownExpanded, isCurrencyDropdownExpanded]);
     
     const toggleDropdown = () => {
         setIsDropdownExpanded(!isDropdownExpanded);
@@ -294,6 +526,10 @@ const QuotationFormContent = ({ isEdited }) => {
     
     const toggleClientDropdown = () => {
         setIsClientDropdownExpanded(!isClientDropdownExpanded);
+    };
+    
+    const toggleCurrencyDropdown = () => {
+        setIsCurrencyDropdownExpanded(!isCurrencyDropdownExpanded);
     };
     
     const handleSelectOption = (event) => {
@@ -352,20 +588,35 @@ const QuotationFormContent = ({ isEdited }) => {
                     handleQuotationChange({
                         target: { name: 'city', value: city }
                     }, 'clientAddress');
-                }
-                
-                // Post Code
-                if (postCode) {
+                } else {
                     handleQuotationChange({
-                        target: { name: 'postCode', value: postCode }
+                        target: { name: 'city', value: '' }
                     }, 'clientAddress');
                 }
+                
+                // Always set post code, even if empty
+                handleQuotationChange({
+                    target: { name: 'postCode', value: postCode }
+                }, 'clientAddress');
             }
             
             // Country
             if (client.country) {
                 handleQuotationChange({
                     target: { name: 'country', value: client.country }
+                }, 'clientAddress');
+                
+                // Set currency based on country
+                const currency = getCurrencySymbol(client.country);
+                if (currency) {
+                    console.log('Setting quote currency to:', currency);
+                    handleQuotationChange({
+                        target: { name: 'currency', value: currency }
+                    }, 'quotation');
+                }
+            } else {
+                handleQuotationChange({
+                    target: { name: 'country', value: '' }
                 }, 'clientAddress');
             }
         }, 100);
@@ -376,7 +627,7 @@ const QuotationFormContent = ({ isEdited }) => {
         return Boolean(quotation?.clientName);
     };
 
-    // Create a wrapper for handleQuotationChange to intercept 'items' updates
+    // Update the handleItemChange function to handle description and calculate VAT
     const handleItemChange = (event, type, date, index) => {
         if (type === 'items') {
             const name = event.target.name;
@@ -396,10 +647,15 @@ const QuotationFormContent = ({ isEdited }) => {
                     [name]: processedValue
                 };
                 
-                // Update total if quantity or price changes
+                // Update total and VAT if quantity or price changes
                 if (name === 'quantity' || name === 'price') {
-                    updatedItems[index].total =
-                        updatedItems[index].quantity * updatedItems[index].price;
+                    const quantity = parseFloat(updatedItems[index].quantity) || 0;
+                    const price = parseFloat(updatedItems[index].price) || 0;
+                    const subtotal = quantity * price;
+                    const vat = subtotal * 0.05; // 5% VAT
+                    
+                    updatedItems[index].vat = vat;
+                    updatedItems[index].total = subtotal + vat;
                 }
                 
                 return updatedItems;
@@ -416,6 +672,60 @@ const QuotationFormContent = ({ isEdited }) => {
         return clientState.clients.find(c => c.companyName === quotation.clientName);
     };
 
+    // Add a function to get the current client's currency symbol
+    const getClientCurrency = () => {
+        const country = quotation?.clientAddress?.country || '';
+        return getCurrencySymbol(country);
+    };
+
+    // Add a submission check that runs before the form is submitted
+    const handleFormSubmit = (e) => {
+        // This will log the current form state before it's submitted
+        console.log('Form submission initiated');
+        
+        // Ensure terms and conditions is properly set in the quotation
+        const termsValue = document.getElementById('terms-and-conditions')?.value;
+        if (termsValue && !quotation.termsAndConditions) {
+            console.log('Setting terms and conditions value:', termsValue);
+            handleQuotationChange({
+                target: {
+                    name: 'termsAndConditions',
+                    value: termsValue
+                }
+            }, 'quotation');
+        }
+        
+        // Ensure currency is set
+        if (!quotation.currency) {
+            const clientCountry = quotation?.clientAddress?.country;
+            const currency = clientCountry ? getCurrencySymbol(clientCountry) : 'USD';
+            console.log('Setting currency value:', currency);
+            handleQuotationChange({
+                target: {
+                    name: 'currency',
+                    value: currency
+                }
+            }, 'quotation');
+        }
+        
+        // Small delay to ensure state update
+        setTimeout(() => {
+            console.log('Updated quotation before submission:', quotation);
+        }, 100);
+        
+        console.log('Current form data:', {
+            quotation,
+            localItems,
+            hasTermsAndConditions: Boolean(quotation.termsAndConditions),
+            hasDescription: Boolean(quotation.description),
+            hasClientName: Boolean(quotation.clientName),
+            itemsCount: localItems.length,
+            currency: quotation.currency
+        });
+
+        // Don't prevent default - we still want the form to submit normally
+    };
+
     return (
         <>
             {!isEdited && <Title>New Quotation</Title>}
@@ -425,7 +735,12 @@ const QuotationFormContent = ({ isEdited }) => {
                     {quotation.id}
                 </Title>
             )}
-            <StyledForm id="quotation-form">
+            <QuotationForm
+                id="quotation-form"
+                noValidate
+                autoComplete="off"
+                onSubmit={handleFormSubmit}
+            >
                 {/* Bill To Section */}
                 <Fieldset>
                     <Legend>Bill to</Legend>
@@ -548,14 +863,81 @@ const QuotationFormContent = ({ isEdited }) => {
                             )}
                         </Label>
                         <TextArea
+                            id="terms-and-conditions"
                             name="termsAndConditions"
                             placeholder="Enter terms and conditions"
                             value={quotation.termsAndConditions || ''}
                             $error={errors?.termsAndConditions}
-                            onChange={(event) =>
-                                handleQuotationChange(event, 'quotation')
-                            }
+                            onChange={(event) => handleQuotationChange(event, 'quotation')}
+                            required
                         />
+                    </InputWrapper>
+
+                    {/* Add a currency selector component after the Terms and Conditions field */}
+                    <InputWrapper>
+                        <Label htmlFor="currency">Currency</Label>
+                        <StyledSelect>
+                            <Cta
+                                type="button"
+                                aria-label="Select currency"
+                                aria-expanded={isCurrencyDropdownExpanded}
+                                aria-controls="currency-select-list"
+                                onClick={toggleCurrencyDropdown}
+                                $isExpanded={isCurrencyDropdownExpanded}
+                            >
+                                {quotation.currency || 'USD'}
+                                <Icon name={'arrow-down'} size={12} color={colors.purple} />
+                            </Cta>
+                            {isCurrencyDropdownExpanded && (
+                                <List id="currency-select-list" ref={currencySelectRef}>
+                                    <Item>
+                                        <Option
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleQuotationChange({
+                                                    target: { name: 'currency', value: 'USD' }
+                                                }, 'quotation');
+                                                setIsCurrencyDropdownExpanded(false);
+                                            }}
+                                        >
+                                            USD
+                                        </Option>
+                                    </Item>
+                                    <Item>
+                                        <Option
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleQuotationChange({
+                                                    target: { name: 'currency', value: 'AED' }
+                                                }, 'quotation');
+                                                setIsCurrencyDropdownExpanded(false);
+                                            }}
+                                        >
+                                            AED
+                                        </Option>
+                                    </Item>
+                                    <Item>
+                                        <Option
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleQuotationChange({
+                                                    target: { name: 'currency', value: 'EUR' }
+                                                }, 'quotation');
+                                                setIsCurrencyDropdownExpanded(false);
+                                            }}
+                                        >
+                                            EUR
+                                        </Option>
+                                    </Item>
+                                </List>
+                            )}
+                        </StyledSelect>
                     </InputWrapper>
                 </Fieldset>
                 
@@ -653,19 +1035,19 @@ const QuotationFormContent = ({ isEdited }) => {
                     <Legend $lg>Item List</Legend>
                     <Wrapper>
                         {localItems.map((item, index) => (
-                            <InputsGroup key={index}>
-                                <InputWrapper>
-                                    <Label
-                                        htmlFor="name"
-                                        $srOnly={index > 0 && isDesktop}
+                            <ItemInputsGroup key={index}>
+                                <ItemName>
+                                    <MinimalLabel
+                                        htmlFor={`item-name-${index}`}
                                         $error={errors.items && errors.items[index]?.name}
                                     >
                                         Item Name
                                         {errors.items && errors.items[index]?.name && (
                                             <Error>can't be empty</Error>
                                         )}
-                                    </Label>
-                                    <Input
+                                    </MinimalLabel>
+                                    <MinimalInput
+                                        id={`item-name-${index}`}
                                         type="text"
                                         name="name"
                                         value={item.name || ''}
@@ -679,44 +1061,21 @@ const QuotationFormContent = ({ isEdited }) => {
                                             )
                                         }
                                     />
-                                </InputWrapper>
-                                <InputWrapper>
-                                    <Label
-                                        htmlFor="quantity"
-                                        $srOnly={index > 0 && isDesktop}
-                                        $error={errors.items && errors.items[index]?.quantity}
+                                </ItemName>
+                                
+                                <ItemDescription>
+                                    <MinimalLabel
+                                        htmlFor={`item-description-${index}`}
+                                        $error={errors.items && errors.items[index]?.description}
                                     >
-                                        Qty.
-                                    </Label>
-                                    <Input
-                                        type="text"
-                                        name="quantity"
-                                        value={item.quantity || ''}
-                                        $error={errors.items && errors.items[index]?.quantity}
-                                        onChange={(event) =>
-                                            handleItemChange(
-                                                event,
-                                                'items',
-                                                null,
-                                                index
-                                            )
-                                        }
-                                        $qty
-                                    />
-                                </InputWrapper>
-                                <InputWrapper>
-                                    <Label
-                                        htmlFor="price"
-                                        $srOnly={index > 0 && isDesktop}
-                                        $error={errors.items && errors.items[index]?.price}
-                                    >
-                                        Price
-                                    </Label>
-                                    <Input
-                                        type="text"
-                                        name="price"
-                                        value={item.price || ''}
-                                        $error={errors.items && errors.items[index]?.price}
+                                        Item Description
+                                    </MinimalLabel>
+                                    <DescriptionInput
+                                        id={`item-description-${index}`}
+                                        name="description"
+                                        value={item.description || ''}
+                                        placeholder="Description..."
+                                        $error={errors.items && errors.items[index]?.description}
                                         onChange={(event) =>
                                             handleItemChange(
                                                 event,
@@ -726,14 +1085,78 @@ const QuotationFormContent = ({ isEdited }) => {
                                             )
                                         }
                                     />
-                                </InputWrapper>
-                                <InputWrapper>
-                                    <Label $srOnly={index > 0 && isDesktop}>
-                                        Total
-                                    </Label>
-                                    <TotalValue>{item.total || 0}</TotalValue>
-                                </InputWrapper>
-                                <Delete
+                                </ItemDescription>
+                                
+                                <div className="qty-price-row">
+                                    <ItemQty>
+                                        <MinimalLabel
+                                            htmlFor={`item-quantity-${index}`}
+                                            $error={errors.items && errors.items[index]?.quantity}
+                                        >
+                                            Qty.
+                                        </MinimalLabel>
+                                        <MinimalInput
+                                            id={`item-quantity-${index}`}
+                                            type="text"
+                                            name="quantity"
+                                            value={item.quantity || ''}
+                                            $error={errors.items && errors.items[index]?.quantity}
+                                            onChange={(event) =>
+                                                handleItemChange(
+                                                    event,
+                                                    'items',
+                                                    null,
+                                                    index
+                                                )
+                                            }
+                                            $qty
+                                        />
+                                    </ItemQty>
+                                    
+                                    <ItemPrice>
+                                        <MinimalLabel
+                                            htmlFor={`item-price-${index}`}
+                                            $error={errors.items && errors.items[index]?.price}
+                                        >
+                                            Price ({quotation.currency || 'USD'})
+                                        </MinimalLabel>
+                                        <MinimalInput
+                                            id={`item-price-${index}`}
+                                            type="text"
+                                            name="price"
+                                            value={item.price || ''}
+                                            $error={errors.items && errors.items[index]?.price}
+                                            onChange={(event) =>
+                                                handleItemChange(
+                                                    event,
+                                                    'items',
+                                                    null,
+                                                    index
+                                                )
+                                            }
+                                        />
+                                    </ItemPrice>
+                                </div>
+                                
+                                <div className="vat-total-row">
+                                    <ItemVat>
+                                        <MinimalLabel htmlFor={`item-vat-${index}`}>VAT (5%)</MinimalLabel>
+                                        <VatValue>
+                                            <span className="currency">{quotation.currency || 'USD'}</span>
+                                            {formatNumber(item.vat)}
+                                        </VatValue>
+                                    </ItemVat>
+                                    
+                                    <ItemTotal>
+                                        <MinimalLabel htmlFor={`item-total-${index}`}>Total</MinimalLabel>
+                                        <TotalValue>
+                                            <span className="currency">{quotation.currency || 'USD'}</span>
+                                            {formatNumber(item.total)}
+                                        </TotalValue>
+                                    </ItemTotal>
+                                </div>
+                                
+                                <ItemDelete
                                     type="button"
                                     onClick={() => {
                                         setLocalItems(prevItems => 
@@ -743,11 +1166,11 @@ const QuotationFormContent = ({ isEdited }) => {
                                 >
                                     <Icon
                                         name="delete"
-                                        size={16}
+                                        size={14}
                                         color={colors.btnTheme}
                                     />
-                                </Delete>
-                            </InputsGroup>
+                                </ItemDelete>
+                            </ItemInputsGroup>
                         ))}
                         <Button 
                             type="button" 
@@ -755,7 +1178,14 @@ const QuotationFormContent = ({ isEdited }) => {
                             onClick={() => {
                                 setLocalItems(prevItems => [
                                     ...prevItems, 
-                                    { name: '', quantity: 0, price: 0, total: 0 }
+                                    { 
+                                        name: '', 
+                                        description: '',
+                                        quantity: 0, 
+                                        price: 0, 
+                                        vat: 0,
+                                        total: 0 
+                                    }
                                 ]);
                             }}
                         >
@@ -772,7 +1202,7 @@ const QuotationFormContent = ({ isEdited }) => {
                         ))}
                     </ErrorsWrapper>
                 )}
-            </StyledForm>
+            </QuotationForm>
         </>
     );
 };

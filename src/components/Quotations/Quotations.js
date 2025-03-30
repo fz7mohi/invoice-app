@@ -11,14 +11,19 @@ import { Container, Header, Info, Title, Text } from './QuotationsStyles';
 const Quotations = () => {
     const [filterType, setFilterType] = useState('all');
     const shouldReduceMotion = useReducedMotion();
-    const { windowWidth, quotationState, createQuotation } = useGlobalContext();
+    const { windowWidth, quotationState, createQuotation, refreshQuotations } = useGlobalContext();
     
     const isLoading = quotationState?.isLoading || false;
-    const quotations = quotationState?.quotations || [];
+    const rawQuotations = quotationState?.quotations || [];
     const isDesktop = windowWidth >= 768;
 
+    // Force a refresh of quotations data on component mount, only once
+    useEffect(() => {
+        refreshQuotations();
+    }, []);
+
     // Filter quotations based on status
-    const filteredQuotations = quotations.filter(quotation => {
+    const filteredQuotations = rawQuotations.filter(quotation => {
         if (filterType === 'all') return true;
         if (filterType === 'pending') return quotation.status === 'pending';
         if (filterType === 'paid') return quotation.status === 'paid';

@@ -2,115 +2,97 @@
  * Function to validate form. Iterate through each property of given object with user inputed values
  * and return errors if it doesn't meet criteria.
  * @param    {object} objectToValidate    Object with form inputs values
- * @param    {function} handleSetErrors    State handler
- * @return   {boolean}    Boolean value
+ * @param    {array} itemsArray    Array of items to validate
+ * @return   {object}    Object with validation results
  */
-const formValidation = (objectToValidate, handleSetErrors) => {
+const formValidation = (objectToValidate, itemsArray) => {
     let errors = {};
     let messages = [];
+    let isError = false;
 
-    for (const propName in objectToValidate) {
-        const propValue = objectToValidate[propName];
-
-        // Skip one loop if propName is 'paymentDue'
-        if (propName === 'paymentDue') continue;
-
-        // If propName is 'clientEmail' validate propValue with emailValidation().
-        // If the email is invalid add error. If the email is valid - skip one loop.
-        if (propName === 'clientEmail') {
-            if (!emailValidation(propValue)) {
-                errors = { ...errors, [propName]: true };
-                messages.push('- The email must be correct');
-            }
-            continue;
-        }
-
-        // If propValue is empty string add error.
-        if (propValue === '') {
-            errors = { ...errors, [propName]: true };
-            messages.push('- All fields must be added');
-        }
-
-        // If propValue is an array check if array.length is equal to zero. If so add error. Else iterate over
-        // every object in that array and for each object iterate through properties.
-        // Check if property value is empty. If so add error else add error with value of false.
-        if (Array.isArray(propValue)) {
-            let arr = [];
-            let obj = {};
-
-            if (propValue.length === 0) {
-                errors = { ...errors, items: true };
-                messages.push('- An item must be added');
-            } else {
-                propValue.forEach((object) => {
-                    for (let property in object) {
-                        if (object[property] === '') {
-                            obj = { ...obj, [property]: true };
-                            messages.push('- All fields must be added');
-                        } else {
-                            obj = { ...obj, [property]: false };
-                        }
-                    }
-
-                    // If obj have one or more keys push that object to array and then
-                    // add error with propName assigned with value of arr.
-                    if (Object.keys(obj).length != 0) {
-                        arr.push(obj);
-                        errors = { ...errors, [propName]: arr };
-                    }
-                });
-            }
-        }
-
-        // Check if propValue is an object and if propValue isn't an array. Then iterate over each property in
-        // propValue object and check if propValue[property] is equal to empty string. If so, add new error.
-        if (typeof propValue === 'object' && !Array.isArray(propValue)) {
-            for (let property in propValue) {
-                if (propValue[property] === '') {
-                    errors = {
-                        ...errors,
-                        [propName]: {
-                            ...errors[propName],
-                            [property]: true,
-                        },
-                    };
-                    messages.push('- All fields must be added');
-                }
-            }
+    // Check if required fields exist on the object
+    const requiredFields = ['description', 'clientName', 'termsAndConditions'];
+    for (const field of requiredFields) {
+        if (!objectToValidate[field] || objectToValidate[field] === '') {
+            errors[field] = true;
+            messages.push(`- ${field} cannot be empty`);
+            isError = true;
         }
     }
 
-    // If there is no keys in errors object return true.
-    // If 'items' is the only error in errors object check if 'items' is an array. If not, set error state and return false.
-    // Else iterate through each obj in array and then iterate over each property for that object. Push to array value of that property.
-    // If arr include value of true set state with errors and return false, else return true.
-    // Else set errors state with errors object and unique messages array also return false.
-    if (Object.keys(errors).length === 0) {
-        return true;
-    } else if (
-        Object.keys(errors).length === 1 &&
-        Object.keys(errors)[0] === 'items'
-    ) {
-        if (!Array.isArray(errors.items)) {
-            handleSetErrors(errors, [...new Set(messages)]);
-            return false;
+    // Skip validation for paymentDue as it's calculated
+    
+    // Check client email format if it exists
+    if (objectToValidate.clientEmail && !emailValidation(objectToValidate.clientEmail)) {
+        errors.clientEmail = true;
+        messages.push('- The email must be correct');
+        isError = true;
+    }
+    
+    // Check client address
+    if (objectToValidate.clientAddress) {
+        // Make post code optional but still validate other address fields
+        const requiredAddressFields = ['street', 'city', 'country'];
+        for (const field of requiredAddressFields) {
+            if (!objectToValidate.clientAddress[field] || objectToValidate.clientAddress[field] === '') {
+                if (!errors.clientAddress) errors.clientAddress = {};
+                errors.clientAddress[field] = true;
+                messages.push(`- Client ${field} cannot be empty`);
+                isError = true;
+            }
         }
-        let arr = [];
-        errors.items.forEach((obj) => {
-            for (let prop in obj) {
-                arr.push(obj[prop]);
+        
+        // Post code is optional, so we don't validate it
+    }
+    
+    // Validate items
+    if (!itemsArray || itemsArray.length === 0) {
+        errors.items = true;
+        messages.push('- At least one item must be added');
+        isError = true;
+    } else {
+        const itemsErrors = [];
+        
+        itemsArray.forEach((item, index) => {
+            const itemError = {};
+            
+            // Check required item fields
+            if (!item.name || item.name === '') {
+                itemError.name = true;
+                messages.push('- Item name cannot be empty');
+                isError = true;
+            }
+            
+            if (!item.quantity || isNaN(parseFloat(item.quantity))) {
+                itemError.quantity = true;
+                messages.push('- Item quantity must be a number');
+                isError = true;
+            }
+            
+            if (!item.price || isNaN(parseFloat(item.price))) {
+                itemError.price = true;
+                messages.push('- Item price must be a number');
+                isError = true;
+            }
+            
+            // Only add errors for this item if there are any
+            if (Object.keys(itemError).length > 0) {
+                itemsErrors[index] = itemError;
             }
         });
-        if (arr.includes(true)) {
-            handleSetErrors(errors, [...new Set(messages)]);
-            return false;
-        } else {
-            return true;
+        
+        // Only add items errors if there are any
+        if (itemsErrors.length > 0) {
+            errors.items = itemsErrors;
         }
-    } else {
-        handleSetErrors(errors, [...new Set(messages)]);
-        return false;
     }
+    
+    // Return validation results
+    return {
+        isError,
+        err: errors,
+        msg: [...new Set(messages)] // Remove duplicate messages
+    };
 };
 
 /**
@@ -119,6 +101,7 @@ const formValidation = (objectToValidate, handleSetErrors) => {
  * @return   {Boolean}         Returns true or false
  */
 const emailValidation = (email) => {
+    if (!email) return false;
     const regex =
         /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return regex.test(email);

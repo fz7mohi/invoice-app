@@ -44,6 +44,7 @@ const AppProvider = ({ children }) => {
         setItems,
         addNewItem,
         removeItemAtIndex,
+        refreshQuotations
     } = useManageQuotations();
 
     const {
@@ -77,6 +78,13 @@ const AppProvider = ({ children }) => {
     const handleResize = () => {
         setWindowWidth(window.innerWidth);
     };
+
+    useEffect(() => {
+        if (typeof refreshQuotations === 'function') {
+            console.log('App context mounted - refreshing quotations data');
+            refreshQuotations();
+        }
+    }, []);
 
     return (
         <AppContext.Provider
@@ -127,6 +135,7 @@ const AppProvider = ({ children }) => {
                 filteredInvoices,
                 filterType,
                 changeFilterType,
+                refreshQuotations
             }}
         >
             <Provider themeColor={theme}>{children}</Provider>

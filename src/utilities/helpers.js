@@ -19,15 +19,38 @@ export const formatDate = (date) => {
 /**
  * Format price with currency symbol
  * @param {number} price - Price to format
+ * @param {string} currency - Currency code (ISO 4217)
  * @returns {string} Formatted price string
  */
-export const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(price || 0);
+export const formatPrice = (price, currency = 'USD') => {
+    console.log(`Formatting price ${price} with currency:`, currency);
+    
+    // Handle invalid or empty currency - ensure it's a valid 3-letter code
+    if (!currency || typeof currency !== 'string' || currency.length !== 3) {
+        console.warn(`Invalid currency code: "${currency}", defaulting to USD`);
+        currency = 'USD';
+    }
+    
+    // Normalize currency to uppercase
+    currency = currency.toUpperCase();
+    
+    try {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(price || 0);
+    } catch (error) {
+        console.error(`Error formatting price with currency ${currency}:`, error);
+        // Fallback format if there's an error
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(price || 0);
+    }
 };
 
 /**

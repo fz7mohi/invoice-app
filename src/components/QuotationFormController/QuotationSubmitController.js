@@ -6,31 +6,72 @@ import { StyledSubmitController } from '../FormController/SubmitController/Submi
 const QuotationSubmitController = () => {
     const { quotationState, handleQuotationSubmit, discardQuotationChanges } = useGlobalContext();
     const [isQuotationEdited] = useState(quotationState.form.isEditing);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmitWithLogging = async (type) => {
+        try {
+            // Prevent double submissions
+            if (isSubmitting) return;
+            
+            setIsSubmitting(true);
+            console.log('QuotationSubmitController: Submit button clicked with type:', type);
+            console.log('Current quotation state before submit:', quotationState);
+            
+            // Call the submit function and await its completion
+            await handleQuotationSubmit(type);
+            
+            console.log('Quotation submitted successfully, closing form...');
+            
+            // After submit completes, close the form with a small delay to ensure state updates
+            setTimeout(() => {
+                discardQuotationChanges();
+                console.log('Form closed after submission');
+            }, 300);
+        } catch (error) {
+            console.error('Error during form submission:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <StyledSubmitController $isEdited={isQuotationEdited}>
-            <Button $small type="button" $secondary onClick={discardQuotationChanges}>
+            <Button 
+                $small 
+                type="button" 
+                $secondary 
+                onClick={discardQuotationChanges}
+                disabled={isSubmitting}
+            >
                 Discard
             </Button>
             {!isQuotationEdited && (
                 <Button
-                    type="submit"
+                    type="button"
                     form="quotation-form"
                     $small
                     $save
-                    onClick={() => handleQuotationSubmit('draft')}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        handleSubmitWithLogging('draft');
+                    }}
+                    disabled={isSubmitting}
                 >
-                    Save as Draft
+                    {isSubmitting ? 'Saving...' : 'Save as Draft'}
                 </Button>
             )}
             <Button
-                type="submit"
+                type="button"
                 form="quotation-form"
                 $small
                 $primary
-                onClick={() => handleQuotationSubmit(isQuotationEdited ? 'change' : 'new')}
+                onClick={(e) => {
+                    e.preventDefault();
+                    handleSubmitWithLogging(isQuotationEdited ? 'change' : 'new');
+                }}
+                disabled={isSubmitting}
             >
-                Save {!isQuotationEdited ? '& Send' : 'Changes'}
+                {isSubmitting ? 'Saving...' : `Save ${!isQuotationEdited ? '& Send' : 'Changes'}`}
             </Button>
         </StyledSubmitController>
     );

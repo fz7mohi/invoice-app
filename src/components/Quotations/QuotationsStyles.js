@@ -8,9 +8,17 @@ export const Container = styled.section`
 
     @media (min-width: 768px) {
         width: 100%;
-        max-width: 730px;
+        max-width: 95%;
         margin: 0 auto 40px auto;
         padding: 0;
+    }
+    
+    @media (min-width: 1024px) {
+        max-width: 90%;
+    }
+    
+    @media (min-width: 1440px) {
+        max-width: 1300px;
     }
 `;
 

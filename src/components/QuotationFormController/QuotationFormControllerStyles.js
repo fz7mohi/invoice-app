@@ -7,7 +7,7 @@ export const StyledQuotationFormController = styled(motion.div)`
     bottom: 0;
     left: -20px;
     background-color: ${({ theme }) => theme.colors.bgForm};
-    padding: 32px 4px 190px 44px;
+    padding: 32px 24px 190px 44px;
     transition: background-color 400ms ease-in-out;
     z-index: 99;
     width: 100%;
@@ -32,15 +32,20 @@ export const StyledQuotationFormController = styled(motion.div)`
     }
 
     @media (min-width: 700px) {
-        max-width: 616px;
+        max-width: 720px;
         border-radius: 0 20px 20px 0;
         overflow: hidden;
-        padding: 56px 32px 127px 46px;
+        padding: 56px 40px 127px 46px;
     }
 
     @media (min-width: 1024px) {
-        max-width: 719px;
-        padding: 56px 32px 100px 149px;
+        max-width: 900px;
+        padding: 56px 60px 100px 149px;
         top: 0;
+    }
+    
+    @media (min-width: 1440px) {
+        max-width: 1000px;
+        padding: 56px 70px 100px 159px;
     }
 `; 
