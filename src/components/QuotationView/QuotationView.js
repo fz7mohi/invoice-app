@@ -732,8 +732,7 @@ const QuotationView = () => {
                             {quotation.clientAddress.country && `${quotation.clientAddress.country}`}
                         </>
                     )}
-                    {/* Display TRN from client data or from quotation as fallback */}
-                    <br /><br />
+                    <br />
                     <span style={{ fontWeight: '600', opacity: clientTRN ? 1 : 0.7 }}>
                         TRN: {clientTRN || 'Not provided'}
                     </span>
