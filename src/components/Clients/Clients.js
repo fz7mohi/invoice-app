@@ -18,16 +18,18 @@ import {
     InfoItem,
     ActionButtons,
     EditButton,
-    DeleteButton
+    DeleteButton,
+    SearchBar,
+    SearchContainer,
+    SearchInput,
+    SearchIcon,
+    HeaderContent,
+    TitleGroup
 } from './ClientsStyles';
 import Icon from '../shared/Icon/Icon';
 import ConfirmModal from '../shared/ConfirmModal/ConfirmModal';
 import { clientsVariants } from '../../utilities/framerVariants';
-import styled from 'styled-components';
-
-const ClientsContainer = styled.main`
-    // ... existing code ...
-`;
+import { useState, useMemo } from 'react';
 
 const Clients = () => {
     const { 
@@ -39,7 +41,29 @@ const Clients = () => {
     } = useGlobalContext();
     
     const { clients, isModalOpen, isLoading } = clientState;
+    const [searchQuery, setSearchQuery] = useState('');
     const shouldReduceMotion = useReducedMotion();
+    
+    // Enhanced search functionality
+    const filteredClients = useMemo(() => {
+        if (!searchQuery.trim()) return clients;
+        
+        const query = searchQuery.toLowerCase().trim();
+        return clients.filter(client => {
+            const searchableFields = [
+                client.companyName,
+                client.email,
+                client.phone,
+                client.address,
+                client.country,
+                client.trnNumber
+            ].filter(Boolean); // Remove null/undefined values
+            
+            return searchableFields.some(field => 
+                field.toLowerCase().includes(query)
+            );
+        });
+    }, [clients, searchQuery]);
     
     const variant = (element, index) => {
         if (typeof clientsVariants[element] === 'function') {
@@ -76,6 +100,10 @@ const Clients = () => {
         toggleClientModal();
     };
 
+    const handleSearch = (e) => {
+        setSearchQuery(e.target.value);
+    };
+
     return (
         <StyledClients
             as={motion.main}
@@ -88,26 +116,45 @@ const Clients = () => {
                 as={motion.div}
                 variants={variant('header')}
             >
-                <TitleContainer>
-                    <Title>Clients</Title>
-                    <ClientCount>
-                        {isLoading ? 'Loading...' : 
-                            clients.length > 0
-                                ? `${clients.length} client${clients.length !== 1 ? 's' : ''}`
-                                : 'No clients'}
-                    </ClientCount>
-                </TitleContainer>
-                
-                <ButtonContainer>
-                    <NewClientButton
-                        onClick={handleNewClientClick}
-                        disabled={isLoading}
-                    >
-                        <Icon name="plus" size={15} color="#FFF" />
-                        New Client
-                    </NewClientButton>
-                </ButtonContainer>
+                <HeaderContent>
+                    <TitleGroup>
+                        <TitleContainer>
+                            <Title>Clients</Title>
+                            <ClientCount>
+                                {isLoading ? 'Loading...' : 
+                                    filteredClients.length > 0
+                                        ? `${filteredClients.length} client${filteredClients.length !== 1 ? 's' : ''}`
+                                        : 'No clients'}
+                            </ClientCount>
+                        </TitleContainer>
+                    </TitleGroup>
+                    
+                    <ButtonContainer>
+                        <NewClientButton
+                            onClick={handleNewClientClick}
+                            disabled={isLoading}
+                        >
+                            <Icon name="plus" size={15} color="#FFF" />
+                            New Client
+                        </NewClientButton>
+                    </ButtonContainer>
+                </HeaderContent>
             </Header>
+
+            <SearchBar>
+                <SearchContainer>
+                    <SearchIcon>
+                        <Icon name="search" size={16} />
+                    </SearchIcon>
+                    <SearchInput
+                        type="text"
+                        placeholder="Search by name, email, phone..."
+                        value={searchQuery}
+                        onChange={handleSearch}
+                        aria-label="Search clients"
+                    />
+                </SearchContainer>
+            </SearchBar>
             
             {isLoading ? (
                 <EmptyState
@@ -119,7 +166,7 @@ const Clients = () => {
                         Please wait while we fetch your client data.
                     </EmptyText>
                 </EmptyState>
-            ) : clients.length === 0 ? (
+            ) : filteredClients.length === 0 ? (
                 <EmptyState
                     as={motion.div}
                     variants={variant('emptyState')}
@@ -130,13 +177,14 @@ const Clients = () => {
                     />
                     <EmptyHeading>There is nothing here</EmptyHeading>
                     <EmptyText>
-                        Create a client by clicking the 
-                        <strong> New Client</strong> button.
+                        {searchQuery 
+                            ? 'No clients found matching your search.'
+                            : 'Create a client by clicking the New Client button.'}
                     </EmptyText>
                 </EmptyState>
             ) : (
                 <ClientList>
-                    {clients.map((client, index) => (
+                    {filteredClients.map((client, index) => (
                         <ClientItem 
                             key={client.id}
                             as={motion.div}

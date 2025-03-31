@@ -239,4 +239,77 @@ export const DeleteButton = styled.button`
         padding: 8px 16px;
         font-size: 14px;
     }
+`;
+
+export const HeaderContent = styled.div`
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+`;
+
+export const TitleGroup = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+export const SearchBar = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding: 16px 24px;
+    background-color: #252945;
+    border-radius: 8px;
+    border: 1px solid #252945;
+    transition: all 0.2s ease;
+
+    @media (min-width: 768px) {
+        padding: 16px 32px;
+        margin-bottom: 40px;
+    }
+`;
+
+export const SearchContainer = styled.div`
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 400px;
+`;
+
+export const SearchInput = styled.input`
+    background: none;
+    border: none;
+    color: #FFFFFF;
+    font-size: 14px;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    outline: none;
+
+    &::placeholder {
+        color: #888EB0;
+    }
+
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus {
+        -webkit-text-fill-color: #FFFFFF;
+        -webkit-box-shadow: 0 0 0px 1000px #252945 inset;
+        transition: background-color 5000s ease-in-out 0s;
+    }
+`;
+
+export const SearchIcon = styled.span`
+    color: #888EB0;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+
+    ${SearchContainer}:focus-within & {
+        color: #7C5DFA;
+    }
 `; 

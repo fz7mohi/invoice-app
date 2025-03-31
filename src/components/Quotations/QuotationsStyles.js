@@ -26,50 +26,83 @@ export const Container = styled.section`
 `;
 
 export const Header = styled(motion.header)`
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 32px;
+
+    @media (min-width: 768px) {
+        margin-bottom: 40px;
+    }
+`;
+
+export const HeaderTop = styled.div`
     display: grid;
     grid-template-columns: 1fr auto auto;
     align-items: center;
     gap: 24px;
-    margin-bottom: 32px;
 
     @media (max-width: 768px) {
         grid-template-columns: 1fr auto auto;
         gap: 16px;
     }
+`;
 
-    /* Override for New Quotation button */
-    button[type="button"] {
-        background-color: #7C5DFA !important;
-        color: #FFFFFF !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        padding: 8px 24px !important;
-        height: 48px !important;
-        border-radius: 24px !important;
-        font-weight: 700 !important;
-        border: none !important;
-        cursor: pointer !important;
-        transition: background-color 0.3s ease !important;
+export const SearchBar = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background-color: #252945;
+    border-radius: 8px;
+    border: 1px solid #252945;
+    transition: all 0.2s ease;
 
-        &:hover {
-            background-color: #9277FF !important;
-        }
+    @media (min-width: 768px) {
+        padding: 16px 32px;
+    }
+`;
 
-        &:before {
-            content: '+';
-            font-size: 20px;
-            margin-right: 4px;
-            color: #FFFFFF !important;
-        }
+export const SearchContainer = styled.div`
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 400px;
+`;
 
-        @media (max-width: 767px) {
-            padding: 8px 16px !important;
-            
-            span {
-                display: none;
-            }
-        }
+export const SearchInput = styled.input`
+    background: none;
+    border: none;
+    color: #FFFFFF;
+    font-size: 14px;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    outline: none;
+
+    &::placeholder {
+        color: #888EB0;
+    }
+
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus {
+        -webkit-text-fill-color: #FFFFFF;
+        -webkit-box-shadow: 0 0 0px 1000px #252945 inset;
+        transition: background-color 5000s ease-in-out 0s;
+    }
+`;
+
+export const SearchIcon = styled.span`
+    color: #888EB0;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+
+    ${SearchContainer}:focus-within & {
+        color: #7C5DFA;
     }
 `;
 
