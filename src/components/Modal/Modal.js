@@ -8,9 +8,17 @@ import { useGlobalContext } from '../App/context';
 import { StyledModal } from './ModalStyles';
 
 const Modal = () => {
-    const { state, toggleModal } = useGlobalContext();
+    const { 
+        state, 
+        toggleModal,
+        quotationState,
+        toggleQuotationModal 
+    } = useGlobalContext();
+    
     const isDeleteModal = state.isModalOpen.name === 'delete';
     const isStatusModal = state.isModalOpen.name === 'status';
+    const isQuotationModal = quotationState?.form?.isCreating || quotationState?.form?.isEditing;
+    
     const modalRef = useRef();
     const shouldReduceMotion = useReducedMotion();
     const variant = (element) => {
@@ -24,7 +32,13 @@ const Modal = () => {
      * Function to trap user focus within Modal component.
      */
     const focusTrap = (event) => {
-        if (event.key === 'Escape') toggleModal();
+        if (event.key === 'Escape') {
+            if (isQuotationModal) {
+                toggleQuotationModal();
+            } else {
+                toggleModal();
+            }
+        }
         if (event.key !== 'Tab') return;
 
         const modalElements = modalRef.current.querySelectorAll('button');
@@ -45,11 +59,17 @@ const Modal = () => {
     };
 
     /**
-     * Function to hide Modal component after user click outside Modal contaienr.
+     * Function to hide Modal component after user click outside Modal container.
      */
     const handleClickOutsideModal = (event) => {
         const target = event.target;
-        if (target === modalRef.current) toggleModal();
+        if (target === modalRef.current) {
+            if (isQuotationModal) {
+                toggleQuotationModal();
+            } else {
+                toggleModal();
+            }
+        }
     };
 
     // Side effect to add event listeners and disable page scrolling.
@@ -65,7 +85,7 @@ const Modal = () => {
             document.removeEventListener('click', handleClickOutsideModal);
             document.body.style.overflow = 'unset';
         };
-    }, []);
+    }, [isQuotationModal]); // Add isQuotationModal to dependencies
 
     const modal = (
         <StyledModal
@@ -81,6 +101,7 @@ const Modal = () => {
         >
             {isDeleteModal && <ModalDelete variants={containerVariant} />}
             {isStatusModal && <ModalStatus variants={containerVariant} />}
+            {isQuotationModal && <QuotationFormController variants={containerVariant} />}
         </StyledModal>
     );
 

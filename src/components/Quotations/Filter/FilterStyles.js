@@ -12,16 +12,21 @@ export const Button = styled.button`
     flex-flow: row;
     gap: 12px;
     align-items: center;
-    padding: 0;
+    padding: 8px 16px;
+    background-color: #1E2139;
+    border: 1px solid ${({ theme }) => theme.colors.purple};
+    border-radius: 24px;
+    color: #FFFFFF !important;
+    font-weight: 700;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background-color: ${({ theme }) => theme.colors.purple};
+        color: #FFFFFF !important;
+    }
 
     @media (min-width: 768px) {
         gap: 16px;
-
-        &:hover {
-            svg {
-                transform: rotate(180deg);
-            }
-        }
     }
 `;
 
@@ -30,16 +35,17 @@ export const List = styled.ul`
     position: absolute;
     flex-flow: column;
     gap: 16px;
-    top: 40px;
+    top: calc(100% + 8px);
     left: 50%;
     width: clamp(134px, 19vw, 192px);
     padding: 24px;
-    background-color: ${({ theme }) => theme.colors.bgFilter};
-    box-shadow: 0 10px 20px 0 ${({ theme }) => theme.colors.bgFilterShadow};
+    background-color: #1E2139;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
     border-radius: 8px;
     transform: translateX(-50%);
-    transition: background-color 400ms ease-in-out;
+    transition: all 0.3s ease;
     z-index: 10;
+    border: 1px solid ${({ theme }) => theme.colors.purple};
 `;
 
 export const Item = styled.li``;
@@ -50,6 +56,9 @@ export const StatusFilter = styled.button`
     padding: 0 0 0 29px;
     width: 100%;
     text-align: left;
+    color: #FFFFFF !important;
+    transition: all 0.3s ease;
+    background-color: #1E2139;
 
     &::before {
         position: absolute;
@@ -58,10 +67,10 @@ export const StatusFilter = styled.button`
         left: 0;
         width: 16px;
         height: 16px;
-        background-color: ${({ theme }) => theme.colors.bgFilterBox};
-        border: 1px solid transparent;
+        background-color: #1E2139;
+        border: 1px solid ${({ theme }) => theme.colors.purple};
         border-radius: 2px;
-        transition: background-color 400ms ease-in-out, border 300ms ease-in-out;
+        transition: all 0.3s ease;
 
         ${({ $isActive }) =>
             $isActive === true &&
@@ -71,15 +80,16 @@ export const StatusFilter = styled.button`
                 background-repeat: no-repeat;
                 background-size: 10px;
                 background-position: center;
+                border-color: ${({ theme }) => theme.colors.purple};
             `}
     }
 
-    @media (min-width: 768px) {
-        &:hover {
-            &::before {
-                border: 1px solid ${({ theme }) => theme.colors.purple};
-                border-radius: 2px;
-            }
+    &:hover {
+        color: ${({ theme }) => theme.colors.purple} !important;
+        background-color: #252945;
+        
+        &::before {
+            border-color: ${({ theme }) => theme.colors.purple};
         }
     }
 `; 

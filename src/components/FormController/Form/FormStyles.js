@@ -1,173 +1,192 @@
 import styled, { css } from 'styled-components';
-import {
-    primaryFontStyles,
-    secondaryFontStyles,
-    headingExtraSmall,
-    headingMediumLarge,
-    headingLarge,
-} from '../../../utilities/typographyStyles';
+import { primaryFontStyles } from '../../../utilities/typographyStyles';
 
-const customScrollbar = css`
-    scrollbar-width: thin;
-    scrollbar-color: ${({ theme }) => theme.colors.bgFormScroll} transparent;
+export const defaultInput = css`
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid #252945;
+    background-color: #1E2139;
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
 
+    &::placeholder {
+        color: #DFE3FA;
+        opacity: 0.7;
+    }
+
+    &:hover {
+        border-color: #7C5DFA;
+    }
+
+    &:focus {
+        border-color: #7C5DFA;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
+    }
+`;
+
+export const FormContainer = styled.div`
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
+
+export const StyledForm = styled.form`
+    width: 100%;
+    display: flex;
+    flex-flow: column;
+    gap: 32px;
+    padding: 24px;
+    background-color: #1E2139;
+    border-radius: 12px;
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+    padding-bottom: 120px;
+
+    /* Custom scrollbar styles */
     &::-webkit-scrollbar {
         width: 8px;
     }
 
     &::-webkit-scrollbar-track {
-        background: transparent;
+        background: #1E2139;
     }
 
     &::-webkit-scrollbar-thumb {
-        background-color: ${({ theme }) => theme.colors.bgFormScroll};
-        border-radius: 20px;
+        background: #252945;
+        border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: #7C5DFA;
     }
 `;
 
-export const defaultInput = css`
-    width: 100%;
-    padding: 16px 13px 16px 20px;
-    border-radius: 4px;
-    border: 1px solid ${({ theme }) => theme.colors.bgInputBorder};
-    background-color: ${({ theme }) => theme.colors.bgInput};
-    color: ${({ theme }) => theme.colors.textPrimary};
+export const FloatingButtons = styled.div`
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #1E2139;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid #252945;
+    z-index: 100;
+    
+    @media (min-width: 768px) {
+        left: 80px;
+        padding: 16px 32px;
+    }
+`;
+
+export const Title = styled.h1`
+    ${primaryFontStyles}
+    color: #FFFFFF;
+    font-size: 24px;
     font-weight: 700;
-    transition: border 400ms ease-in-out, background-color 400ms ease-in-out,
-        color 400ms ease-in-out;
-    -webkit-appearance: none;
-
-    &:focus {
-        border: 1px solid ${({ theme }) => theme.colors.purple};
-        outline: none;
-    }
-`;
-
-export const Title = styled.h2`
-    ${headingLarge}
-    margin-bottom: 24px;
+    margin-bottom: 8px;
+    position: sticky;
+    top: 0;
+    background-color: #1E2139;
+    padding-bottom: 16px;
+    z-index: 10;
 `;
 
 export const Hashtag = styled.span`
-    color: ${({ theme }) => theme.colors.textTertiary};
-    transition: color 400ms ease-in-out;
-`;
-
-export const StyledForm = styled.form`
-    ${customScrollbar}
-    position: relative;
-    display: flex;
-    flex-flow: column;
-    gap: 48px;
-    height: 80%;
-    overflow-y: scroll;
-    padding-right: 20px;
-
-    &:focus {
-        outline: none;
-    }
-
-    @media (min-width: 768px) {
-        padding: 0px 24px 10px 10px;
-    }
+    color: #7C5DFA;
 `;
 
 export const Fieldset = styled.fieldset`
+    border: none;
+    padding: 0;
+    margin: 0;
     display: flex;
     flex-flow: column;
     gap: 24px;
-    border: none;
 `;
 
 export const Legend = styled.legend`
-    ${headingExtraSmall}
-    margin-bottom: 24px;
-    color: ${({ theme }) => theme.colors.purple};
-
-    ${({ $lg }) =>
-        $lg &&
-        css`
-            ${headingMediumLarge}
-            color: ${({ theme }) => theme.colors.grayMedium};
-        `}
+    ${primaryFontStyles}
+    color: #7C5DFA;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 `;
 
 export const InputWrapper = styled.div`
     display: flex;
     flex-flow: column;
-    gap: 10px;
-    flex: 1;
-    min-width: 145px;
-
-    ${({ $fullWidth }) =>
-        $fullWidth &&
-        css`
-            min-width: 100%;
-        `}
+    gap: 8px;
+    width: 100%;
 `;
 
 export const Label = styled.label`
     ${primaryFontStyles}
-    display: flex;
-    justify-content: space-between;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    transition: color 400ms ease-in-out;
-
-    ${({ $error }) =>
-        $error &&
-        css`
-            color: ${({ theme }) => theme.colors.red};
-        `};
+    color: #DFE3FA;
+    font-size: 13px;
+    font-weight: 500;
 `;
 
 export const ErrorsWrapper = styled.div`
     display: flex;
     flex-flow: column;
-    margin-top: -15px;
+    gap: 4px;
+    margin-top: 4px;
 `;
 
 export const Error = styled.span`
-    ${secondaryFontStyles}
-    font-size: 0.625rem;
-    font-weight: 600;
-    color: ${({ theme }) => theme.colors.red};
-    opacity: 0;
-    animation: fadeIn 350ms ease-in-out forwards;
-
-    @keyframes fadeIn {
-        0% {
-            opacity: 0;
-        }
-        100% {
-            opacity: 1;
-        }
-    }
+    color: #EC5757;
+    font-size: 12px;
+    font-weight: 500;
 `;
 
 export const Input = styled.input`
-    ${primaryFontStyles}
     ${defaultInput}
-
     ${({ $error }) =>
         $error &&
         css`
-            border: 1px solid ${({ theme }) => theme.colors.red};
-        `};
+            border-color: #EC5757;
+            &:hover, &:focus {
+                border-color: #EC5757;
+                box-shadow: 0 0 0 2px rgba(236, 87, 87, 0.1);
+            }
+        `}
+    ${({ $valid }) =>
+        $valid &&
+        css`
+            border-color: #33D69F;
+            &:hover, &:focus {
+                border-color: #33D69F;
+                box-shadow: 0 0 0 2px rgba(51, 214, 159, 0.1);
+            }
+        `}
 `;
 
 export const InputsGroup = styled.div`
-    display: flex;
-    flex-flow: wrap;
+    display: grid;
     gap: 24px;
-    border: none;
-
+    margin-bottom: 24px;
+    
     ${({ $fullWidthMobile }) =>
         $fullWidthMobile &&
         css`
-            flex-flow: column;
-
-            @media (min-width: 600px) {
-                flex-flow: wrap;
+            @media (max-width: 767px) {
+                grid-template-columns: 1fr;
             }
         `}
+
+    @media (min-width: 768px) {
+        grid-template-columns: ${({ $columns }) =>
+            $columns ? $columns : 'repeat(3, 1fr)'};
+    }
 `;

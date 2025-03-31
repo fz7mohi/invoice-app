@@ -435,224 +435,161 @@ const useManageQuotations = () => {
      * @return   {Promise}        Promise that resolves when the submission is complete, rejects on errors
      */
     const handleSubmit = async (type) => {
-        console.log('handleSubmit called with type:', type);
-        
-        return new Promise(async (resolve, reject) => {
-            try {
-                // Create a copy of the quotation to avoid modifying the original state directly
-                const quotationData = { ...quotation };
+        try {
+            console.log('Starting quotation submission with type:', type);
+            
+            // For draft submissions, bypass validation
+            if (type === 'draft') {
+                console.log('Processing draft submission - bypassing validation');
                 
-                // Generate new ID for new quotations
-                if (!quotationData.customId) {
-                    quotationData.customId = generateId();
-                    console.log('Generated new custom ID for quotation:', quotationData.customId);
-                }
+                // Set default values for draft
+                const draftQuotation = {
+                    ...quotation,
+                    description: quotation.description || 'Draft Quotation',
+                    termsAndConditions: quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS,
+                    currency: quotation.currency || 'USD',
+                    items: quotation.items.length > 0 
+                        ? quotation.items.map(item => ({
+                            name: item.name || 'Draft Item',
+                            description: item.description || '',
+                            quantity: parseFloat(item.quantity) || 0,
+                            price: parseFloat(item.price) || 0,
+                            vat: parseFloat(item.vat) || 0,
+                            total: parseFloat(item.total) || 0
+                        }))
+                        : [{
+                            name: 'Draft Item',
+                            description: '',
+                            quantity: 0,
+                            price: 0,
+                            vat: 0,
+                            total: 0
+                        }]
+                };
                 
-                // Ensure items are properly formatted with numeric values
-                const processedItems = items.map(item => ({
-                    ...item,
-                    name: item.name || '',
-                    description: item.description || '',
-                    quantity: parseFloat(item.quantity) || 0,
-                    price: parseFloat(item.price) || 0,
-                    vat: parseFloat(item.vat) || 0,
-                    total: parseFloat(item.total) || 0
-                }));
-                
-                // Calculate total
-                const totalAmount = processedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
-                
-                // Update the quotation data
-                quotationData.items = processedItems;
-                quotationData.total = totalAmount;
-
-                // Validate form
-                const validation = formValidation(quotationData, processedItems);
-
-                if (validation.isError) {
-                    dispatch({ 
-                        type: 'SET_QUOTATION_ERRORS', 
-                        payload: { 
-                            err: validation.err, 
-                            msg: validation.msg 
-                        } 
-                    });
-                    return reject(new Error('Form validation failed'));
-                }
-                
-                // Set the status based on type
-                const status = type === 'new' ? 'pending' : 'draft';
-                
-                // If editing existing quotation
-                if (state.form.isEditing) {
-                    // Update in Firestore
-                    try {
-                        // Prepare payment due date
-                        const paymentDueDate = new Date(quotationData.createdAt);
-                        paymentDueDate.setDate(
-                            paymentDueDate.getDate() + parseInt(quotationData.paymentTerms)
-                        );
-                        
-                        // Convert Date objects to Firestore Timestamps
-                        const firestoreQuotation = {
-                            ...quotationData,
-                            customId: quotationData.customId,
-                            items: processedItems,
-                            status: status,
-                            createdAt: Timestamp.fromDate(new Date(quotationData.createdAt)),
-                            paymentDue: Timestamp.fromDate(paymentDueDate)
-                        };
-                        
-                        // Use the document ID from the quotation
-                        const quotationRef = doc(db, 'quotations', quotationData.id);
-                        await updateDoc(quotationRef, firestoreQuotation);
-                        
-                        // Update local state with the updated quotation
-                        const updatedQuotation = {
-                            ...quotationData,
-                            items: processedItems,
-                            status: status,
-                            currency: quotationData.currency || 'USD' // Include currency
-                        };
-                        
-                        dispatch({ 
-                            type: 'SAVE_QUOTATION_CHANGES', 
-                            payload: { quotation: updatedQuotation } 
-                        });
-                    } catch (firebaseError) {
-                        console.error('Firebase update error:', firebaseError);
-                        // Fallback to local state update
-                        const updatedQuotation = {
-                            ...quotationData,
-                            items: processedItems,
-                            status: status,
-                            currency: quotationData.currency || 'USD' // Include currency
-                        };
-                        
-                        dispatch({ 
-                            type: 'SAVE_QUOTATION_CHANGES', 
-                            payload: { quotation: updatedQuotation } 
-                        });
-                    }
-                } else {
-                    // Adding new quotation
-                    try {
-                        // Check Firebase connection and permissions with a simple write test
-                        try {
-                            // First, check if we can access the collection
-                            const quotationsCollection = collection(db, 'quotations');
-
-                            // Prepare payment due date
-                            const paymentDueDate = new Date(quotationData.createdAt);
-                            paymentDueDate.setDate(
-                                paymentDueDate.getDate() + parseInt(quotationData.paymentTerms)
-                            );
-                            
-                            // Create the quotation object with all required fields and custom ID
-                            const firestoreQuotation = {
-                                customId: quotationData.customId, // Store our custom ID as a field
-                                description: quotationData.description || '',
-                                clientName: quotationData.clientName || '',
-                                clientEmail: quotationData.clientEmail || '',
-                                clientAddress: quotationData.clientAddress || {},
-                                termsAndConditions: quotationData.termsAndConditions || '',
-                                senderAddress: quotationData.senderAddress || {},
-                                items: processedItems || [],
-                                total: totalAmount || 0,
-                                currency: quotationData.currency || 'USD', // Include currency
-                                status: status,
-                                paymentTerms: quotationData.paymentTerms || '30',
-                                createdAt: Timestamp.fromDate(new Date()),
-                                paymentDue: Timestamp.fromDate(paymentDueDate)
-                            };
-                            
-                            try {
-                                const docRef = await addDoc(collection(db, 'quotations'), firestoreQuotation);
-                                
-                                // Update local state with the new quotation
-                                const newQuotation = {
-                                    ...quotationData,
-                                    id: docRef.id, // Firestore ID
-                                    customId: quotationData.customId, // Our friendly ID format
-                                    items: processedItems,
-                                    status: status,
-                                    currency: quotationData.currency || 'USD' // Include currency
-                                };
-                                
-                                dispatch({ 
-                                    type: 'ADD_QUOTATION', 
-                                    payload: { quotation: newQuotation }
-                                });
-                                
-                                // Reset form after successful submission
-                                resetForm();
-                                
-                                // Close the form 
-                                dispatch({ type: 'DISCARD_QUOTATION' });
-                                
-                                // Operation complete
-                                await refreshQuotations();
-                                resolve(newQuotation);
-                            } catch (addError) {
-                                console.error('Specific error adding document to Firestore:', addError);
-                                
-                                // Fallback to local state update
-                                dispatch({ 
-                                    type: 'ADD_QUOTATION', 
-                                    payload: {
-                                        quotation: {
-                                            ...quotationData,
-                                            customId: quotationData.customId,
-                                            items: processedItems,
-                                            status: status,
-                                            currency: quotationData.currency || 'USD'
-                                        }
-                                    }
-                                });
-                                reject(addError);
-                            }
-                        } catch (collectionError) {
-                            console.error('Error accessing quotations collection:', collectionError);
-                            
-                            // Fallback to local state update
-                            dispatch({
-                                type: 'ADD_QUOTATION',
-                                payload: {
-                                    quotation: {
-                                        ...quotationData,
-                                        customId: quotationData.customId,
-                                        items: processedItems,
-                                        status: status,
-                                        currency: quotationData.currency || 'USD'
-                                    }
-                                }
-                            });
-                            reject(collectionError);
+                // Only validate client selection for draft
+                if (!draftQuotation.clientName) {
+                    dispatch({
+                        type: ACTIONS.SET_ERRORS,
+                        payload: {
+                            isError: true,
+                            fields: { clientName: true },
+                            messages: ['- Client name is required']
                         }
-                    } catch (firebaseError) {
-                        console.error('Firebase connection error:', firebaseError);
-                        
-                        // Fallback to local state update
-                        dispatch({ 
-                            type: 'ADD_QUOTATION', 
-                            payload: {
-                                quotation: {
-                                    ...quotationData,
-                                    customId: quotationData.customId,
-                                    items: processedItems,
-                                    status: status,
-                                    currency: quotationData.currency || 'USD'
-                                }
-                            }
-                        });
-                        reject(firebaseError);
-                    }
+                    });
+                    return;
                 }
-            } catch (error) {
-                console.error('Error saving quotation:', error);
-                reject(error);
+                
+                // Update quotation state with draft values
+                setQuotation(draftQuotation);
+                
+                // Generate a unique ID for the quotation
+                const quotationId = generateId();
+                
+                // Create the quotation document
+                const quotationDoc = {
+                    ...draftQuotation,
+                    id: quotationId,
+                    customId: quotationId,
+                    status: 'draft',
+                    createdAt: new Date(),
+                    paymentDue: new Date(),
+                    total: draftQuotation.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
+                };
+                
+                // Add to Firestore
+                const docRef = await addDoc(collection(db, 'quotations'), quotationDoc);
+                console.log('Draft quotation added with ID:', docRef.id);
+                
+                // Update local state
+                dispatch({
+                    type: ACTIONS.ADD_QUOTATION,
+                    payload: quotationDoc
+                });
+                
+                // Reset form and close modal
+                resetForm();
+                dispatch({ type: 'DISCARD_QUOTATION' });
+                
+                // Refresh quotations list immediately
+                await refreshQuotations();
+                
+                return;
             }
-        });
+            
+            // For regular submissions, validate all fields
+            const validationResult = formValidation(quotation, items);
+            
+            if (validationResult.isError) {
+                dispatch({
+                    type: ACTIONS.SET_ERRORS,
+                    payload: {
+                        isError: true,
+                        fields: validationResult.err,
+                        messages: validationResult.msg
+                    }
+                });
+                return;
+            }
+
+            // Process items for regular submission
+            const processedItems = items.map(item => ({
+                name: item.name || '',
+                description: item.description || '',
+                quantity: parseFloat(item.quantity) || 0,
+                price: parseFloat(item.price) || 0,
+                vat: parseFloat(item.vat) || 0,
+                total: parseFloat(item.total) || 0
+            }));
+
+            // Calculate total
+            const totalAmount = processedItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+
+            // Generate a unique ID for the quotation
+            const quotationId = generateId();
+
+            // Create the quotation document
+            const quotationDoc = {
+                ...quotation,
+                id: quotationId,
+                customId: quotationId,
+                status: 'pending',
+                items: processedItems,
+                total: totalAmount,
+                createdAt: new Date(),
+                paymentDue: new Date(),
+                currency: quotation.currency || 'USD',
+                termsAndConditions: quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS
+            };
+
+            // Add to Firestore
+            const docRef = await addDoc(collection(db, 'quotations'), quotationDoc);
+            console.log('Quotation added with ID:', docRef.id);
+
+            // Update local state
+            dispatch({
+                type: ACTIONS.ADD_QUOTATION,
+                payload: quotationDoc
+            });
+
+            // Reset form and close modal
+            resetForm();
+            dispatch({ type: 'DISCARD_QUOTATION' });
+
+            // Refresh quotations list immediately
+            await refreshQuotations();
+            
+        } catch (error) {
+            console.error('Error submitting quotation:', error);
+            dispatch({
+                type: ACTIONS.SET_ERRORS,
+                payload: {
+                    isError: true,
+                    fields: {},
+                    messages: ['Error submitting quotation: ' + error.message]
+                }
+            });
+        }
     };
 
     /**

@@ -9,7 +9,8 @@ export const Backdrop = styled(motion.div)`
     right: 0;
     bottom: 0;
     left: 0;
-    background-color: ${({ theme }) => theme.colors.blackAlpha50};
+    background-color: ${({ theme }) => theme.colors.blackAlpha50 || 'rgba(0, 0, 0, 0.5)'};
+    backdrop-filter: blur(2px);
     z-index: 99;
 `;
 

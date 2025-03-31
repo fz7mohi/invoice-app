@@ -82,7 +82,7 @@ const Quotations = () => {
                 
                 <Button 
                     type="button" 
-                    $newInvoice 
+                    $primary 
                     onClick={createQuotation}
                     disabled={isLoading}
                 >

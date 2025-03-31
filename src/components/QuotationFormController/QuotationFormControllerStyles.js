@@ -6,14 +6,37 @@ export const StyledQuotationFormController = styled(motion.div)`
     top: clamp(72px, 10.5vw, 80px); /* header height */
     bottom: 0;
     left: -20px;
-    background-color: ${({ theme }) => theme.colors.bgForm};
+    background-color: #1E2139;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 32px 24px 190px 44px;
-    transition: background-color 400ms ease-in-out;
     z-index: 99;
     width: 100%;
     overscroll-behavior: contain;
     overflow-y: auto;
     overflow-x: hidden;
+
+    /* Form elements styling */
+    input, select, textarea {
+        background-color: #1E2139 !important;
+        border: 1px solid #252945 !important;
+        color: #FFFFFF !important;
+
+        &::placeholder {
+            color: #DFE3FA !important;
+        }
+
+        &:focus {
+            border-color: #7C5DFA !important;
+        }
+    }
+
+    label {
+        color: #DFE3FA !important;
+    }
+
+    h1, h2, h3, h4, h5, h6, p, span {
+        color: #FFFFFF !important;
+    }
 
     &::before {
         position: absolute;
@@ -24,8 +47,8 @@ export const StyledQuotationFormController = styled(motion.div)`
         height: 190px;
         background: linear-gradient(
             to top,
-            rgba(0, 0, 0, 0.1),
-            rgba(0, 0, 0, 0) 100%
+            #1E2139 20%,
+            transparent 100%
         );
         z-index: 2;
         pointer-events: none;

@@ -7,7 +7,8 @@ import dateToString from '../../utilities/dateToString';
 import allowOnlyNumbers from '../../utilities/allowOnlyNumbers';
 import Icon from '../shared/Icon/Icon';
 import Button from '../shared/Button/Button';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import { defaultInput } from '../FormController/Form/FormStyles';
 
 import {
     StyledForm,
@@ -21,26 +22,29 @@ import {
     Error,
     Input,
     InputsGroup,
-    defaultInput
+    FormContainer,
+    FloatingButtons,
 } from '../FormController/Form/FormStyles';
 
 // Date Picker Custom Components
-const CustomPicker = styled.button`
-    width: 100%;
-    padding: 16px 13px 16px 20px;
-    border-radius: 4px;
-    border: 1px solid ${({ theme }) => theme.colors.bgInputBorder};
-    background-color: ${({ theme }) => theme.colors.bgInput};
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: 700;
+export const CustomPicker = styled.button`
+    ${defaultInput}
     text-align: left;
+    cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    
+    background-color: #1E2139;
+    color: #FFFFFF;
+    border: 1px solid #252945;
+
+    &:hover {
+        border-color: #7C5DFA;
+    }
+
     &:focus {
-        border: 1px solid ${({ theme }) => theme.colors.purple};
-        outline: none;
+        border-color: #7C5DFA;
+        box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
     }
 `;
 
@@ -58,9 +62,71 @@ const CustomInput = forwardRef(({ isDisabled, value, onClick }, ref) => (
 ));
 
 // Select Dropdown Components
-const StyledSelect = styled.div`
+const SelectWrapper = styled.div`
     position: relative;
     width: 100%;
+`;
+
+const SelectButton = styled.button`
+    ${defaultInput}
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background-color: #1E2139;
+    color: #FFFFFF;
+    border: 1px solid #252945;
+    width: 100%;
+    text-align: left;
+
+    &:hover {
+        border-color: #7C5DFA;
+    }
+
+    &:focus {
+        border-color: #7C5DFA;
+        box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
+    }
+`;
+
+const DropdownList = styled.ul`
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    background-color: #1E2139;
+    border-radius: 6px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+    z-index: 100;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #252945;
+`;
+
+const DropdownItem = styled.li`
+    &:not(:last-child) {
+        border-bottom: 1px solid #252945;
+    }
+`;
+
+const DropdownOption = styled.button`
+    width: 100%;
+    padding: 12px 16px;
+    text-align: left;
+    background: none;
+    border: none;
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    
+    &:hover {
+        color: #7C5DFA;
+        background-color: rgba(124, 93, 250, 0.1);
+    }
 `;
 
 const Cta = styled.button`
@@ -87,74 +153,34 @@ const Cta = styled.button`
     }
 `;
 
-const List = styled.ul`
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    width: 100%;
-    background-color: ${({ theme }) => theme.colors.bgForm || theme.colors.formBackground || '#fff'};
-    border-radius: 8px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
-    z-index: 100;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 300px;
-    overflow-y: auto;
-`;
-
-const Item = styled.li`
-    &:not(:last-child) {
-        border-bottom: 1px solid ${({ theme }) => theme.colors.dropdownDivider || theme.colors.divider || '#eee'};
-    }
-`;
-
-const Option = styled.button`
-    width: 100%;
-    padding: 16px 24px;
-    text-align: left;
-    background: none;
-    border: none;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: 700;
-    cursor: pointer;
-    
-    &:hover {
-        color: ${({ theme }) => theme.colors.purple};
-        background-color: ${({ theme }) => theme.colors.bgInputHover || 'rgba(126, 136, 195, 0.1)'};
-    }
-`;
-
 // Item List Components
 const Wrapper = styled.div`
     display: flex;
     flex-flow: column;
     gap: 16px;
     width: 100%;
-    margin-right: 20px;
+    margin-bottom: 24px;
     
     @media (min-width: 768px) {
         gap: 20px;
-        margin-right: 0;
     }
 `;
 
 const TotalValue = styled.div`
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 10px;
-    border-radius: 4px;
-    border: none;
-    background-color: transparent;
-    color: ${({ theme }) => theme.colors.textTertiary};
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #252945;
+    background-color: #1E2139;
+    color: #FFFFFF;
     font-weight: 500;
     font-size: 13px;
     
     .currency {
         margin-right: 4px;
-        font-size: 11px;
-        color: ${({ theme }) => theme.colors.textSecondary};
+        font-size: 12px;
+        color: #DFE3FA;
     }
 `;
 
@@ -167,45 +193,78 @@ const Delete = styled.button`
     background: none;
     border: none;
     cursor: pointer;
-    color: ${({ theme }) => theme.colors.btnTheme};
+    color: #DFE3FA;
     align-self: center;
     
     &:hover {
-        color: ${({ theme }) => theme.colors.red};
+        color: #EC5757;
     }
 `;
 
 // Add TextArea component for Terms and Conditions
-const TextArea = styled.textarea`
+export const TextArea = styled.textarea`
     ${defaultInput}
-    min-height: 120px;
     resize: vertical;
-    
+    min-height: 120px;
+    background-color: #1E2139;
+    color: #FFFFFF;
+    border: 1px solid #252945;
+    font-family: inherit;
+    line-height: 1.5;
+
     ${({ $error }) =>
         $error &&
-        `border: 1px solid ${props => props.theme.colors.red};`}
-    
+        css`
+            border-color: #EC5757;
+            &:hover, &:focus {
+                border-color: #EC5757;
+                box-shadow: 0 0 0 2px rgba(236, 87, 87, 0.1);
+            }
+        `}
+
     ${({ $valid }) =>
         $valid &&
-        `border: 1px solid #33d69f;`}
+        css`
+            border-color: #33D69F;
+            &:hover, &:focus {
+                border-color: #33D69F;
+                box-shadow: 0 0 0 2px rgba(51, 214, 159, 0.1);
+            }
+        `}
+
+    &:hover {
+        border-color: #7C5DFA;
+    }
+
+    &:focus {
+        border-color: #7C5DFA;
+        box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
+    }
 `;
 
 // Create a styled card component for client details
-const ClientDetailsCard = styled.div`
-    margin-top: 12px;
-    padding: 16px;
-    border-radius: 4px;
-    background-color: ${({ theme }) => theme.colors.bgInput || '#f9fafe'};
-    border: 1px solid ${({ theme }) => theme.colors.bgInputBorder};
-    
-    ${({ $empty, theme }) => $empty && `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: ${theme.colors.textTertiary || '#7e88c3'};
-        font-style: italic;
-        min-height: 80px;
-    `}
+export const ClientDetailsCard = styled.div`
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #252945;
+    border: 1px solid #1E2139;
+    color: #FFFFFF;
+    margin-bottom: 24px;
+
+    h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #7C5DFA;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    p {
+        color: #DFE3FA;
+        font-size: 13px;
+        line-height: 1.5;
+    }
 `;
 
 const CardTitle = styled.h3`
@@ -261,12 +320,12 @@ const DescriptionInput = styled.textarea`
 const ItemInputsGroup = styled(InputsGroup)`
     display: grid;
     grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 14px 12px;
-    background-color: ${({ theme }) => theme.colors.bgInput || '#f9fafe'};
-    border-radius: 6px;
+    gap: 16px;
+    padding: 20px;
+    background-color: #252945;
+    border-radius: 8px;
     width: 100%;
-    border: 1px solid ${({ theme }) => theme.colors.bgInputBorder || '#DFE3FA'};
+    border: 1px solid #1E2139;
     
     /* On mobile, we'll use a different grid layout */
     display: grid;
@@ -281,14 +340,14 @@ const ItemInputsGroup = styled(InputsGroup)`
     .qty-price-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 16px;
         grid-area: qty-price;
     }
     
     .vat-total-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 16px;
         grid-area: vat-total;
     }
     
@@ -299,8 +358,8 @@ const ItemInputsGroup = styled(InputsGroup)`
             "desc desc desc desc desc desc"
             "qty price vat total total total";
         align-items: flex-start;
-        gap: 10px;
-        padding: 16px 14px;
+        gap: 16px;
+        padding: 24px;
         
         /* Remove the wrapper divs on desktop */
         .qty-price-row, .vat-total-row {
@@ -365,7 +424,7 @@ const ItemDelete = styled.button`
     background: none;
     border: none;
     cursor: pointer;
-    color: ${({ theme }) => theme.colors.btnTheme};
+    color: #DFE3FA;
     align-self: flex-start;
     justify-self: flex-end;
     
@@ -374,42 +433,49 @@ const ItemDelete = styled.button`
     }
     
     &:hover {
-        color: ${({ theme }) => theme.colors.red};
+        color: #EC5757;
     }
 `;
 
 // Update the VAT display value
 const VatValue = styled(TotalValue)`
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 12px;
-    font-weight: 400;
+    color: #DFE3FA;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 12px;
+    background-color: #1E2139;
+    border-radius: 6px;
+    border: 1px solid #252945;
 `;
 
 // Add a custom styled form that extends StyledForm
 const QuotationForm = styled(StyledForm)`
     width: 100%;
-    padding-right: 20px; /* Add padding to prevent horizontal overflow */
+    height: 100%;
+    padding: 24px;
     
     @media (min-width: 768px) {
         max-width: 100%;
+        padding: 32px;
     }
     
     @media (min-width: 1024px) {
-        padding-right: 10px;
+        padding: 40px;
     }
 `;
 
 // Add the MinimalLabel styled component
 const MinimalLabel = styled(Label)`
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
+    color: #DFE3FA;
     margin-bottom: 4px;
 `;
 
 // Add the MinimalInput styled component
 const MinimalInput = styled(Input)`
-    padding: 10px;
-    font-size: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
     height: auto;
 `;
 
@@ -443,6 +509,84 @@ const formatNumber = (value) => {
     });
 };
 
+// Add a styled button for "Add New Item"
+const AddNewItemButton = styled(Button)`
+    background-color: #252945;
+    color: #FFFFFF;
+    border: 1px solid #252945;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    
+    &:hover {
+        background-color: #1E2139;
+        border-color: #7C5DFA;
+        color: #7C5DFA;
+    }
+    
+    &:focus {
+        outline: none;
+        border-color: #7C5DFA;
+        box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
+    }
+`;
+
+// Update the FloatingButtons style
+const StyledFloatingButtons = styled(FloatingButtons)`
+    background-color: #1E2139;
+    border-top: 1px solid #252945;
+    padding: 16px 24px;
+    
+    @media (min-width: 768px) {
+        padding: 16px 32px;
+    }
+    
+    button {
+        min-width: 120px;
+        padding: 12px 24px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        
+        &[type="submit"] {
+            background-color: #7C5DFA;
+            color: #FFFFFF;
+            border: none;
+            
+            &:hover {
+                background-color: #9277FF;
+            }
+        }
+        
+        &[type="button"] {
+            background-color: #252945;
+            color: #FFFFFF;
+            border: 1px solid #252945;
+            
+            &:hover {
+                background-color: #1E2139;
+                border-color: #7C5DFA;
+                color: #7C5DFA;
+            }
+        }
+    }
+`;
+
+// Add a constant for default terms and conditions
+const DEFAULT_TERMS_AND_CONDITIONS = `Validity: This quote is valid for 15 days from the date of issue.
+Payment Terms: 50% advance payment along with the issuance of the LPO (Local Purchase Order), and the remaining 50% to be settled before the delivery of the order.`;
+
+// Add this function at the top level of the component
+const scrollToNewItem = (index) => {
+    setTimeout(() => {
+        const itemElement = document.getElementById(`item-${index}`);
+        if (itemElement) {
+            itemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 100);
+};
+
 const QuotationFormContent = ({ isEdited }) => {
     const { colors } = useTheme();
     const {
@@ -456,7 +600,9 @@ const QuotationFormContent = ({ isEdited }) => {
         clientState,
         setItems,
         addNewItem,
-        removeItemAtIndex
+        removeItemAtIndex,
+        handleQuotationSubmit,
+        toggleQuotationModal
     } = useGlobalContext();
     
     const [isDropdownExpanded, setIsDropdownExpanded] = useState(false);
@@ -678,56 +824,153 @@ const QuotationFormContent = ({ isEdited }) => {
         return getCurrencySymbol(country);
     };
 
-    // Add a submission check that runs before the form is submitted
-    const handleFormSubmit = (e) => {
-        // This will log the current form state before it's submitted
-        console.log('Form submission initiated');
-        
-        // Ensure terms and conditions is properly set in the quotation
-        const termsValue = document.getElementById('terms-and-conditions')?.value;
-        if (termsValue && !quotation.termsAndConditions) {
-            console.log('Setting terms and conditions value:', termsValue);
+    // Add useEffect to set default terms and conditions when component mounts
+    useEffect(() => {
+        if (!quotation.termsAndConditions) {
+            console.log('Setting default terms and conditions');
             handleQuotationChange({
                 target: {
                     name: 'termsAndConditions',
-                    value: termsValue
+                    value: DEFAULT_TERMS_AND_CONDITIONS
                 }
             }, 'quotation');
         }
+    }, []); // Empty dependency array means this runs once when component mounts
+
+    // Update the handleFormSubmit function to handle different submission types
+    const handleFormSubmit = async (e, type = 'new') => {
+        e.preventDefault();
+        console.log('Form submission initiated with type:', type);
         
-        // Ensure currency is set
-        if (!quotation.currency) {
-            const clientCountry = quotation?.clientAddress?.country;
+        // Create a copy of the current quotation state
+        const updatedQuotation = { ...quotation };
+        
+        // For draft, only validate client selection and set default values
+        if (type === 'draft') {
+            if (!updatedQuotation.clientName) {
+                console.error('Client name is required');
+                return;
+            }
+            
+            // Set default values for draft without validation
+            updatedQuotation.description = updatedQuotation.description || 'Draft Quotation';
+            updatedQuotation.termsAndConditions = DEFAULT_TERMS_AND_CONDITIONS;
+            updatedQuotation.currency = updatedQuotation.currency || 'USD';
+            
+            // Process items with default values for draft
+            updatedQuotation.items = localItems.length > 0 
+                ? localItems.map(item => ({
+                    name: item.name || 'Draft Item',
+                    description: item.description || '',
+                    quantity: parseFloat(item.quantity) || 0,
+                    price: parseFloat(item.price) || 0,
+                    vat: parseFloat(item.vat) || 0,
+                    total: parseFloat(item.total) || 0
+                }))
+                : [{
+                    name: 'Draft Item',
+                    description: '',
+                    quantity: 0,
+                    price: 0,
+                    vat: 0,
+                    total: 0
+                }];
+            
+            // Update the quotation state with all the processed data
+            Object.entries(updatedQuotation).forEach(([key, value]) => {
+                handleQuotationChange({
+                    target: {
+                        name: key,
+                        value: value
+                    }
+                }, 'quotation');
+            });
+            
+            try {
+                // Call handleQuotationSubmit with the draft type
+                await handleQuotationSubmit('draft');
+                
+                // Close the modal after successful submission
+                toggleQuotationModal();
+                
+                // Refresh the quotations list
+                if (typeof refreshQuotations === 'function') {
+                    await refreshQuotations();
+                }
+            } catch (error) {
+                console.error('Error submitting quotation:', error);
+            }
+            
+            return;
+        }
+        
+        // For regular submission, validate all required fields
+        if (!updatedQuotation.termsAndConditions) {
+            console.log('Setting terms and conditions value:', DEFAULT_TERMS_AND_CONDITIONS);
+            updatedQuotation.termsAndConditions = DEFAULT_TERMS_AND_CONDITIONS;
+        }
+        
+        if (!updatedQuotation.currency) {
+            const clientCountry = updatedQuotation?.clientAddress?.country;
             const currency = clientCountry ? getCurrencySymbol(clientCountry) : 'USD';
             console.log('Setting currency value:', currency);
-            handleQuotationChange({
-                target: {
-                    name: 'currency',
-                    value: currency
-                }
-            }, 'quotation');
+            updatedQuotation.currency = currency;
         }
         
-        // Small delay to ensure state update
-        setTimeout(() => {
-            console.log('Updated quotation before submission:', quotation);
-        }, 100);
+        if (!updatedQuotation.description) {
+            updatedQuotation.description = 'Quotation for goods/services';
+        }
         
-        console.log('Current form data:', {
-            quotation,
-            localItems,
-            hasTermsAndConditions: Boolean(quotation.termsAndConditions),
-            hasDescription: Boolean(quotation.description),
-            hasClientName: Boolean(quotation.clientName),
-            itemsCount: localItems.length,
-            currency: quotation.currency
+        if (!updatedQuotation.clientName) {
+            console.error('Client name is required');
+            return;
+        }
+        
+        // Process items for regular submission
+        updatedQuotation.items = localItems.map(item => ({
+            name: item.name || '',
+            description: item.description || '',
+            quantity: parseFloat(item.quantity) || 0,
+            price: parseFloat(item.price) || 0,
+            vat: parseFloat(item.vat) || 0,
+            total: parseFloat(item.total) || 0
+        }));
+        
+        // Update the quotation state with all the processed data
+        Object.entries(updatedQuotation).forEach(([key, value]) => {
+            handleQuotationChange({
+                target: {
+                    name: key,
+                    value: value
+                }
+            }, 'quotation');
         });
+        
+        try {
+            // Call handleQuotationSubmit with the appropriate type
+            await handleQuotationSubmit(type);
+            
+            // Close the modal after successful submission
+            toggleQuotationModal();
+            
+            // Refresh the quotations list
+            if (typeof refreshQuotations === 'function') {
+                await refreshQuotations();
+            }
+        } catch (error) {
+            console.error('Error submitting quotation:', error);
+        }
+    };
 
-        // Don't prevent default - we still want the form to submit normally
+    // Update the handleAddItem function
+    const handleAddItem = () => {
+        const newIndex = localItems.length;
+        addNewItem();
+        scrollToNewItem(newIndex);
     };
 
     return (
-        <>
+        <FormContainer>
             {!isEdited && <Title>New Quotation</Title>}
             {isEdited && (
                 <Title>
@@ -739,7 +982,10 @@ const QuotationFormContent = ({ isEdited }) => {
                 id="quotation-form"
                 noValidate
                 autoComplete="off"
-                onSubmit={handleFormSubmit}
+                onSubmit={(e) => {
+                    // Handle save and send
+                    handleFormSubmit(e, isEdited ? 'change' : 'new');
+                }}
             >
                 {/* Bill To Section */}
                 <Fieldset>
@@ -751,14 +997,13 @@ const QuotationFormContent = ({ isEdited }) => {
                                 <Error>can't be empty</Error>
                             )}
                         </Label>
-                        <StyledSelect>
-                            <Cta
+                        <SelectWrapper>
+                            <SelectButton
                                 type="button"
                                 aria-label="Select client"
                                 aria-expanded={isClientDropdownExpanded}
                                 aria-controls="client-select-list"
                                 onClick={toggleClientDropdown}
-                                $isExpanded={isClientDropdownExpanded}
                             >
                                 {hasClientDetails() ? (
                                     <>{quotation.clientName}</>
@@ -766,30 +1011,28 @@ const QuotationFormContent = ({ isEdited }) => {
                                     'Select a client'
                                 )}
                                 <Icon name={'arrow-down'} size={12} color={colors.purple} />
-                            </Cta>
+                            </SelectButton>
                             {isClientDropdownExpanded && (
-                                <List id="client-select-list" ref={clientSelectRef}>
+                                <DropdownList id="client-select-list" ref={clientSelectRef}>
                                     {clientState.clients.length === 0 ? (
-                                        <Item><Option>No clients found</Option></Item>
+                                        <DropdownItem>
+                                            <DropdownOption disabled>No clients found</DropdownOption>
+                                        </DropdownItem>
                                     ) : (
                                         clientState.clients.map((client) => (
-                                            <Item key={client.id}>
-                                                <Option
+                                            <DropdownItem key={client.id}>
+                                                <DropdownOption
                                                     type="button"
-                                                    onClick={(e) => {
-                                                        e.preventDefault(); 
-                                                        e.stopPropagation();
-                                                        handleSelectClient(client);
-                                                    }}
+                                                    onClick={() => handleSelectClient(client)}
                                                 >
                                                     {client.companyName}
-                                                </Option>
-                                            </Item>
+                                                </DropdownOption>
+                                            </DropdownItem>
                                         ))
                                     )}
-                                </List>
+                                </DropdownList>
                             )}
-                        </StyledSelect>
+                        </SelectWrapper>
                     </InputWrapper>
                     
                     {/* Client Details Card */}
@@ -866,7 +1109,7 @@ const QuotationFormContent = ({ isEdited }) => {
                             id="terms-and-conditions"
                             name="termsAndConditions"
                             placeholder="Enter terms and conditions"
-                            value={quotation.termsAndConditions || ''}
+                            value={quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS}
                             $error={errors?.termsAndConditions}
                             onChange={(event) => handleQuotationChange(event, 'quotation')}
                             required
@@ -876,26 +1119,23 @@ const QuotationFormContent = ({ isEdited }) => {
                     {/* Add a currency selector component after the Terms and Conditions field */}
                     <InputWrapper>
                         <Label htmlFor="currency">Currency</Label>
-                        <StyledSelect>
-                            <Cta
+                        <SelectWrapper>
+                            <SelectButton
                                 type="button"
                                 aria-label="Select currency"
                                 aria-expanded={isCurrencyDropdownExpanded}
                                 aria-controls="currency-select-list"
                                 onClick={toggleCurrencyDropdown}
-                                $isExpanded={isCurrencyDropdownExpanded}
                             >
                                 {quotation.currency || 'USD'}
                                 <Icon name={'arrow-down'} size={12} color={colors.purple} />
-                            </Cta>
+                            </SelectButton>
                             {isCurrencyDropdownExpanded && (
-                                <List id="currency-select-list" ref={currencySelectRef}>
-                                    <Item>
-                                        <Option
+                                <DropdownList id="currency-select-list" ref={currencySelectRef}>
+                                    <DropdownItem>
+                                        <DropdownOption
                                             type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
+                                            onClick={() => {
                                                 handleQuotationChange({
                                                     target: { name: 'currency', value: 'USD' }
                                                 }, 'quotation');
@@ -903,14 +1143,12 @@ const QuotationFormContent = ({ isEdited }) => {
                                             }}
                                         >
                                             USD
-                                        </Option>
-                                    </Item>
-                                    <Item>
-                                        <Option
+                                        </DropdownOption>
+                                    </DropdownItem>
+                                    <DropdownItem>
+                                        <DropdownOption
                                             type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
+                                            onClick={() => {
                                                 handleQuotationChange({
                                                     target: { name: 'currency', value: 'AED' }
                                                 }, 'quotation');
@@ -918,14 +1156,12 @@ const QuotationFormContent = ({ isEdited }) => {
                                             }}
                                         >
                                             AED
-                                        </Option>
-                                    </Item>
-                                    <Item>
-                                        <Option
+                                        </DropdownOption>
+                                    </DropdownItem>
+                                    <DropdownItem>
+                                        <DropdownOption
                                             type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
+                                            onClick={() => {
                                                 handleQuotationChange({
                                                     target: { name: 'currency', value: 'EUR' }
                                                 }, 'quotation');
@@ -933,11 +1169,11 @@ const QuotationFormContent = ({ isEdited }) => {
                                             }}
                                         >
                                             EUR
-                                        </Option>
-                                    </Item>
-                                </List>
+                                        </DropdownOption>
+                                    </DropdownItem>
+                                </DropdownList>
                             )}
-                        </StyledSelect>
+                        </SelectWrapper>
                     </InputWrapper>
                 </Fieldset>
                 
@@ -955,63 +1191,62 @@ const QuotationFormContent = ({ isEdited }) => {
                         </InputWrapper>
                         <InputWrapper>
                             <Label>Payment Terms</Label>
-                            <StyledSelect>
-                                <Cta
+                            <SelectWrapper>
+                                <SelectButton
                                     type="button"
                                     aria-label="Select payment terms"
                                     aria-expanded={isDropdownExpanded}
                                     aria-controls="select-list"
                                     onClick={toggleDropdown}
-                                    $isExpanded={isDropdownExpanded}
                                 >
                                     Net {quotation.paymentTerms} Days
                                     <Icon name={'arrow-down'} size={12} color={colors.purple} />
-                                </Cta>
+                                </SelectButton>
                                 {isDropdownExpanded && (
-                                    <List id="select-list" ref={selectRef}>
-                                        <Item>
-                                            <Option
+                                    <DropdownList id="select-list" ref={selectRef}>
+                                        <DropdownItem>
+                                            <DropdownOption
                                                 type="button"
-                                                name="paymentTerms"
-                                                value="1"
-                                                onClick={(event) => handleSelectOption(event)}
+                                                onClick={() => handleQuotationChange({
+                                                    target: { name: 'paymentTerms', value: '1' }
+                                                }, 'quotation')}
                                             >
                                                 Net 1 Day
-                                            </Option>
-                                        </Item>
-                                        <Item>
-                                            <Option
+                                            </DropdownOption>
+                                        </DropdownItem>
+                                        <DropdownItem>
+                                            <DropdownOption
                                                 type="button"
-                                                name="paymentTerms"
-                                                value="7"
-                                                onClick={(event) => handleSelectOption(event)}
+                                                onClick={() => handleQuotationChange({
+                                                    target: { name: 'paymentTerms', value: '7' }
+                                                }, 'quotation')}
                                             >
                                                 Net 7 Days
-                                            </Option>
-                                        </Item>
-                                        <Item>
-                                            <Option
+                                            </DropdownOption>
+                                        </DropdownItem>
+                                        <DropdownItem>
+                                            <DropdownOption
                                                 type="button"
-                                                name="paymentTerms"
-                                                value="14"
-                                                onClick={(event) => handleSelectOption(event)}
+                                                onClick={() => handleQuotationChange({
+                                                    target: { name: 'paymentTerms', value: '14' }
+                                                }, 'quotation')}
                                             >
                                                 Net 14 Days
-                                            </Option>
-                                        </Item>
-                                        <Item>
-                                            <Option
+                                            </DropdownOption>
+                                        </DropdownItem>
+                                        <DropdownItem>
+                                            <DropdownOption
                                                 type="button"
-                                                name="paymentTerms"
-                                                value="30"
-                                                onClick={(event) => handleSelectOption(event)}
+                                                onClick={() => handleQuotationChange({
+                                                    target: { name: 'paymentTerms', value: '30' }
+                                                }, 'quotation')}
                                             >
                                                 Net 30 Days
-                                            </Option>
-                                        </Item>
-                                    </List>
+                                            </DropdownOption>
+                                        </DropdownItem>
+                                    </DropdownList>
                                 )}
-                            </StyledSelect>
+                            </SelectWrapper>
                         </InputWrapper>
                     </InputsGroup>
                     <InputWrapper>
@@ -1035,7 +1270,7 @@ const QuotationFormContent = ({ isEdited }) => {
                     <Legend $lg>Item List</Legend>
                     <Wrapper>
                         {localItems.map((item, index) => (
-                            <ItemInputsGroup key={index}>
+                            <ItemInputsGroup key={index} id={`item-${index}`}>
                                 <ItemName>
                                     <MinimalLabel
                                         htmlFor={`item-name-${index}`}
@@ -1174,8 +1409,9 @@ const QuotationFormContent = ({ isEdited }) => {
                         ))}
                         <Button 
                             type="button" 
-                            $secondary 
+                            as={AddNewItemButton}
                             onClick={() => {
+                                const newIndex = localItems.length;
                                 setLocalItems(prevItems => [
                                     ...prevItems, 
                                     { 
@@ -1187,6 +1423,13 @@ const QuotationFormContent = ({ isEdited }) => {
                                         total: 0 
                                     }
                                 ]);
+                                // Add a small delay to ensure the new item is rendered
+                                setTimeout(() => {
+                                    const itemElement = document.getElementById(`item-${newIndex}`);
+                                    if (itemElement) {
+                                        itemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }
+                                }, 100);
                             }}
                         >
                             + Add New Item
@@ -1203,7 +1446,38 @@ const QuotationFormContent = ({ isEdited }) => {
                     </ErrorsWrapper>
                 )}
             </QuotationForm>
-        </>
+            
+            <StyledFloatingButtons>
+                <Button
+                    type="button"
+                    onClick={() => {
+                        // Handle discard
+                        toggleQuotationModal();
+                    }}
+                >
+                    Discard
+                </Button>
+                <Button
+                    type="button"
+                    onClick={(e) => {
+                        // Handle save as draft
+                        handleFormSubmit(e, 'draft');
+                    }}
+                >
+                    Save as Draft
+                </Button>
+                <Button
+                    type="submit"
+                    form="quotation-form"
+                    onClick={(e) => {
+                        // Handle save and send
+                        handleFormSubmit(e, isEdited ? 'change' : 'new');
+                    }}
+                >
+                    Save & Send
+                </Button>
+            </StyledFloatingButtons>
+        </FormContainer>
     );
 };
 
