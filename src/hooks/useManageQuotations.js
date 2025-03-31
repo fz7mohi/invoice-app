@@ -28,7 +28,6 @@ const getQuotationsFromLocalStorage = () => {
         const storedQuotations = localStorage.getItem('quotations');
         return storedQuotations ? JSON.parse(storedQuotations) : [];
     } catch (error) {
-        console.error('Error getting quotations from localStorage:', error);
         return [];
     }
 };
@@ -41,7 +40,7 @@ const postQuotationsToLocalStorage = (quotations) => {
     try {
         localStorage.setItem('quotations', JSON.stringify(quotations));
     } catch (error) {
-        console.error('Error posting quotations to localStorage:', error);
+        // Silent error handling
     }
 };
 
@@ -142,11 +141,6 @@ const useManageQuotations = () => {
                     const quotationsList = querySnapshot.docs.map(doc => {
                         try {
                             const data = doc.data() || {};
-                            console.log(`Processing document ${doc.id}:`, data);
-                            
-                            // Log raw data to check for currency
-                            console.log(`Quotation ${doc.id} raw data:`, data);
-                            console.log(`Quotation ${doc.id} has currency:`, data.currency);
                             
                             // Convert Firestore Timestamp back to Date object safely
                             let createdAt = new Date();
@@ -155,13 +149,13 @@ const useManageQuotations = () => {
                             try {
                                 createdAt = data.createdAt?.toDate() || new Date();
                             } catch (dateError) {
-                                console.error('Error converting createdAt:', dateError);
+                                // Silent error handling
                             }
                             
                             try {
                                 paymentDue = data.paymentDue?.toDate() || new Date();
                             } catch (dateError) {
-                                console.error('Error converting paymentDue:', dateError);
+                                // Silent error handling
                             }
                             
                             // Handle items specially to ensure they're always an array
@@ -170,9 +164,8 @@ const useManageQuotations = () => {
                             // Special handling for quotation status
                             const status = data.status || 'pending';
                             
-                            // Explicitly get and log the currency
+                            // Explicitly get the currency
                             const currency = data.currency || 'USD';
-                            console.log(`Setting currency for ${doc.id} to:`, currency);
                             
                             // Create a complete quotation object with all required fields
                             return {
@@ -185,12 +178,11 @@ const useManageQuotations = () => {
                                 status,
                                 items,
                                 total: parseFloat(data.total) || 0,
-                                currency: currency, // Set currency with explicit value
+                                currency: currency,
                                 createdAt,
                                 paymentDue
                             };
                         } catch (docError) {
-                            console.error('Error processing document:', docError, doc.id);
                             // Return a minimal valid document to prevent rendering errors
                             return {
                                 id: doc.id,
@@ -206,12 +198,9 @@ const useManageQuotations = () => {
                         }
                     });
                     
-                    console.log('Fetched quotations from Firestore:', quotationsList);
                     dispatch({ type: 'SET_QUOTATIONS', payload: quotationsList });
                     dispatch({ type: 'SET_FIREBASE_ERROR', payload: false });
                 } catch (firebaseError) {
-                    console.error('Firebase error, falling back to localStorage:', firebaseError);
-                    
                     if (!isMounted) return;
                     
                     dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
@@ -221,7 +210,7 @@ const useManageQuotations = () => {
                     dispatch({ type: 'SET_QUOTATIONS', payload: localQuotations });
                 }
             } catch (error) {
-                console.error('Error loading quotations:', error);
+                // Silent error handling
             } finally {
                 if (isMounted) {
                     dispatch({ type: 'SET_LOADING', payload: false });
@@ -256,27 +245,21 @@ const useManageQuotations = () => {
         let name = event ? event.target.name : null;
         let value = event ? event.target.value : null;
 
-        console.log(`handleQuotationChange called with type: ${type}, name: ${name}, value:`, value);
-
         switch (type) {
             case 'quotation':
-                console.log('Updating quotation field:', name, 'to:', value);
-                setQuotation(prev => {
-                    const updated = { ...prev, [name]: value };
-                    console.log('Updated quotation:', updated);
-                    return updated;
-                });
+                setQuotation(prev => ({
+                    ...prev,
+                    [name]: value
+                }));
                 break;
             case 'senderAddress':
                 setSenderAddress({ ...senderAddress, [name]: value });
                 break;
             case 'clientAddress':
-                console.log('Updating clientAddress field:', name, 'to:', value);
-                setClientAddress(prev => {
-                    const updated = { ...prev, [name]: value };
-                    console.log('Updated clientAddress:', updated);
-                    return updated;
-                });
+                setClientAddress(prev => ({
+                    ...prev,
+                    [name]: value
+                }));
                 break;
             case 'date':
                 setQuotation({ ...quotation, createdAt: date });
@@ -312,13 +295,7 @@ const useManageQuotations = () => {
      * Add new item to items array.
      */
     const addQuotationItem = () => {
-        console.log('addQuotationItem function called in useManageQuotations');
-        console.log('Current items:', items);
-        setItems((oldItems) => {
-            console.log('Setting items with:', [...oldItems, initialItems]);
-            return [...oldItems, initialItems];
-        });
-        console.log('Items after update (may not show changes yet due to state update):', items);
+        setItems((oldItems) => [...oldItems, initialItems]);
     };
 
     /**
@@ -345,10 +322,6 @@ const useManageQuotations = () => {
                 try {
                     const data = doc.data() || {};
                     
-                    // Log raw data to check for currency
-                    console.log(`Quotation ${doc.id} raw data:`, data);
-                    console.log(`Quotation ${doc.id} has currency:`, data.currency);
-                    
                     // Convert Firestore Timestamp back to Date object safely
                     let createdAt = new Date();
                     let paymentDue = new Date();
@@ -356,13 +329,13 @@ const useManageQuotations = () => {
                     try {
                         createdAt = data.createdAt?.toDate() || new Date();
                     } catch (dateError) {
-                        console.error('Error converting createdAt:', dateError);
+                        // Silent error handling
                     }
                     
                     try {
                         paymentDue = data.paymentDue?.toDate() || new Date();
                     } catch (dateError) {
-                        console.error('Error converting paymentDue:', dateError);
+                        // Silent error handling
                     }
                     
                     // Handle items specially to ensure they're always an array
@@ -374,9 +347,8 @@ const useManageQuotations = () => {
                     // Generate a custom ID if none exists
                     const customId = data.customId || generateId();
                     
-                    // Explicitly get and log the currency
+                    // Explicitly get the currency
                     const currency = data.currency || 'USD';
-                    console.log(`Setting currency for ${customId} to:`, currency);
                     
                     // Create a complete quotation object with all required fields
                     return {
@@ -389,12 +361,11 @@ const useManageQuotations = () => {
                         status,
                         items,
                         total: parseFloat(data.total) || 0,
-                        currency: currency, // Set currency with explicit value
+                        currency: currency,
                         createdAt,
                         paymentDue
                     };
                 } catch (docError) {
-                    console.error('Error processing document:', docError, doc.id);
                     // Return a minimal valid document to prevent rendering errors
                     return {
                         id: doc.id,
@@ -410,15 +381,13 @@ const useManageQuotations = () => {
                 }
             });
             
-            // Use direct string 'SET_QUOTATIONS' instead of constant
             dispatch({ 
                 type: 'SET_QUOTATIONS', 
                 payload: quotationsList 
             });
         } catch (error) {
-            console.error('Error refreshing quotations:', error);
+            // Silent error handling
         } finally {
-            // Use direct string 'SET_LOADING' instead of constant
             dispatch({ type: 'SET_LOADING', payload: false });
         }
     };
@@ -432,7 +401,6 @@ const useManageQuotations = () => {
         try {
             // Validate form
             const validationResult = formValidation(quotation, items);
-            console.log('Validation result:', validationResult);
             
             if (validationResult.isError) {
                 dispatch(errors(validationResult.err, validationResult.msg));
@@ -454,8 +422,6 @@ const useManageQuotations = () => {
 
             // Check if we're editing an existing quotation
             const isEditing = state.form.isEditing || Boolean(quotation.id || state.modal.id);
-            console.log('Is editing:', isEditing, 'Modal ID:', state.modal.id, 'Quotation ID:', quotation.id, 'Current quotation:', quotation);
-            console.log('Form state:', state.form);
 
             // Create the quotation document
             const quotationDoc = {
@@ -483,11 +449,7 @@ const useManageQuotations = () => {
                 quotationDoc.paymentDue = quotation.paymentDue || new Date();
             }
 
-            console.log('Prepared quotation document:', quotationDoc);
-
             try {
-                console.log('Attempting to save to Firestore...');
-                
                 // Create the Firestore document data
                 const firestoreDoc = {
                     ...quotationDoc,
@@ -507,18 +469,14 @@ const useManageQuotations = () => {
                     senderAddress: quotationDoc.senderAddress || {}
                 };
 
-                console.log('Firestore document prepared:', firestoreDoc);
-
                 if (isEditing) {
                     // Update existing document
                     const documentId = quotation.id || state.modal.id;
                     if (!documentId) {
-                        console.error('No document ID found for editing');
                         throw new Error('No document ID found for editing');
                     }
                     const quotationRef = doc(db, 'quotations', documentId);
                     await updateDoc(quotationRef, firestoreDoc);
-                    console.log('Document updated with ID:', documentId);
                     
                     // Update local state immediately
                     const updatedQuotation = {
@@ -544,7 +502,6 @@ const useManageQuotations = () => {
                     // Add new document
                     const quotationsRef = collection(db, 'quotations');
                     const docRef = await addDoc(quotationsRef, firestoreDoc);
-                    console.log('New document written with ID:', docRef.id);
                     
                     // Update local state for new quotation
                     const newQuotation = {
@@ -562,25 +519,12 @@ const useManageQuotations = () => {
                 // Final refresh to ensure everything is in sync
                 await refreshQuotations();
 
-                console.log('Quotation submission completed successfully');
                 return true;
             } catch (firebaseError) {
-                console.error('Error saving quotation to Firestore:', firebaseError);
-                console.error('Error details:', {
-                    code: firebaseError.code,
-                    message: firebaseError.message,
-                    stack: firebaseError.stack
-                });
                 throw firebaseError;
             }
             
         } catch (error) {
-            console.error('Error submitting quotation:', error);
-            console.error('Error details:', {
-                code: error.code,
-                message: error.message,
-                stack: error.stack
-            });
             dispatch(errors({}, ['Error submitting quotation: ' + error.message]));
             throw error;
         }
@@ -597,7 +541,6 @@ const useManageQuotations = () => {
             );
             
             if (!quotationToApprove) {
-                console.error('Quotation not found');
                 return;
             }
             
@@ -606,14 +549,13 @@ const useManageQuotations = () => {
                 const quotationRef = doc(db, 'quotations', quotationToApprove.id);
                 await updateDoc(quotationRef, { status: 'approved' });
             } catch (firebaseError) {
-                console.error('Firebase approve error:', firebaseError);
                 // Will continue with local state update even if Firebase fails
             }
             
             // Update in local state
             dispatch({ type: 'APPROVE_QUOTATION' });
         } catch (error) {
-            console.error('Error approving quotation:', error);
+            // Silent error handling
         }
     };
 
@@ -622,38 +564,27 @@ const useManageQuotations = () => {
      */
     const handleDelete = async () => {
         try {
-            console.log('handleDelete called in useManageQuotations');
-            console.log('Current modal state:', state.modal);
-            
             // Find the quotation to delete
             const quotationToDelete = state.quotations.find(
                 (q) => q.id === state.modal.id
             );
             
-            console.log('Quotation to delete:', quotationToDelete);
-            
             if (!quotationToDelete) {
-                console.error('Quotation not found with ID:', state.modal.id);
                 return;
             }
             
             // Try to delete from Firestore first
             try {
-                console.log('Attempting to delete from Firestore:', quotationToDelete.id);
                 const quotationRef = doc(db, 'quotations', quotationToDelete.id);
                 await deleteDoc(quotationRef);
-                console.log('Successfully deleted from Firestore');
             } catch (firebaseError) {
-                console.error('Firebase delete error:', firebaseError);
                 // Will continue with local state update even if Firebase fails
             }
             
             // Update local state
-            console.log('Dispatching DELETE_QUOTATION action');
             dispatch({ type: 'DELETE_QUOTATION' });
-            console.log('Local state updated');
         } catch (error) {
-            console.error('Error in handleDelete:', error);
+            // Silent error handling
         }
     };
 
@@ -662,20 +593,16 @@ const useManageQuotations = () => {
      * @param    {string} id    String with quotation ID
      */
     const editQuotation = async (id) => {
-        console.log('=== editQuotation called with id:', id);
-        
         try {
             // Fetch directly from Firestore
             const quotationRef = doc(db, 'quotations', id);
             const docSnap = await getDoc(quotationRef);
             
             if (!docSnap.exists()) {
-                console.log('No quotation found in Firestore with id:', id);
                 return;
             }
 
             const data = docSnap.data();
-            console.log('Fetched quotation from Firestore:', data);
             
             // Convert Firestore Timestamp back to Date object safely
             let createdAt = new Date();
@@ -685,7 +612,7 @@ const useManageQuotations = () => {
                 createdAt = data.createdAt?.toDate() || new Date();
                 paymentDue = data.paymentDue?.toDate() || new Date();
             } catch (dateError) {
-                console.error('Error converting dates:', dateError);
+                // Silent error handling
             }
             
             // Create a complete quotation object
@@ -699,14 +626,11 @@ const useManageQuotations = () => {
                 currency: data.currency || 'USD'
             };
             
-            console.log('Processed quotation for editing:', quotationToEdit);
-            
             // Set the quotation state
             setQuotation(quotationToEdit);
             
             // Set the items
             if (quotationToEdit.items && quotationToEdit.items.length > 0) {
-                console.log('Setting items from quotation:', quotationToEdit.items);
                 setItems(quotationToEdit.items);
             }
             
@@ -718,7 +642,7 @@ const useManageQuotations = () => {
             dispatch({ type: 'EDIT_QUOTATION', payload: { id } });
             
         } catch (error) {
-            console.error('Error fetching quotation from Firestore:', error);
+            // Silent error handling
         }
     };
 
@@ -757,12 +681,10 @@ const useManageQuotations = () => {
      * @param    {string} name    String with action name (delete or approve)
      */
     const toggleModal = (id, name) => {
-        console.log('Toggling quotation modal with:', { id, name });
         // If we have an ID and name, we're opening the modal
         // If we don't have an ID or name, we're closing it
         const isOpening = Boolean(id && name);
         dispatch(modal(isOpening ? id : null, isOpening ? name : null));
-        console.log('Dispatched modal action');
     };
 
     /**
@@ -800,13 +722,10 @@ const useManageQuotations = () => {
      * Add new item to items array - direct implementation for component use
      */
     const addNewItem = () => {
-        console.log('addNewItem function called in useManageQuotations');
-        console.log('Current items:', items);
         try {
             setItems(oldItems => [...oldItems, initialItems]);
-            console.log('Items updated successfully');
         } catch (error) {
-            console.error('Error adding new item:', error);
+            // Silent error handling
         }
     };
 
@@ -815,12 +734,10 @@ const useManageQuotations = () => {
      * @param {number} index Index of item to delete
      */
     const removeItemAtIndex = (index) => {
-        console.log('removeItemAtIndex function called for index:', index);
         try {
             setItems(oldItems => oldItems.filter((_, i) => i !== index));
-            console.log('Item removed successfully');
         } catch (error) {
-            console.error('Error removing item:', error);
+            // Silent error handling
         }
     };
 
