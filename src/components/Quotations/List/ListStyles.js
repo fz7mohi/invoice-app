@@ -1,119 +1,112 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { Link as RouterLink } from 'react-router-dom';
 
-export const StyledList = styled(motion.div)`
+export const StyledList = styled(motion.ul)`
     display: flex;
-    flex-direction: column;
+    flex-flow: column;
     gap: 16px;
     width: 100%;
-`;
-
-export const EmptyState = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
-
-    img {
-        width: 240px;
-        height: 200px;
-        margin-bottom: 32px;
-    }
-`;
-
-export const EmptyHeading = styled.h2`
-    font-size: 20px;
-    font-weight: 700;
-    color: #FFFFFF;
-    margin-bottom: 8px;
-`;
-
-export const EmptyText = styled.p`
-    font-size: 12px;
-    color: #888EB0;
-    max-width: 240px;
-    line-height: 1.5;
-`;
-
-export const Item = styled(motion.div)`
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    background-color: #252945;
-    border: 1px solid #252945;
-    border-radius: 8px;
-    padding: 16px;
-    transition: all 0.2s ease;
-    cursor: pointer;
-
-    &:hover {
-        border-color: #7C5DFA;
-    }
+    margin-bottom: 104px;
 
     @media (min-width: 768px) {
-        padding: 20px 24px;
-        grid-template-columns: 1fr 1fr auto;
-        gap: 24px;
+        gap: 16px;
+        margin-bottom: 56px;
     }
 `;
 
-export const Link = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+export const Item = styled(motion.li)`
+    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    border-radius: 8px;
+    box-shadow: ${({ theme }) => theme.colors.boxShadow};
+    transition: outline 0.2s;
+
+    &:hover {
+        outline: 1px solid ${({ theme }) => theme.colors.purple};
+    }
+    
+    @media (min-width: 1024px) {
+        min-height: 80px;
+    }
+`;
+
+export const Link = styled(RouterLink)`
+    display: grid;
+    grid-template-areas:
+        'date id'
+        'client description'
+        'price status';
+    grid-template-columns: 1fr 1fr;
     text-decoration: none;
-    color: inherit;
+    padding: 24px;
+    gap: 15px 10px;
+
+    @media (min-width: 768px) {
+        grid-template-areas: 'date id client description price status icon';
+        grid-template-columns: 110px 110px 150px 1fr 120px 120px 20px;
+        align-items: center;
+        padding: 16px 24px;
+        gap: 0;
+    }
+
+    @media (min-width: 1024px) {
+        grid-template-columns: 120px 120px 180px 1fr 150px 140px 20px;
+        padding: 16px 32px;
+    }
+    
+    @media (min-width: 1440px) {
+        grid-template-columns: 140px 140px 220px 1fr 180px 160px 20px;
+    }
 `;
 
 export const Uid = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #FFFFFF;
+    grid-area: id;
+    font-weight: 700;
+    font-size: 12px;
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 export const Hashtag = styled.span`
-    color: #888EB0;
+    color: ${({ theme }) => theme.colors.textQuaternary};
 `;
 
 export const PaymentDue = styled.div`
+    grid-area: date;
     font-size: 12px;
-    color: #888EB0;
+    color: ${({ theme }) => theme.colors.textSecondary};
+
+    @media (min-width: 768px) {
+        justify-self: start;
+    }
 `;
 
 export const ClientName = styled.div`
-    font-size: 14px;
-    font-weight: 500;
-    color: #FFFFFF;
-    margin-top: 4px;
+    grid-area: client;
+    font-size: 12px;
+    text-align: right;
+    color: ${({ theme }) => theme.colors.textSecondary};
+
+    @media (min-width: 768px) {
+        text-align: left;
+    }
 `;
 
 export const TotalPrice = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    grid-area: price;
+    font-size: 16px;
+    font-weight: 700;
     text-align: right;
+    color: ${({ theme }) => theme.colors.textPrimary};
 
-    h3 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #FFFFFF;
-        margin: 0;
-    }
-
-    @media (max-width: 767px) {
-        text-align: left;
-        margin-top: 8px;
+    @media (min-width: 768px) {
+        text-align: right;
     }
 `;
 
 export const Description = styled.div`
+    grid-area: description;
     font-size: 12px;
-    color: #888EB0;
+    color: ${({ theme }) => theme.colors.textSecondary};
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -17,11 +17,60 @@ import {
     ClientName,
     TotalPrice,
     Description,
-    EmptyState,
-    EmptyHeading,
-    EmptyText
 } from './ListStyles';
 import styled from 'styled-components';
+
+// Simple button component for force loading
+const ForceLoadButton = ({ onClick }) => (
+    <button 
+        onClick={onClick}
+        style={{
+            padding: '8px 16px',
+            backgroundColor: '#7c5dfa',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            margin: '20px auto',
+            display: 'block'
+        }}
+    >
+        Force Load Quotations
+    </button>
+);
+
+// Add a header component
+const ListHeader = styled.div`
+    display: none;
+    
+    @media (min-width: 768px) {
+        display: grid;
+        grid-template-areas: 'date id client description price status icon';
+        grid-template-columns: 110px 110px 150px 1fr 120px 120px 20px;
+        padding: 0 24px 16px 24px;
+        font-weight: 500;
+        font-size: 12px;
+        color: ${({ theme }) => theme.colors.textSecondary};
+    }
+    
+    @media (min-width: 1024px) {
+        grid-template-columns: 120px 120px 180px 1fr 150px 140px 20px;
+        padding: 0 32px 16px 32px;
+    }
+    
+    @media (min-width: 1440px) {
+        grid-template-columns: 140px 140px 220px 1fr 180px 160px 20px;
+    }
+`;
+
+const HeaderItem = styled.div`
+    &.date { grid-area: date; }
+    &.id { grid-area: id; }
+    &.client { grid-area: client; }
+    &.description { grid-area: description; }
+    &.price { grid-area: price; text-align: right; }
+    &.status { grid-area: status; text-align: center; }
+`;
 
 const List = ({ isLoading, quotations, variant }) => {
     const { colors } = useTheme();
@@ -48,71 +97,139 @@ const List = ({ isLoading, quotations, variant }) => {
                 return `FTQ${randomNum}`;
             };
             
-            const fetchedData = querySnapshot.docs.map(doc => {
+            const quotationsList = querySnapshot.docs.map(doc => {
                 const data = doc.data();
+                
+                // Check if currency exists in the raw data
+                console.log(`Raw Firestore document ${doc.id} has currency:`, data.currency);
+                
+                // Ensure each quotation has a custom ID in the correct format
+                const customId = data.customId || generateCustomId();
+                
+                // Explicitly set currency with a clear default
+                const currency = data.currency || 'USD';
+                console.log(`Setting currency for ${customId} to:`, currency);
+                
                 return {
-                    id: doc.id,
-                    customId: data.customId || generateCustomId(),
                     ...data,
-                    createdAt: data.createdAt?.toDate() || new Date(),
-                    paymentDue: data.paymentDue?.toDate() || new Date(),
+                    id: doc.id,
+                    customId: customId, // Ensure custom ID always exists
+                    clientName: data.clientName || 'Unnamed Client',
+                    status: data.status || 'pending',
+                    total: parseFloat(data.total) || 0,
+                    currency: currency, // Explicitly set currency
+                    paymentDue: data.paymentDue?.toDate?.() || new Date()
                 };
             });
             
-            setDirectData(fetchedData);
+            setDirectData(quotationsList);
         } catch (error) {
-            console.error('Error fetching quotations:', error);
+            console.error('Error fetching directly:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    if (isEmpty && !isLoading) {
-        return (
-            <EmptyState>
-                <img 
-                    src={require('../../../assets/images/illustration-empty.svg')} 
-                    alt="No quotations" 
-                />
-                <EmptyHeading>There is nothing here</EmptyHeading>
-                <EmptyText>
-                    Create a new quotation by clicking the New Quotation button and get started
-                </EmptyText>
-            </EmptyState>
-        );
-    }
-
+    // Choose which data to display
+    const dataToDisplay = directData.length > 0 ? directData : quotations;
+    const showEmptyState = dataToDisplay.length === 0 && !loading;
+    
     return (
-        <StyledList>
-            {quotations.map((quotation, index) => (
-                <Item
-                    key={quotation.id}
-                    variants={variant('list', index)}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    layout
-                >
-                    <Link>
-                        <Uid>
-                            <Hashtag>#</Hashtag>
-                            {quotation.customId || quotation.id}
-                        </Uid>
-                        <PaymentDue>Due {formatDate(quotation.paymentDue)}</PaymentDue>
-                        <ClientName>{quotation.clientName}</ClientName>
-                        <Description>{quotation.description || 'No description'}</Description>
-                    </Link>
-                    
-                    <TotalPrice>
-                        <h3>{formatPrice(quotation.total)}</h3>
-                        <Status currStatus={quotation.status}>
-                            <span>•</span>
-                            {quotation.status}
-                        </Status>
-                    </TotalPrice>
-                </Item>
-            ))}
-        </StyledList>
+        <>
+            {isEmpty && <ForceLoadButton onClick={fetchDirectly} />}
+            {loading && <p style={{textAlign: 'center'}}>Loading directly from Firebase...</p>}
+            
+            {showEmptyState && <ErrorMessage variant={variant} />}
+            {dataToDisplay.length > 0 && (
+                <>
+                    <ListHeader>
+                        <HeaderItem className="date">Date</HeaderItem>
+                        <HeaderItem className="id">Quote ID</HeaderItem>
+                        <HeaderItem className="client">Client Name</HeaderItem>
+                        <HeaderItem className="description">Project Description</HeaderItem>
+                        <HeaderItem className="price">Total</HeaderItem>
+                        <HeaderItem className="status">Status</HeaderItem>
+                    </ListHeader>
+                    <StyledList>
+                        {dataToDisplay.map(
+                            (quotation, index) => {
+                                // Extract properties safely with defaults
+                                const {
+                                    id = 'Unknown',
+                                    customId,
+                                    paymentDue,
+                                    clientName = 'Unnamed Client',
+                                    status = 'pending',
+                                    total = 0,
+                                    description,
+                                    currency,
+                                } = quotation || {};
+                                
+                                // Add detailed debug logging
+                                console.log(`Quotation ${customId} has currency:`, currency);
+
+                                return (
+                                    <Item
+                                        key={id}
+                                        layout
+                                        variants={variant('list', index)}
+                                        initial="hidden"
+                                        animate="visible"
+                                        exit="exit"
+                                    >
+                                        <Link to={`/quotation/${id}`} onClick={(e) => {
+                                            // Add more comprehensive debugging
+                                            console.log('Navigating to quotation with:');
+                                            console.log('- ID:', id);
+                                            console.log('- CustomID:', customId);
+                                            console.log('- Full quotation:', quotation);
+                                            
+                                            // Store the quotation in sessionStorage as a fallback
+                                            try {
+                                                const simplifiedQuotation = {
+                                                    ...quotation,
+                                                    // Convert dates to ISO strings to avoid circular references
+                                                    createdAt: quotation.createdAt instanceof Date ? quotation.createdAt.toISOString() : quotation.createdAt,
+                                                    paymentDue: quotation.paymentDue instanceof Date ? quotation.paymentDue.toISOString() : quotation.paymentDue
+                                                };
+                                                sessionStorage.setItem(`quotation_${id}`, JSON.stringify(simplifiedQuotation));
+                                                console.log('Stored quotation data in sessionStorage as fallback');
+                                            } catch (err) {
+                                                console.error('Failed to store in sessionStorage:', err);
+                                            }
+                                        }}>
+                                            <PaymentDue>
+                                                {formatDate(quotation.createdAt || new Date())}
+                                            </PaymentDue>
+                                            <Uid>
+                                                <Hashtag>#</Hashtag>
+                                                {customId || 'Unknown ID'}
+                                            </Uid>
+                                            <ClientName>{clientName}</ClientName>
+                                            <Description>
+                                                {description || 'No description'}
+                                            </Description>
+                                            <TotalPrice>
+                                                {console.log(`Formatting price for ${customId} with currency:`, currency)}
+                                                {formatPrice(total, currency || 'USD')}
+                                            </TotalPrice>
+                                            <Status currStatus={status} $grid />
+                                            {isDesktop && (
+                                                <Icon
+                                                    name={'arrow-right'}
+                                                    size={10}
+                                                    color={colors.purple}
+                                                />
+                                            )}
+                                        </Link>
+                                    </Item>
+                                );
+                            }
+                        )}
+                    </StyledList>
+                </>
+            )}
+        </>
     );
 };
 

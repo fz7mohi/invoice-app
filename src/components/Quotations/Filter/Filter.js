@@ -75,10 +75,10 @@ const Filter = ({ filterType, setFilterType }) => {
                     </Item>
                     <Item>
                         <StatusFilter
-                            onClick={() => handleFilterChange('invoiced')}
-                            $isActive={filterType === 'invoiced'}
+                            onClick={() => handleFilterChange('paid')}
+                            $isActive={filterType === 'paid'}
                         >
-                            Invoiced
+                            Paid
                         </StatusFilter>
                     </Item>
                     <Item>

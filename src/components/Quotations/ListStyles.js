@@ -127,7 +127,7 @@ export const Status = styled.div`
                     color: ${theme.textPending};
                     background-color: ${theme.backgroundPending};
                 `;
-            case 'invoiced':
+            case 'approved':
                 return `
                     color: ${theme.textPaid};
                     background-color: ${theme.backgroundPaid};
