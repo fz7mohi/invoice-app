@@ -417,7 +417,7 @@ const QuotationView = () => {
                     </div>
                 </div>
                 <div style="height: 2px; background-color: #004359; margin-bottom: 15px;"></div>
-                <div style="text-align: center; margin-bottom: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
                     <h1 style="font-size: 22px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
                 </div>
             `;
@@ -444,27 +444,18 @@ const QuotationView = () => {
             // Create a custom info section with quotation number and date only
             const infoSection = document.createElement('div');
             infoSection.style.display = 'flex';
-            infoSection.style.justifyContent = 'space-between';
+            infoSection.style.justifyContent = 'flex-start';
             infoSection.style.marginBottom = '30px';
             infoSection.style.padding = '0 20px';
             
-            // Add quotation number
+            // Add quotation number only
             const quoteNumberDiv = document.createElement('div');
             quoteNumberDiv.innerHTML = `
                 <div style="font-weight: bold; color: #004359; margin-bottom: 5px;">Quotation #</div>
                 <div style="font-size: 16px; color: black;">${quotation.customId || id}</div>
             `;
             
-            // Add quotation date
-            const quoteDateDiv = document.createElement('div');
-            quoteDateDiv.style.textAlign = 'right';
-            quoteDateDiv.innerHTML = `
-                <div style="font-weight: bold; color: #004359; margin-bottom: 5px;">Date</div>
-                <div style="font-size: 16px; color: black;">${formatDate(quotation.createdAt)}</div>
-            `;
-            
             infoSection.appendChild(quoteNumberDiv);
-            infoSection.appendChild(quoteDateDiv);
             
             // Create a container for PDF content
             const pdfContainer = document.createElement('div');
