@@ -14,6 +14,9 @@ import RouteError from '../RouteError/RouteError';
 import { useGlobalContext } from './context';
 import { AnimatePresence } from 'framer-motion';
 import QuotationView from '../QuotationView/QuotationView';
+import Settings from '../Settings/Settings';
+import { ThemeProvider } from 'styled-components';
+import { lightTheme, darkTheme } from '../../utilities/themes';
 
 // Create spinner animation keyframes
 const spinnerStyle = document.createElement('style');
@@ -24,8 +27,22 @@ spinnerStyle.innerHTML = `
 }`;
 document.head.appendChild(spinnerStyle);
 
+// Add a global CSS rule for dark theme
+const darkModeStyle = document.createElement('style');
+darkModeStyle.innerHTML = `
+[data-theme='dark'] {
+  background-color: #141625;
+  color: #ffffff;
+}
+[data-theme='light'] {
+  background-color: #f8f8fb;
+  color: #0c0e16;
+}
+`;
+document.head.appendChild(darkModeStyle);
+
 const App = () => {
-    const { invoiceState, clientState, quotationState } = useGlobalContext();
+    const { invoiceState, clientState, quotationState, theme } = useGlobalContext();
     
     // Safely access isModalOpen - handle both old and new state structures
     const isModalOpen = invoiceState.isModalOpen?.status || invoiceState.modal?.isOpen || false;
@@ -37,39 +54,55 @@ const App = () => {
     
     const location = useLocation();
 
+    // Use the appropriate theme based on user preference
+    const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+    
+    console.log('Current theme mode:', theme);
+    console.log('Applied theme object:', currentTheme);
+
+    // Apply the current theme to document body when the theme changes
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+    }, [theme]);
+
     return (
-        <Wrapper>
-            <Header />
-            <AnimatePresence>
-                {isFormOpen && <FormController />}
-                {isClientFormOpen && <ClientFormController />}
-                {isModalOpen && <Modal />}
-                {isQuotationFormOpen && <QuotationFormController />}
-            </AnimatePresence>
-            <AnimatePresence exitBeforeEnter>
-                <Switch location={location} key={location.key}>
-                    <Route exact path="/">
-                        <Redirect to="/invoices" />
-                    </Route>
-                    <Route exact path="/invoices">
-                        <Invoices />
-                    </Route>
-                    <Route path="/invoice/:id" children={<InvoiceView />} />
-                    <Route path="/clients">
-                        <Clients />
-                    </Route>
-                    <Route path="/quotations">
-                        <Quotations />
-                    </Route>
-                    <Route path="/quotation/:id">
-                        <QuotationView />
-                    </Route>
-                    <Route path="*">
-                        <RouteError />
-                    </Route>
-                </Switch>
-            </AnimatePresence>
-        </Wrapper>
+        <ThemeProvider theme={currentTheme}>
+            <Wrapper>
+                <Header />
+                <AnimatePresence>
+                    {isFormOpen && <FormController />}
+                    {isClientFormOpen && <ClientFormController />}
+                    {isModalOpen && <Modal />}
+                    {isQuotationFormOpen && <QuotationFormController />}
+                </AnimatePresence>
+                <AnimatePresence exitBeforeEnter>
+                    <Switch location={location} key={location.key}>
+                        <Route exact path="/">
+                            <Redirect to="/invoices" />
+                        </Route>
+                        <Route exact path="/invoices">
+                            <Invoices />
+                        </Route>
+                        <Route path="/invoice/:id" children={<InvoiceView />} />
+                        <Route path="/clients">
+                            <Clients />
+                        </Route>
+                        <Route path="/quotations">
+                            <Quotations />
+                        </Route>
+                        <Route path="/quotation/:id">
+                            <QuotationView />
+                        </Route>
+                        <Route path="/settings">
+                            <Settings />
+                        </Route>
+                        <Route path="*">
+                            <RouteError />
+                        </Route>
+                    </Switch>
+                </AnimatePresence>
+            </Wrapper>
+        </ThemeProvider>
     );
 };
 

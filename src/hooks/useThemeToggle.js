@@ -25,7 +25,7 @@ const postThemeToLocalStorage = (newTheme) => {
  */
 const getUserPreferredTheme = () => {
     const isUserPrefersDark =
-        matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     return isUserPrefersDark ? darkTheme : lightTheme;
 };
 
@@ -44,13 +44,15 @@ const useThemeToggle = () => {
      */
     useEffect(() => {
         postThemeToLocalStorage(theme);
+        // Also set a data attribute on the document body for additional styling
+        document.documentElement.setAttribute('data-theme', theme);
     }, [theme]);
 
     /**
      * Handle function to toggle between themes.
      */
     const toggleTheme = () => {
-        theme === lightTheme ? setTheme(darkTheme) : setTheme(lightTheme);
+        setTheme(prevTheme => prevTheme === lightTheme ? darkTheme : lightTheme);
     };
 
     return { theme, toggleTheme };

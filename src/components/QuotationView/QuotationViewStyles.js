@@ -203,7 +203,8 @@ export const ItemsHeader = styled.div`
         grid-template-columns: 2.5fr 0.7fr 1fr ${props => props.showVat ? '1fr' : ''} 1.2fr;
         grid-column-gap: 24px;
         padding: 16px 24px;
-        background-color: ${({ theme }) => theme.colors.backgroundDetails || theme.colors.backgroundAlt || theme.colors.background};
+        background-color: #004359;
+        color: white;
         border-radius: 8px 8px 0 0;
     }
 `;
@@ -211,7 +212,7 @@ export const ItemsHeader = styled.div`
 export const HeaderCell = styled.p`
     font-size: 12px;
     font-weight: 600;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: white;
     margin: 0;
     
     &:nth-child(3), &:nth-child(4), &:nth-child(5) {
@@ -328,36 +329,27 @@ export const ItemVat = styled.p`
 `;
 
 export const Total = styled.div`
+    background-color: #004359;
+    padding: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 20px;
-    background-color: ${({ theme }) => theme.colors.purple};
     color: white;
     border-radius: 0 0 8px 8px;
-
-    @media (min-width: 768px) {
-        padding: 28px 24px;
-    }
 `;
 
 export const TotalText = styled.p`
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     margin: 0;
     color: white;
 `;
 
 export const TotalAmount = styled.p`
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 700;
     margin: 0;
-    letter-spacing: -0.3px;
     color: white;
-    
-    @media (min-width: 768px) {
-        font-size: 20px;
-    }
 `;
 
 export const TermsSection = styled.div`
@@ -474,11 +466,11 @@ export const MetaItem = styled.div`
 `;
 
 export const PrintButton = styled.button`
-    background-color: transparent;
-    border: 1px solid ${({ theme }) => theme.colors.divider || theme.colors.backgroundAlt || '#f0f0f0'};
-    color: ${({ theme }) => theme.colors.textTertiary};
+    background-color: ${({ theme }) => theme.colors.purple};
+    border: none;
+    color: white;
     border-radius: 4px;
-    padding: 6px 10px;
+    padding: 8px 12px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -492,11 +484,46 @@ export const PrintButton = styled.button`
     }
     
     &:hover {
-        background-color: ${({ theme }) => theme.colors.backgroundAlt || theme.colors.background};
-        color: ${({ theme }) => theme.colors.purple};
+        background-color: ${({ theme }) => theme.colors.purpleLight || '#9277FF'};
     }
     
     @media (max-width: 767px) {
         display: none;
     }
 `;
+
+export const DownloadButton = styled.button`
+    background-color: #004359;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    transition: all 0.2s ease;
+    
+    svg {
+        margin-right: 6px;
+    }
+    
+    &:hover {
+        background-color: #005E7C;
+    }
+    
+    @media (max-width: 767px) {
+        display: none;
+    }
+`;
+
+// Add the Fortune Gifts colors to the theme
+export const fortuneGiftsTheme = {
+    primary: '#004359',
+    secondary: '#000000',
+    accent: '#FF4806',
+    primaryLight: '#005E7C',
+    accentLight: '#FF6D3C'
+};

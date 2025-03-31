@@ -6,7 +6,7 @@
     "scripts": {
         "build": "NODE_OPTIONS=--openssl-legacy-provider npx mix",
         "mix-watch": "npx mix watch",
-        "dev": "NODE_OPTIONS=--openssl-legacy-provider npx mix && serve -s dist",
+        "dev": "NODE_OPTIONS=\"--openssl-legacy-provider\" npx mix && serve -s dist",
         "server": "node server.js"
     },
     "repository": {
@@ -21,15 +21,25 @@
     },
     "homepage": "https://github.com/tediko/invoice-app#readme",
     "devDependencies": {
+        "assert": "^2.1.0",
+        "browserify-zlib": "^0.2.0",
+        "buffer": "^6.0.3",
         "laravel-mix": "^6.0.25",
         "prettier": "2.3.2",
-        "serve": "^14.2.1"
+        "process": "^0.11.10",
+        "react-app-rewired": "^2.2.1",
+        "serve": "^14.2.1",
+        "stream-browserify": "^3.0.0",
+        "util": "^0.12.5"
     },
     "dependencies": {
         "@babel/preset-react": "^7.14.5",
+        "browser-process-hrtime": "^1.0.0",
         "express": "^4.21.2",
         "firebase": "^11.5.0",
         "framer-motion": "^4.1.17",
+        "html2canvas": "^1.4.1",
+        "jspdf": "^2.5.1",
         "react": "^17.0.2",
         "react-datepicker": "^4.1.1",
         "react-dom": "^17.0.2",

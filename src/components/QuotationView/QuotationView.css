@@ -140,4 +140,105 @@ a:focus-visible {
     size: A4;
     margin: 1.5cm;
   }
+}
+
+/* Add CSS for PDF output */
+.letterhead {
+    padding: 25px 20px;
+    background-color: white;
+}
+
+/* Add this to make PDF generation look better */
+@media print {
+    body {
+        background-color: white !important;
+    }
+    
+    .letterhead {
+        margin-bottom: 30px;
+    }
+    
+    .Controller, .MotionLink, .ButtonWrapper {
+        display: none !important;
+    }
+}
+
+/* Make sure the colored elements print correctly with Fortune Gifts brand colors */
+.Details .ItemsHeader {
+    background-color: #004359 !important;
+    color: white !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+}
+
+.Total {
+    background-color: #004359 !important;
+    color: white !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+}
+
+/* Additional PDF styling for Fortune Gifts brand */
+.pdf-accent {
+    color: #FF4806 !important;
+}
+
+.pdf-primary {
+    color: #004359 !important;
+}
+
+.pdf-divider {
+    background-color: #004359 !important;
+}
+
+/* Override any purple elements with the Fortune Gifts primary color */
+.InfoCard {
+    border-color: #004359;
+}
+
+.StatusBadge {
+    color: #004359;
+}
+
+.DownloadButton {
+    background-color: #004359;
+}
+
+/* Add special class for Fortune Gifts letterhead */
+.fortune-gifts-letterhead {
+    padding: 30px;
+    background-color: white;
+    font-family: 'Arial', sans-serif;
+}
+
+.fortune-gifts-letterhead .logo-container {
+    margin-bottom: 20px;
+}
+
+.fortune-gifts-letterhead .logo-container img {
+    max-height: 80px;
+}
+
+.fortune-gifts-letterhead .company-tagline {
+    font-size: 14px;
+    color: #004359;
+    margin-top: 10px;
+}
+
+.fortune-gifts-letterhead .contact-info {
+    font-size: 14px;
+    color: #000000;
+    text-align: right;
+}
+
+.fortune-gifts-letterhead .trn {
+    color: #FF4806;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.fortune-gifts-letterhead .divider {
+    height: 3px;
+    background-color: #004359;
+    margin: 20px 0 30px;
 } 

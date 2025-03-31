@@ -7,6 +7,14 @@ import InvoiceFormController from './components/InvoiceFormController/InvoiceFor
 import ClientFormController from './components/ClientFormController/ClientFormController';
 import Clients from './components/Clients/Clients';
 import Quotations from './components/Quotations/Quotations';
+import Settings from './components/Settings/Settings';
+import { useContext } from 'react';
+import { AppContext } from './components/App/context';
+import { ThemeProvider } from 'styled-components';
+import { darkTheme, lightTheme } from './utilities/themes';
+import GlobalStyle from './utilities/GlobalStyle';
+import { Switch, Route } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 
 function App() {
     const {
@@ -51,6 +59,9 @@ function App() {
                 <Route exact path="/quotations/:id">
                     <GoBack />
                     <div>Quotation Details</div>
+                </Route>
+                <Route exact path="/settings">
+                    <Settings />
                 </Route>
             </Switch>
         </ThemeProvider>

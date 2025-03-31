@@ -6,9 +6,9 @@ import avatar from '../../assets/images/image-avatar.jpg';
 export const StyledHeader = styled.header`
     display: grid;
     grid-template-columns: 1fr auto auto;
-    background-color: ${({ theme }) => theme.colors.bgHeader};
+    background-color: ${({ theme }) => theme?.backgrounds?.card || (theme?.mode === 'dark' ? '#1E2139' : '#ffffff')};
     height: clamp(72px, 10.5vw, 80px);
-    transition: background-color 400s ease-in-out;
+    transition: background-color 400ms ease-in-out;
     z-index: 100;
 
     @media (min-width: 1024px) {
@@ -25,7 +25,7 @@ export const StyledHeader = styled.header`
 
 export const Logo = styled(Link)`
     position: relative;
-    background-color: ${({ theme }) => theme.colors.purple};
+    background-color: ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
     width: clamp(72px, 10.5vw, 80px);
     height: 100%;
     border-radius: 0 20px 20px 0;
@@ -37,7 +37,7 @@ export const Logo = styled(Link)`
     }
 
     &:focus-visible {
-        outline: 2px dashed ${({ theme }) => theme.colors.purple};
+        outline: 2px dashed ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
         outline-offset: 2px;
     }
 
@@ -48,7 +48,7 @@ export const Logo = styled(Link)`
         left: 0;
         width: 100%;
         height: 100%;
-        background: ${({ theme }) => theme.colors.purpleLight};
+        background: ${({ theme }) => theme?.colors?.purpleLight || '#9277ff'};
         border-radius: 20px 0;
     }
 
@@ -92,13 +92,13 @@ export const ThemeToggle = styled.button`
     }
 
     &:focus-visible {
-        outline: 2px dashed ${({ theme }) => theme.colors.purple};
+        outline: 2px dashed ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
         outline-offset: -4px;
     }
 
     @media (min-width: 768px) {
         &:hover svg {
-            color: ${({ theme }) => theme.colors.btnThemeHover};
+            color: ${({ theme }) => theme?.colors?.btnThemeHover || '#dfe3fa'};
             transition: color 300ms ease-in;
         }
     }
@@ -111,7 +111,7 @@ export const ThemeToggle = styled.button`
 export const Profile = styled.div`
     position: relative;
     width: clamp(80px, 12.5vw, 96px);
-    border-left: 1px solid ${({ theme }) => theme.colors.grayLight};
+    border-left: 1px solid ${({ theme }) => theme?.borders || '#dfe3fa'};
     ${({ isMobile }) => isMobile && `
         width: 100%;
         height: 80px;
@@ -119,14 +119,14 @@ export const Profile = styled.div`
         justify-content: center;
         align-items: center;
         border-left: none;
-        border-bottom: 1px solid ${({ theme }) => theme.colors.grayLight};
+        border-bottom: 1px solid ${({ theme }) => theme?.borders || '#dfe3fa'};
     `}
 
     @media (min-width: 1024px) {
         height: 88px;
         width: 100%;
         border-left: unset;
-        border-top: 1px solid ${({ theme }) => theme.colors.grayLight};
+        border-top: 1px solid ${({ theme }) => theme?.borders || '#dfe3fa'};
     }
 
     &::before {
@@ -159,14 +159,14 @@ export const MobileMenuButton = styled.button`
     border: none;
     padding: 0 clamp(24px, 4.5vw, 32px);
     cursor: pointer;
-    border-left: 1px solid ${({ theme }) => theme.colors.grayLight};
+    border-left: 1px solid ${({ theme }) => theme?.borders || '#dfe3fa'};
     
     &:focus {
         outline: none;
     }
     
     &:focus-visible {
-        outline: 2px dashed ${({ theme }) => theme.colors.purple};
+        outline: 2px dashed ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
         outline-offset: -4px;
     }
 `;
@@ -188,7 +188,7 @@ export const MobileNavPanel = styled.div`
     width: 80%;
     max-width: 320px;
     height: 100vh;
-    background-color: ${({ theme }) => theme.colors.bgHeader};
+    background-color: ${({ theme }) => theme?.backgrounds?.card || (theme?.mode === 'dark' ? '#1E2139' : '#ffffff')};
     z-index: 100;
     box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
     display: flex;

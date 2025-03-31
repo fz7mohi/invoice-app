@@ -8,6 +8,8 @@ import Button from '../shared/Button/Button';
 import { formatDate, formatPrice } from '../../utilities/helpers';
 import { useGlobalContext } from '../App/context';
 import './QuotationView.css';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import {
     StyledQuotationView,
     Container,
@@ -44,7 +46,7 @@ import {
     StatusBadge,
     MetaInfo,
     MetaItem,
-    PrintButton
+    DownloadButton
 } from './QuotationViewStyles';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
@@ -401,9 +403,288 @@ const QuotationView = () => {
         }
     }, [id, quotation, isLoading, isDirectlyFetching]);
 
-    // Print quotation function
-    const handlePrint = () => {
-        window.print();
+    // Download quotation as PDF
+    const handleDownloadPDF = async () => {
+        try {
+            // Create the letterhead as a separate element
+            const letterhead = document.createElement('div');
+            letterhead.className = 'letterhead';
+            letterhead.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px 0;">
+                    <div>
+                        <img src="images/invoice-logo.png" alt="Fortune Gifts Logo" style="max-height: 60px;" onerror="this.onerror=null; this.src=''; this.alt='Fortune Gifts'; this.style.fontSize='22px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                    </div>
+                    <div style="text-align: right; font-size: 12px; color: #000000;">
+                        <div>P.O Box 123456, Dubai, UAE</div>
+                        <div>Tel: +971 4 123 4567 | TRN: <span style="color: #FF4806;">100399501900003</span></div>
+                    </div>
+                </div>
+                <div style="height: 2px; background-color: #004359; margin-bottom: 15px;"></div>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h1 style="font-size: 22px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
+                </div>
+            `;
+            
+            // Get the element to convert
+            const element = document.querySelector('.InfoCard');
+            if (!element) return;
+            
+            // Create a clone of the element to modify
+            const elementClone = element.cloneNode(true);
+            
+            // Remove the entire InfoHeader section (project description and created date)
+            const headerElement = elementClone.querySelector('.InfoHeader');
+            if (headerElement) {
+                headerElement.remove();
+            }
+            
+            // Find and remove the description if it exists
+            const descElement = elementClone.querySelector('.InfoDesc');
+            if (descElement) {
+                descElement.style.display = 'none';
+            }
+            
+            // Create a custom info section with quotation number and date only
+            const infoSection = document.createElement('div');
+            infoSection.style.display = 'flex';
+            infoSection.style.justifyContent = 'space-between';
+            infoSection.style.marginBottom = '30px';
+            infoSection.style.padding = '0 20px';
+            
+            // Add quotation number
+            const quoteNumberDiv = document.createElement('div');
+            quoteNumberDiv.innerHTML = `
+                <div style="font-weight: bold; color: #004359; margin-bottom: 5px;">Quotation #</div>
+                <div style="font-size: 16px; color: black;">${quotation.customId || id}</div>
+            `;
+            
+            // Add quotation date
+            const quoteDateDiv = document.createElement('div');
+            quoteDateDiv.style.textAlign = 'right';
+            quoteDateDiv.innerHTML = `
+                <div style="font-weight: bold; color: #004359; margin-bottom: 5px;">Date</div>
+                <div style="font-size: 16px; color: black;">${formatDate(quotation.createdAt)}</div>
+            `;
+            
+            infoSection.appendChild(quoteNumberDiv);
+            infoSection.appendChild(quoteDateDiv);
+            
+            // Create a container for PDF content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = '20px';
+            pdfContainer.style.backgroundColor = 'white';
+            pdfContainer.appendChild(letterhead);
+            pdfContainer.appendChild(infoSection);
+            
+            // Extract and clean up the client section
+            const clientSection = elementClone.querySelector('.InfoAddresses');
+            if (clientSection) {
+                // Set the section title (Bill To) to Fortune Gifts blue
+                const clientAddressTitle = clientSection.querySelector('.AddressTitle');
+                if (clientAddressTitle) {
+                    clientAddressTitle.style.color = '#004359';
+                    clientAddressTitle.style.fontWeight = 'bold';
+                }
+                
+                // Set ALL text within the client address section to black
+                const addressTextElements = clientSection.querySelectorAll('.AddressText');
+                addressTextElements.forEach(element => {
+                    element.style.color = 'black';
+                    
+                    // Also set all child elements' text to black
+                    const childElements = element.querySelectorAll('*');
+                    childElements.forEach(child => {
+                        child.style.color = 'black';
+                    });
+                    
+                    // Make sure the TRN span has the right color
+                    const trnSpan = element.querySelector('span');
+                    if (trnSpan) {
+                        trnSpan.style.color = 'black';
+                    }
+                    
+                    // Set any inline styles directly on the element
+                    element.setAttribute('style', element.getAttribute('style') + '; color: black !important;');
+                });
+                
+                // Remove the quote date section as we've already added it above
+                const dateSection = clientSection.querySelector('[align="right"]');
+                if (dateSection) {
+                    dateSection.remove();
+                }
+                
+                pdfContainer.appendChild(clientSection);
+            }
+            
+            // Extract and append the client email section if it exists
+            const clientEmailSection = elementClone.querySelector('.AddressGroup:not(.InfoAddresses)');
+            if (clientEmailSection) {
+                const emailTitle = clientEmailSection.querySelector('.AddressTitle');
+                if (emailTitle) {
+                    emailTitle.style.color = '#004359';
+                    emailTitle.style.fontWeight = 'bold';
+                }
+                
+                // Set all regular text to black in the email section
+                const addressTextElements = clientEmailSection.querySelectorAll('.AddressText');
+                addressTextElements.forEach(element => {
+                    element.style.color = 'black';
+                });
+                
+                // Update any icon colors to match Fortune Gifts branding
+                const icons = clientEmailSection.querySelectorAll('svg');
+                icons.forEach(icon => {
+                    if (icon.style && icon.style.color) {
+                        icon.style.color = '#004359';
+                    }
+                });
+                
+                pdfContainer.appendChild(clientEmailSection);
+            }
+            
+            // Extract and append the items section
+            const itemsSection = elementClone.querySelector('.Details');
+            if (itemsSection) {
+                // Set all item names and descriptions to black
+                const itemNames = itemsSection.querySelectorAll('.ItemName');
+                itemNames.forEach(element => {
+                    element.style.color = 'black';
+                });
+                
+                const itemDescriptions = itemsSection.querySelectorAll('.ItemDescription');
+                itemDescriptions.forEach(element => {
+                    element.style.color = 'black';
+                });
+                
+                // Set all prices, quantities, and totals to black except in the header and grand total
+                const itemPrices = itemsSection.querySelectorAll('.ItemPrice:not(.ItemsHeader .ItemPrice)');
+                itemPrices.forEach(element => {
+                    element.style.color = 'black';
+                });
+                
+                const itemQtys = itemsSection.querySelectorAll('.ItemQty:not(.ItemsHeader .ItemQty)');
+                itemQtys.forEach(element => {
+                    element.style.color = 'black';
+                });
+                
+                const itemVats = itemsSection.querySelectorAll('.ItemVat:not(.ItemsHeader .ItemVat)');
+                itemVats.forEach(element => {
+                    element.style.color = 'black';
+                });
+                
+                const itemTotals = itemsSection.querySelectorAll('.ItemTotal:not(.ItemsHeader .ItemTotal)');
+                itemTotals.forEach(element => {
+                    element.style.color = 'black';
+                });
+                
+                pdfContainer.appendChild(itemsSection);
+            }
+            
+            // Extract and append the terms and conditions section if it exists
+            const termsSection = elementClone.querySelector('.TermsSection');
+            if (termsSection) {
+                const termsTitle = termsSection.querySelector('.TermsTitle');
+                if (termsTitle) {
+                    termsTitle.style.color = '#004359';
+                    termsTitle.style.fontWeight = 'bold';
+                }
+                
+                // Set the terms text to black
+                const termsText = termsSection.querySelector('.TermsText');
+                if (termsText) {
+                    termsText.style.color = 'black';
+                }
+                
+                pdfContainer.appendChild(termsSection);
+            }
+            
+            // Add signature section at the bottom
+            const signatureSection = document.createElement('div');
+            signatureSection.style.marginTop = '60px';
+            signatureSection.style.display = 'flex';
+            signatureSection.style.justifyContent = 'space-between';
+            signatureSection.style.padding = '0 20px';
+            
+            signatureSection.innerHTML = `
+                <div style="width: 45%;">
+                    <div style="border-bottom: 1px solid #004359; margin-bottom: 10px;"></div>
+                    <div style="font-weight: bold; color: #004359;">Authorized Signature</div>
+                </div>
+                <div style="width: 45%;">
+                    <div style="border-bottom: 1px solid #004359; margin-bottom: 10px;"></div>
+                    <div style="font-weight: bold; color: #004359;">Client Acceptance</div>
+                </div>
+            `;
+            
+            pdfContainer.appendChild(signatureSection);
+            
+            // Temporarily add to document to render
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            document.body.appendChild(pdfContainer);
+            
+            // Convert to canvas with better options for PDF
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+            
+            // Remove temporary elements
+            document.body.removeChild(pdfContainer);
+            
+            // Calculate PDF dimensions (A4 format)
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const canvasRatio = canvas.height / canvas.width;
+            const imgWidth = pdfWidth;
+            const imgHeight = pdfWidth * canvasRatio;
+            
+            // If content is longer than a page, create multiple pages
+            if (imgHeight > pdfHeight) {
+                // Calculate the number of pages needed
+                const pageCount = Math.ceil(imgHeight / pdfHeight);
+                
+                // Add each portion of the image to separate pages
+                for (let i = 0; i < pageCount; i++) {
+                    if (i > 0) pdf.addPage();
+                    
+                    const sourceY = i * canvas.height / pageCount;
+                    const sourceHeight = canvas.height / pageCount;
+                    
+                    const tmpCanvas = document.createElement('canvas');
+                    tmpCanvas.width = canvas.width;
+                    tmpCanvas.height = sourceHeight;
+                    
+                    const ctx = tmpCanvas.getContext('2d');
+                    ctx.drawImage(
+                        canvas, 
+                        0, sourceY, canvas.width, sourceHeight,
+                        0, 0, tmpCanvas.width, tmpCanvas.height
+                    );
+                    
+                    const pageImgData = tmpCanvas.toDataURL('image/png');
+                    pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                }
+            } else {
+                // Add the image to the PDF
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            }
+            
+            // Save the PDF
+            pdf.save(`Quotation_${quotation.customId || id}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('There was an error generating the PDF. Please try again.');
+        }
     };
 
     // Calculate VAT amount (5%)
@@ -557,10 +838,10 @@ const QuotationView = () => {
                     </div>
                     
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <PrintButton onClick={handlePrint} className="PrintButton">
-                            <Icon name="printer" size={13} />
-                            Print
-                        </PrintButton>
+                        <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
+                            <Icon name="download" size={13} />
+                            Download PDF
+                        </DownloadButton>
                         
                         {isDesktop && (
                             <ButtonWrapper className="ButtonWrapper">

@@ -6,6 +6,15 @@ import useManageClients from '../../hooks/useManageClients';
 import useManageQuotations from '../../hooks/useManageQuotations';
 import useFilter from '../../hooks/useFilter';
 
+// Fortune Gifts brand colors
+export const fortuneGiftsTheme = {
+    primary: '#004359',
+    secondary: '#000000',
+    accent: '#FF4806',
+    primaryLight: '#005E7C',
+    accentLight: '#FF6D3C'
+};
+
 const AppContext = React.createContext();
 
 const AppProvider = ({ children }) => {
@@ -135,7 +144,8 @@ const AppProvider = ({ children }) => {
                 filteredInvoices,
                 filterType,
                 changeFilterType,
-                refreshQuotations
+                refreshQuotations,
+                fortuneGiftsTheme
             }}
         >
             <Provider themeColor={theme}>{children}</Provider>
