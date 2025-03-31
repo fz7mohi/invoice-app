@@ -2,6 +2,7 @@ import { BiHomeAlt, BiFile, BiUser, BiListOl, BiCog } from 'react-icons/bi';
 import { Link, NavLink } from 'react-router-dom';
 import styled from 'styled-components';
 import logo from '../../assets/logo.svg';
+import { useGlobalContext } from '../App/context';
 
 const Sidebar = () => {
     return (
@@ -60,7 +61,7 @@ const StyledSidebar = styled.aside`
     left: 0;
     width: 80px;
     height: 100vh;
-    background-color: ${props => props.theme?.sidebarBackground || '#373B53'};
+    background-color: ${props => props.theme?.colors?.backgroundItem || '#373B53'};
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -113,11 +114,15 @@ const MenuItem = styled(NavLink)`
     display: flex;
     justify-content: center;
     align-items: center;
-    color: ${props => props.theme?.colors?.textSecondary || '#888eb0'};
+    color: ${props => props.theme?.colors?.textSecondary || '#DFE3FA'};
     font-size: 20px;
     transition: color 0.2s ease;
     
     &:hover {
+        color: ${props => props.theme?.colors?.purple || '#7c5dfa'};
+    }
+
+    &.active {
         color: ${props => props.theme?.colors?.purple || '#7c5dfa'};
     }
     

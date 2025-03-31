@@ -43,10 +43,6 @@ export const lightTheme = {
     input: '#ffffff',
     hoveredItem: '#f9fafe'
   },
-  text: {
-    primary: brandColors.primary,
-    secondary: '#7e88c3'
-  },
   borders: '#dfe3fa',
   sidebarBackground: '#373B53'
 };
@@ -81,10 +77,6 @@ export const darkTheme = {
     card: '#252945',
     input: '#1E2139',
     hoveredItem: '#252945'
-  },
-  text: {
-    primary: '#ffffff',
-    secondary: '#DFE3FA'
   },
   borders: '#252945',
   sidebarBackground: '#1E2139'

@@ -30,6 +30,15 @@ const getUserPreferredTheme = () => {
 };
 
 /**
+ * Function to apply theme to document
+ * @param    {string} theme    Theme name to apply
+ */
+const applyThemeToDocument = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.classList.toggle('dark-theme', theme === darkTheme);
+};
+
+/**
  * Custom hook to toggle themes. Initially, it sets the user's preferred theme
  * @return   {string}    Name of preferred theme.
  * @return   {function}    Function to toggle theme.
@@ -40,12 +49,11 @@ const useThemeToggle = () => {
     );
 
     /**
-     * Call postThemeToLocalStorage function every time theme state has changed.
+     * Apply theme changes to localStorage and document
      */
     useEffect(() => {
         postThemeToLocalStorage(theme);
-        // Also set a data attribute on the document body for additional styling
-        document.documentElement.setAttribute('data-theme', theme);
+        applyThemeToDocument(theme);
     }, [theme]);
 
     /**

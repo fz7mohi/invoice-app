@@ -76,7 +76,7 @@ const quotationViewVariants = {
 };
 
 const QuotationView = () => {
-    const { quotationState, toggleModal, editQuotation, windowWidth, refreshQuotations, darkMode } = useGlobalContext();
+    const { quotationState, toggleModal, editQuotation, windowWidth, refreshQuotations } = useGlobalContext();
     const { colors } = useTheme();
     const { id } = useParams();
     const [quotation, setQuotation] = useState(null);
@@ -92,18 +92,6 @@ const QuotationView = () => {
     const isApproved = quotation?.status === 'approved';
     const isDesktop = windowWidth >= 768;
     const shouldReduceMotion = useReducedMotion();
-    
-    // Update HTML data-theme attribute for CSS selectors
-    useEffect(() => {
-        // Set theme immediately
-        document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-        
-        // Add a class to the body to ensure theme is applied
-        document.body.classList.toggle('dark-theme', darkMode);
-        
-        // Force a reflow to ensure styles are applied
-        document.body.offsetHeight;
-    }, [darkMode]);
     
     // Variant selector for animations
     const variant = (element) => {
