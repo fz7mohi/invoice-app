@@ -40,7 +40,7 @@ const Quotations = () => {
         let filtered = rawQuotations.filter(quotation => {
             if (filterType === 'all') return true;
             if (filterType === 'pending') return quotation.status === 'pending';
-            if (filterType === 'paid') return quotation.status === 'paid';
+            if (filterType === 'invoiced') return quotation.status === 'invoiced';
             if (filterType === 'draft') return quotation.status === 'draft';
             return true;
         });

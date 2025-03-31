@@ -89,7 +89,7 @@ const QuotationView = () => {
     const quotationNotFound = !isLoading && !quotation;
     const isPending = quotation?.status === 'pending';
     const isDraft = quotation?.status === 'draft';
-    const isApproved = quotation?.status === 'approved';
+    const isInvoiced = quotation?.status === 'invoiced';
     const isDesktop = windowWidth >= 768;
     const shouldReduceMotion = useReducedMotion();
     
@@ -826,7 +826,7 @@ const QuotationView = () => {
                     <div>
                         <StatusBadge status={quotation.status}>
                             <span>
-                                {quotation.status === 'approved' ? 'Approved' : 
+                                {quotation.status === 'invoiced' ? 'Invoiced' : 
                                  quotation.status === 'pending' ? 'Pending' : 'Draft'}
                             </span>
                         </StatusBadge>
@@ -843,7 +843,7 @@ const QuotationView = () => {
                                 <Button
                                     $secondary
                                     onClick={() => editQuotation(id)}
-                                    disabled={isLoading || isApproved}
+                                    disabled={isLoading || isInvoiced}
                                 >
                                     Edit
                                 </Button>
@@ -997,7 +997,7 @@ const QuotationView = () => {
                     <Button
                         $secondary
                         onClick={() => editQuotation(id)}
-                        disabled={isLoading || isApproved}
+                        disabled={isLoading || isInvoiced}
                     >
                         Edit
                     </Button>
