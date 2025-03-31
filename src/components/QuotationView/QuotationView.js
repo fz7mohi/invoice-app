@@ -111,10 +111,6 @@ const QuotationView = () => {
     const fetchClientData = async (clientId, clientName) => {
         try {
             setIsClientFetching(true);
-            console.log('Attempting to fetch client with - ID:', clientId, 'Name:', clientName);
-            
-            // Log entire quotation details to debug
-            console.log('Current quotation data:', quotation);
             
             // Function to normalize client names for comparison (lowercase, remove extra spaces)
             const normalizeClientName = (name) => {
@@ -153,10 +149,8 @@ const QuotationView = () => {
             // Check if we have a hardcoded client for this name (case-insensitive)
             if (clientName) {
                 const normalizedName = normalizeClientName(clientName);
-                console.log('Normalized client name for lookup:', normalizedName);
                 
                 if (knownClients[normalizedName]) {
-                    console.log(`Using hardcoded data for ${clientName} (normalized: ${normalizedName})`);
                     const mockClient = {
                         name: clientName,
                         ...knownClients[normalizedName]
@@ -172,7 +166,6 @@ const QuotationView = () => {
                 
                 if (partialMatches.length > 0) {
                     const matchedKey = partialMatches[0]; // Use the first partial match
-                    console.log(`Using hardcoded data for partial match: ${clientName} ~ ${matchedKey}`);
                     const mockClient = {
                         name: clientName,
                         ...knownClients[matchedKey]
@@ -185,7 +178,6 @@ const QuotationView = () => {
             // If we get here, no hardcoded match was found - try database lookup
             
             if (!clientId && !clientName) {
-                console.log('No client identifier available');
                 return null;
             }
             
@@ -198,18 +190,13 @@ const QuotationView = () => {
                 
                 if (clientSnapshot.exists()) {
                     const data = clientSnapshot.data();
-                    console.log('Found client by ID:', data);
                     setClientData(data);
                     return data;
-                } else {
-                    console.log(`No client found with ID: ${clientId}`);
                 }
             }
             
             // If no clientId or client not found by ID, try to find by name
             if (clientName) {
-                console.log(`Trying to find client by name: ${clientName}`);
-                
                 try {
                     // First try exact match
                     const clientsRef = collection(db, 'clients');
@@ -218,20 +205,14 @@ const QuotationView = () => {
                     
                     // If no exact match, try case-insensitive comparison using toLowerCase
                     if (querySnapshot.empty) {
-                        console.log('No exact match found, trying to list all clients');
-                        
                         // Fetch all clients and filter manually
                         const allClientsQuery = query(clientsRef);
                         const allClientsSnapshot = await getDocs(allClientsQuery);
                         
                         if (!allClientsSnapshot.empty) {
-                            console.log(`Found ${allClientsSnapshot.size} total clients`);
-                            
-                            // Log all client names to debug
                             const availableClients = [];
                             allClientsSnapshot.forEach(doc => {
                                 const clientData = doc.data();
-                                console.log(`Available client: ${doc.id} - ${clientData.companyName || 'No name'}`);
                                 availableClients.push({
                                     id: doc.id,
                                     name: clientData.companyName || '',
@@ -241,7 +222,6 @@ const QuotationView = () => {
                             
                             // Try to find a client with similar name (case-insensitive)
                             const normalizedSearchName = normalizeClientName(clientName);
-                            console.log(`Normalized search name: "${normalizedSearchName}"`);
                             
                             // First try exact match after normalization
                             const exactMatch = availableClients.find(client => 
@@ -249,7 +229,6 @@ const QuotationView = () => {
                             );
                             
                             if (exactMatch) {
-                                console.log('Found normalized exact match:', exactMatch);
                                 const matchDoc = allClientsSnapshot.docs.find(doc => doc.id === exactMatch.id);
                                 const data = matchDoc.data();
                                 setClientData(data);
@@ -263,7 +242,6 @@ const QuotationView = () => {
                             );
                             
                             if (partialMatch) {
-                                console.log('Found partial match:', partialMatch);
                                 const matchDoc = allClientsSnapshot.docs.find(doc => doc.id === partialMatch.id);
                                 const data = matchDoc.data();
                                 setClientData(data);
@@ -272,21 +250,17 @@ const QuotationView = () => {
                         }
                     } else {
                         const data = querySnapshot.docs[0].data();
-                        console.log('Found client by exact name:', data);
                         setClientData(data);
                         return data;
                     }
                 } catch (queryError) {
-                    console.error('Error during client name query:', queryError);
+                    // Handle query error silently
                 }
             }
             
-            // If we reach here, no client was found
-            console.log('Client not found after all lookup attempts');
             return null;
             
         } catch (error) {
-            console.error('Error fetching client data:', error);
             return null;
         } finally {
             setIsClientFetching(false);
@@ -296,7 +270,6 @@ const QuotationView = () => {
     // Add a function to fetch directly from Firebase if needed
     const fetchDirectlyFromFirebase = async (quotationId) => {
         try {
-            console.log('Fetching quotation directly from Firebase:', quotationId);
             setIsDirectlyFetching(true);
             
             const quotationRef = doc(db, 'quotations', quotationId);
@@ -304,7 +277,6 @@ const QuotationView = () => {
             
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                console.log('Successfully fetched quotation from Firebase:', data);
                 
                 // Convert Firestore Timestamp back to Date object safely
                 let createdAt = new Date();
@@ -314,7 +286,7 @@ const QuotationView = () => {
                     createdAt = data.createdAt?.toDate() || new Date();
                     paymentDue = data.paymentDue?.toDate() || new Date();
                 } catch (dateError) {
-                    console.error('Error converting dates:', dateError);
+                    // Handle date error silently
                 }
                 
                 // Create a complete quotation object
@@ -335,11 +307,9 @@ const QuotationView = () => {
                 
                 return true;
             } else {
-                console.log('No quotation found in Firebase with ID:', quotationId);
                 return false;
             }
         } catch (error) {
-            console.error('Error fetching quotation from Firebase:', error);
             return false;
         } finally {
             setIsDirectlyFetching(false);
@@ -350,7 +320,6 @@ const QuotationView = () => {
     useEffect(() => {
         // This will try to fetch directly from Firebase as soon as we have an ID
         if (id && !quotation && !isDirectlyFetching) {
-            console.log('No quotation in state yet, trying direct fetch for ID:', id);
             fetchDirectlyFromFirebase(id);
         }
     }, [id, quotation, isDirectlyFetching]);
@@ -358,7 +327,6 @@ const QuotationView = () => {
     // Lookup in state logic
     useEffect(() => {
         if (!quotationState) {
-            console.log('quotationState is null or undefined');
             return;
         }
         
@@ -371,18 +339,14 @@ const QuotationView = () => {
             
             // If not found, try matching by customId (in case IDs are stored differently)
             if (!foundQuotation) {
-                console.log('Not found by ID, trying customId match');
                 foundQuotation = quotations.find(q => q.customId === id);
             }
             
             if (foundQuotation) {
-                console.log('Found quotation:', foundQuotation);
                 setQuotation(foundQuotation);
                 
                 // After setting quotation, fetch client data
                 fetchClientData(foundQuotation.clientId, foundQuotation.clientName);
-            } else {
-                console.log('Quotation not found with ID:', id);
             }
         }
     }, [quotationState?.quotations, id, isDeleting]);
@@ -393,7 +357,6 @@ const QuotationView = () => {
             const storedData = sessionStorage.getItem(`quotation_${id}`);
             if (storedData) {
                 try {
-                    console.log('Found quotation data in sessionStorage');
                     const parsedData = JSON.parse(storedData);
                     
                     // Convert ISO date strings back to Date objects
@@ -406,7 +369,7 @@ const QuotationView = () => {
                     // After setting quotation from session storage, fetch client data
                     fetchClientData(parsedData.clientId, parsedData.clientName);
                 } catch (err) {
-                    console.error('Error reading from sessionStorage:', err);
+                    // Handle error silently
                 }
             }
         }
@@ -419,20 +382,16 @@ const QuotationView = () => {
             const clientCountry = quotation?.clientAddress?.country || 
                                 clientData?.country || 
                                 'qatar';
-            console.log('Client country from quotation/client data:', clientCountry);
             
             // Determine which company profile to use
             let companyProfile;
             try {
-                console.log('Attempting to fetch company profile for:', clientCountry);
                 if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
                     companyProfile = await getCompanyProfile('uae');
                 } else {
                     companyProfile = await getCompanyProfile('qatar');
                 }
-                console.log('Retrieved company profile:', companyProfile);
             } catch (profileError) {
-                console.error('Error fetching company profile:', profileError);
                 // Provide default company profile data
                 companyProfile = {
                     name: 'Fortune Gifts',
@@ -441,7 +400,6 @@ const QuotationView = () => {
                     vatNumber: 'VAT123456789',
                     crNumber: 'CR123456789'
                 };
-                console.log('Using fallback company profile:', companyProfile);
             }
 
             // Create a clone of the element to avoid modifying the original
@@ -692,7 +650,6 @@ const QuotationView = () => {
             // Save the PDF
             pdf.save(`Quotation_${quotation.customId || id}.pdf`);
         } catch (error) {
-            console.error('Error generating PDF:', error);
             alert('There was an error generating the PDF. Please try again.');
         }
     };
@@ -848,33 +805,15 @@ const QuotationView = () => {
         try {
             // Convert country to lowercase for database query
             const countryLower = country.toLowerCase();
-            console.log('Fetching company profile for country:', countryLower);
             
             const companyProfilesRef = collection(db, 'companyProfiles');
-            
-            // Log all available company profiles for debugging
-            const allProfilesQuery = query(companyProfilesRef);
-            const allProfilesSnapshot = await getDocs(allProfilesQuery);
-            console.log('All available company profiles:', allProfilesSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })));
-            
-            // If no profiles exist, initialize them
-            if (allProfilesSnapshot.empty) {
-                console.log('No company profiles found, initializing...');
-                await initializeCompanyProfiles();
-            }
             
             // Query for the specific country
             const q = query(companyProfilesRef, where('country', '==', countryLower));
             const querySnapshot = await getDocs(q);
             
-            console.log('Query snapshot size:', querySnapshot.size);
-            
             if (!querySnapshot.empty) {
                 const profile = querySnapshot.docs[0].data();
-                console.log('Found company profile:', profile);
                 return {
                     name: profile.name || 'Fortune Gifts',
                     address: profile.address || '',
@@ -884,16 +823,12 @@ const QuotationView = () => {
                 };
             }
             
-            console.log(`No profile found for ${countryLower}, checking fallback options`);
-            
             // If no profile found for UAE, return Qatar profile as default
             if (countryLower === 'uae') {
-                console.log('Falling back to Qatar profile for UAE');
                 return getCompanyProfile('qatar');
             }
             
             // Default Qatar profile
-            console.log('Using default Qatar profile');
             return {
                 name: 'Fortune Gifts',
                 address: 'P.O Box 123456, Doha, Qatar',
@@ -902,9 +837,7 @@ const QuotationView = () => {
                 crNumber: 'CR123456789'
             };
         } catch (error) {
-            console.error('Error fetching company profile:', error);
             // Return default Qatar profile in case of error
-            console.log('Error occurred, using default Qatar profile');
             return {
                 name: 'Fortune Gifts',
                 address: 'P.O Box 123456, Doha, Qatar',
@@ -949,10 +882,8 @@ const QuotationView = () => {
             // Add profiles to database
             await addDoc(companyProfilesRef, qatarProfile);
             await addDoc(companyProfilesRef, uaeProfile);
-            
-            console.log('Company profiles initialized successfully');
         } catch (error) {
-            console.error('Error initializing company profiles:', error);
+            // Handle error silently
         }
     };
 
