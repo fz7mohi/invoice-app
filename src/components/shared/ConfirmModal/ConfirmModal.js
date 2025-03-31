@@ -1,4 +1,3 @@
-import { useGlobalContext } from '../../App/context';
 import {
     ModalBackdrop,
     ModalContainer,
@@ -10,31 +9,17 @@ import {
     ConfirmButton
 } from './ConfirmModalStyles';
 
-const ConfirmModal = ({ title, message, confirmAction, cancelAction }) => {
-    const context = useGlobalContext();
-    
-    const handleCancel = () => {
-        if (cancelAction && typeof context[cancelAction] === 'function') {
-            context[cancelAction]();
-        }
-    };
-    
-    const handleConfirm = () => {
-        if (confirmAction && typeof context[confirmAction] === 'function') {
-            context[confirmAction]();
-        }
-    };
-    
+const ConfirmModal = ({ title, message, onConfirm, onCancel }) => {
     return (
         <>
-            <ModalBackdrop onClick={handleCancel} />
+            <ModalBackdrop onClick={onCancel} />
             <ModalContainer>
                 <ModalContent>
                     <Title>{title}</Title>
                     <Message>{message}</Message>
                     <ButtonGroup>
-                        <CancelButton onClick={handleCancel}>Cancel</CancelButton>
-                        <ConfirmButton onClick={handleConfirm}>Confirm</ConfirmButton>
+                        <CancelButton onClick={onCancel}>Cancel</CancelButton>
+                        <ConfirmButton onClick={onConfirm}>Confirm</ConfirmButton>
                     </ButtonGroup>
                 </ModalContent>
             </ModalContainer>

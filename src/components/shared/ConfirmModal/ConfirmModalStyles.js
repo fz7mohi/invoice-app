@@ -6,7 +6,8 @@ export const ModalBackdrop = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
     z-index: 100;
 `;
 
@@ -21,23 +22,24 @@ export const ModalContainer = styled.div`
 `;
 
 export const ModalContent = styled.div`
-    background-color: ${({ theme }) => theme.colors.bgForm};
+    background-color: #1E2139;
+    border: 1px solid #252945;
     border-radius: 8px;
     padding: 32px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
 `;
 
 export const Title = styled.h2`
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
-    color: ${({ theme }) => theme.colors.textPrimary};
+    color: #FFFFFF;
     margin: 0 0 16px 0;
 `;
 
 export const Message = styled.p`
-    font-size: 13px;
-    line-height: 1.6;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 15px;
+    line-height: 1.84;
+    color: #DFE3FA;
     margin: 0 0 24px 0;
 `;
 
@@ -48,30 +50,31 @@ export const ButtonGroup = styled.div`
 `;
 
 export const Button = styled.button`
-    padding: 12px 24px;
+    min-width: 100px;
+    padding: 16px 24px;
     border-radius: 24px;
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
 `;
 
 export const CancelButton = styled(Button)`
-    background-color: ${({ theme }) => theme.colors.btnSaveAsDraft};
-    color: ${({ theme }) => theme.colors.btnSaveAsDraftText};
+    background-color: #252945;
+    color: #DFE3FA;
     border: none;
     
     &:hover {
-        background-color: ${({ theme }) => theme.colors.btnSaveAsDraftHover};
+        background-color: #1E2139;
     }
 `;
 
 export const ConfirmButton = styled(Button)`
-    background-color: ${({ theme }) => theme.colors.red};
-    color: white;
+    background-color: #EC5757;
+    color: #FFFFFF;
     border: none;
     
     &:hover {
-        background-color: ${({ theme }) => theme.colors.redLight};
+        background-color: #FF5252;
     }
 `; 

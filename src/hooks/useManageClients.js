@@ -398,8 +398,11 @@ const useManageClients = () => {
      * Toggle the client form
      */
     const toggleForm = () => {
+        console.log('toggleForm called');
+        console.log('Previous state:', state);
         dispatch({ type: 'TOGGLE_FORM' });
         resetForm();
+        console.log('New state:', state);
     };
 
     /**
@@ -428,9 +431,9 @@ const useManageClients = () => {
         handleClientChange,
         handleSubmit,
         editClient,
-        deleteClient,
+        handleClientDelete: deleteClient,
         toggleForm,
-        toggleModal,
+        toggleClientModal: toggleModal,
         setErrors
     };
 };

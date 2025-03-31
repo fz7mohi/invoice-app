@@ -2,6 +2,8 @@ import styled from 'styled-components';
 
 export const StyledClients = styled.main`
     padding: 32px 24px;
+    background-color: #1E2139;
+    min-height: 100vh;
     
     @media (min-width: 768px) {
         padding: 56px 48px;
@@ -13,17 +15,14 @@ export const StyledClients = styled.main`
     }
 `;
 
-export const Header = styled.header`
+export const Header = styled.div`
     display: flex;
-    flex-direction: column;
-    gap: 18px;
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 32px;
     
     @media (min-width: 768px) {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 56px;
+        margin-bottom: 40px;
     }
 `;
 
@@ -32,7 +31,7 @@ export const TitleContainer = styled.div``;
 export const Title = styled.h1`
     font-size: 24px;
     font-weight: 700;
-    color: ${({ theme }) => theme.colors.textPrimary};
+    color: #FFFFFF;
     margin: 0;
     
     @media (min-width: 768px) {
@@ -42,7 +41,7 @@ export const Title = styled.h1`
 
 export const ClientCount = styled.p`
     font-size: 13px;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: #DFE3FA;
     margin: 4px 0 0 0;
 `;
 
@@ -57,7 +56,7 @@ export const NewClientButton = styled.button`
     align-items: center;
     justify-content: center;
     gap: 8px;
-    background-color: ${({ theme }) => theme.colors.purple};
+    background-color: #7C5DFA;
     color: white;
     border: none;
     border-radius: 24px;
@@ -65,13 +64,14 @@ export const NewClientButton = styled.button`
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
+    transition: background-color 0.2s ease;
     
     &:hover {
-        background-color: ${({ theme }) => theme.colors.purpleLight};
+        background-color: #9277FF;
     }
     
     &:disabled {
-        background-color: ${({ theme }) => theme.colors.purpleLight};
+        background-color: #9277FF;
         opacity: 0.7;
         cursor: not-allowed;
     }
@@ -83,38 +83,40 @@ export const NewClientButton = styled.button`
 `;
 
 export const EmptyState = styled.div`
-    max-width: 220px;
-    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    margin-top: 100px;
+    padding: 48px 24px;
     
     img {
-        width: 180px;
-        height: auto;
-        margin-bottom: 40px;
+        width: 240px;
+        height: 200px;
+        margin-bottom: 32px;
     }
     
     @media (min-width: 768px) {
-        max-width: 250px;
-        
-        img {
-            width: 200px;
-        }
+        padding: 64px;
     }
 `;
 
 export const EmptyHeading = styled.h2`
     font-size: 20px;
     font-weight: 700;
-    color: ${({ theme }) => theme.colors.textPrimary};
+    color: #FFFFFF;
     margin: 0 0 16px 0;
 `;
 
 export const EmptyText = styled.p`
     font-size: 13px;
     line-height: 1.6;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: #DFE3FA;
     margin: 0;
+    
+    strong {
+        color: #FFFFFF;
+    }
 `;
 
 export const ClientList = styled.div`
@@ -127,15 +129,14 @@ export const ClientList = styled.div`
 `;
 
 export const ClientItem = styled.div`
-    background-color: ${({ theme }) => theme.colors.bgInvoiceItem};
+    background-color: #252945;
     border-radius: 8px;
     padding: 24px;
-    box-shadow: 0 10px 10px -10px rgba(72, 84, 159, 0.1);
-    border: 1px solid transparent;
-    transition: border-color 0.2s;
+    border: 1px solid #252945;
+    transition: all 0.2s ease;
     
     &:hover {
-        border-color: ${({ theme }) => theme.colors.purple};
+        border-color: #7C5DFA;
     }
     
     @media (min-width: 768px) {
@@ -150,7 +151,7 @@ export const ClientItem = styled.div`
 export const CompanyName = styled.h3`
     font-size: 16px;
     font-weight: 700;
-    color: ${({ theme }) => theme.colors.textPrimary};
+    color: #FFFFFF;
     margin: 0 0 8px 0;
     
     @media (min-width: 768px) {
@@ -168,50 +169,74 @@ export const ClientInfo = styled.div`
 
 export const InfoItem = styled.p`
     font-size: 13px;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: #DFE3FA;
     margin: 4px 0;
     
     strong {
         font-weight: 700;
-        color: ${({ theme }) => theme.colors.textPrimary};
+        color: #FFFFFF;
     }
 `;
 
 export const ActionButtons = styled.div`
     display: flex;
     gap: 8px;
+    
+    @media (min-width: 768px) {
+        justify-content: flex-end;
+    }
 `;
 
-export const Button = styled.button`
-    padding: 8px 16px;
+export const EditButton = styled.button`
+    background-color: #252945;
+    color: #DFE3FA;
+    border: 1px solid #252945;
     border-radius: 24px;
+    padding: 8px 14px;
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
+    
+    &:hover {
+        background-color: #1E2139;
+        border-color: #7C5DFA;
+        color: #7C5DFA;
+    }
     
     &:disabled {
         opacity: 0.7;
         cursor: not-allowed;
     }
-`;
-
-export const EditButton = styled(Button)`
-    background-color: ${({ theme }) => theme.colors.btnEdit};
-    color: ${({ theme }) => theme.colors.btnEditText};
-    border: none;
     
-    &:hover:not(:disabled) {
-        background-color: ${({ theme }) => theme.colors.btnEditHover};
+    @media (min-width: 768px) {
+        padding: 8px 16px;
+        font-size: 14px;
     }
 `;
 
-export const DeleteButton = styled(Button)`
-    background-color: ${({ theme }) => theme.colors.red};
+export const DeleteButton = styled.button`
+    background-color: #EC5757;
     color: white;
     border: none;
+    border-radius: 24px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
     
-    &:hover:not(:disabled) {
-        background-color: ${({ theme }) => theme.colors.redLight};
+    &:hover {
+        background-color: #FF5252;
+    }
+    
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
+    @media (min-width: 768px) {
+        padding: 8px 16px;
+        font-size: 14px;
     }
 `; 

@@ -23,13 +23,19 @@ import {
 import Icon from '../shared/Icon/Icon';
 import ConfirmModal from '../shared/ConfirmModal/ConfirmModal';
 import { clientsVariants } from '../../utilities/framerVariants';
+import styled from 'styled-components';
+
+const ClientsContainer = styled.main`
+    // ... existing code ...
+`;
 
 const Clients = () => {
     const { 
         clientState, 
         toggleForm, 
         editClient, 
-        toggleClientModal 
+        toggleClientModal,
+        handleClientDelete
     } = useGlobalContext();
     
     const { clients, isModalOpen, isLoading } = clientState;
@@ -47,6 +53,29 @@ const Clients = () => {
             : clientsVariants[element];
     };
     
+    const handleNewClientClick = () => {
+        console.log('New Client button clicked');
+        console.log('clientState before toggle:', clientState);
+        toggleForm();
+        console.log('clientState after toggle:', clientState);
+    };
+
+    const handleDeleteClick = (clientId) => {
+        console.log('Delete button clicked for client:', clientId);
+        toggleClientModal(clientId);
+    };
+
+    const handleConfirmDelete = () => {
+        console.log('Confirming delete for client');
+        handleClientDelete();
+        toggleClientModal();
+    };
+
+    const handleCancelDelete = () => {
+        console.log('Canceling delete for client');
+        toggleClientModal();
+    };
+
     return (
         <StyledClients
             as={motion.main}
@@ -70,7 +99,10 @@ const Clients = () => {
                 </TitleContainer>
                 
                 <ButtonContainer>
-                    <NewClientButton onClick={toggleForm} disabled={isLoading}>
+                    <NewClientButton
+                        onClick={handleNewClientClick}
+                        disabled={isLoading}
+                    >
                         <Icon name="plus" size={15} color="#FFF" />
                         New Client
                     </NewClientButton>
@@ -144,7 +176,7 @@ const Clients = () => {
                                 <EditButton onClick={() => editClient(client.id)} disabled={isLoading}>
                                     Edit
                                 </EditButton>
-                                <DeleteButton onClick={() => toggleClientModal(client.id)} disabled={isLoading}>
+                                <DeleteButton onClick={() => handleDeleteClick(client.id)} disabled={isLoading}>
                                     Delete
                                 </DeleteButton>
                             </ActionButtons>
@@ -157,8 +189,8 @@ const Clients = () => {
                 <ConfirmModal 
                     title="Confirm Deletion"
                     message="Are you sure you want to delete this client? This action cannot be undone."
-                    confirmAction="deleteClient"
-                    cancelAction="toggleClientModal"
+                    onConfirm={handleConfirmDelete}
+                    onCancel={handleCancelDelete}
                 />
             )}
         </StyledClients>

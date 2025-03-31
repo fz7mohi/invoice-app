@@ -25,8 +25,13 @@ const ClientFormController = () => {
             : FormControllerVariants[element];
     };
 
+    console.log('ClientFormController rendered');
+    console.log('clientState:', clientState);
+    console.log('isFormEdited:', isFormEdited);
+
     // Side effect to add event listeners and disable page scrolling.
     useEffect(() => {
+        console.log('ClientFormController mounted');
         document.addEventListener('keydown', focusTrap);
         document.addEventListener('click', handleClickOutsideForm);
         formRef.current.focus();
@@ -34,6 +39,7 @@ const ClientFormController = () => {
         hasScroll && (document.body.style.paddingRight = '17px');
 
         return () => {
+            console.log('ClientFormController unmounted');
             document.removeEventListener('keydown', focusTrap);
             document.removeEventListener('click', handleClickOutsideForm);
             document.body.style.overflow = 'unset';
@@ -46,14 +52,20 @@ const ClientFormController = () => {
      */
     const handleClickOutsideForm = (event) => {
         const target = event.target;
-        if (target === backdropRef.current) toggleForm();
+        if (target === backdropRef.current) {
+            console.log('Clicking outside form, toggling form');
+            toggleForm();
+        }
     };
 
     /**
      * Function to trap user focus within component.
      */
     const focusTrap = (event) => {
-        if (event.key === 'Escape') toggleForm();
+        if (event.key === 'Escape') {
+            console.log('Escape key pressed, toggling form');
+            toggleForm();
+        }
         if (event.key !== 'Tab') return;
 
         const formElements =

@@ -1,114 +1,22 @@
 import { useGlobalContext } from '../App/context';
 import {
-    Title,
-    Hashtag,
-    StyledForm,
-    Fieldset,
-    Legend,
+    FormTitle,
+    FormSection,
+    SectionTitle,
+    InputGroup,
     InputWrapper,
     Label,
-    ErrorsWrapper,
-    Error,
     Input,
-    InputsGroup,
-    defaultInput
-} from '../FormController/Form/FormStyles';
-import styled from 'styled-components';
+    TextArea,
+    Select,
+    ErrorMessage,
+    RequiredIndicator,
+    Tooltip,
+    InputWrapperWithTooltip
+} from './ClientFormControllerStyles';
 import { useEffect, useRef, useState } from 'react';
-
-// Create a styled textarea that matches the input styles
-const TextArea = styled.textarea`
-    ${defaultInput}
-    min-height: 120px;
-    resize: vertical;
-    
-    ${({ $error }) =>
-        $error &&
-        `border: 1px solid ${props => props.theme.colors.red};`}
-    
-    ${({ $valid }) =>
-        $valid &&
-        `border: 1px solid #33d69f;`}
-`;
-
-// Create a styled select that matches the input styles
-const Select = styled.select`
-    ${defaultInput}
-    cursor: pointer;
-    
-    ${({ $error }) =>
-        $error &&
-        `border: 1px solid ${props => props.theme.colors.red};`}
-    
-    ${({ $valid }) =>
-        $valid &&
-        `border: 1px solid #33d69f;`}
-`;
-
-// Styled InputWrapper that includes a tooltip
-const InputWrapperWithTooltip = styled(InputWrapper)`
-    position: relative;
-    
-    &:hover .tooltip {
-        visibility: visible;
-        opacity: 1;
-    }
-`;
-
-// Tooltip component
-const Tooltip = styled.div`
-    visibility: hidden;
-    width: 200px;
-    background-color: ${({ theme }) => theme.colors.bgTooltip || '#555'};
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 8px;
-    position: absolute;
-    z-index: 1;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 125%;
-    opacity: 0;
-    transition: opacity 0.3s;
-    font-size: 12px;
-    
-    &::after {
-        content: "";
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: ${({ theme }) => theme.colors.bgTooltip || '#555'} transparent transparent transparent;
-    }
-`;
-
-// Required field indicator
-const RequiredIndicator = styled.span`
-    color: ${({ theme }) => theme.colors.red};
-    margin-left: 4px;
-`;
-
-// Input with suffix (for percentage)
-const InputGroup = styled.div`
-    position: relative;
-    width: 100%;
-    
-    input {
-        padding-right: 40px;
-    }
-`;
-
-const InputSuffix = styled.span`
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-weight: bold;
-`;
+import Icon from '../shared/Icon/Icon';
+import { useTheme } from 'styled-components';
 
 // List of Middle Eastern countries
 const middleEasternCountries = [
@@ -131,6 +39,7 @@ const middleEasternCountries = [
 
 const ClientFormContent = ({ isEdited }) => {
     const { clientState, client, handleClientChange } = useGlobalContext();
+    const { colors } = useTheme();
     const errors = clientState.errors.err;
     const messages = clientState.errors.msg;
     const clientId = clientState.currClientIndex;
@@ -148,38 +57,13 @@ const ClientFormContent = ({ isEdited }) => {
     
     // Format phone number as user types
     const handlePhoneChange = (e) => {
-        let value = e.target.value.replace(/[^\d+]/g, ''); // Keep digits and plus sign
+        let value = e.target.value.replace(/[^\d+]/g, '');
         
-        // If there's no plus at the beginning, and the user has typed something, add it
         if (value.length > 0 && !value.startsWith('+')) {
             value = '+' + value;
         }
         
-        // Format based on country code (if detected or country selected)
-        if (value.startsWith('+971')) { // UAE
-            // Format: +971 XX XXX XXXX
-            if (value.length <= 4) { // Just +971
-                // Do nothing, keep as is
-            } else if (value.length <= 6) { // +971 XX
-                value = value.slice(0, 4) + ' ' + value.slice(4);
-            } else if (value.length <= 9) { // +971 XX XXX
-                value = value.slice(0, 4) + ' ' + value.slice(4, 6) + ' ' + value.slice(6);
-            } else { // +971 XX XXX XXXX
-                value = value.slice(0, 4) + ' ' + value.slice(4, 6) + ' ' + value.slice(6, 9) + ' ' + value.slice(9, 13);
-            }
-        } else if (value.startsWith('+974')) { // Qatar
-            // Format: +974 XXXX XX XX
-            if (value.length <= 4) { // Just +974
-                // Do nothing, keep as is
-            } else if (value.length <= 8) { // +974 XXXX
-                value = value.slice(0, 4) + ' ' + value.slice(4);
-            } else if (value.length <= 10) { // +974 XXXX XX
-                value = value.slice(0, 4) + ' ' + value.slice(4, 8) + ' ' + value.slice(8);
-            } else { // +974 XXXX XX XX
-                value = value.slice(0, 4) + ' ' + value.slice(4, 8) + ' ' + value.slice(8, 10) + ' ' + value.slice(10, 12);
-            }
-        } else if (value.startsWith('+966')) { // Saudi Arabia
-            // Format: +966 XX XXX XXXX
+        if (value.startsWith('+971')) {
             if (value.length <= 4) {
                 // Do nothing, keep as is
             } else if (value.length <= 6) {
@@ -189,36 +73,15 @@ const ClientFormContent = ({ isEdited }) => {
             } else {
                 value = value.slice(0, 4) + ' ' + value.slice(4, 6) + ' ' + value.slice(6, 9) + ' ' + value.slice(9, 13);
             }
-        } else if (value.startsWith('+973')) { // Bahrain
-            // Format: +973 XXXX XXXX
+        } else if (value.startsWith('+974')) {
             if (value.length <= 4) {
                 // Do nothing, keep as is
             } else if (value.length <= 8) {
                 value = value.slice(0, 4) + ' ' + value.slice(4);
+            } else if (value.length <= 10) {
+                value = value.slice(0, 4) + ' ' + value.slice(4, 8) + ' ' + value.slice(8);
             } else {
-                value = value.slice(0, 4) + ' ' + value.slice(4, 8) + ' ' + value.slice(8, 12);
-            }
-        } else if (value.startsWith('+965')) { // Kuwait
-            // Format: +965 XXXX XXXX
-            if (value.length <= 4) {
-                // Do nothing, keep as is
-            } else if (value.length <= 8) {
-                value = value.slice(0, 4) + ' ' + value.slice(4);
-            } else {
-                value = value.slice(0, 4) + ' ' + value.slice(4, 8) + ' ' + value.slice(8, 12);
-            }
-        } else {
-            // Generic Middle Eastern format when country code not recognized
-            if (value.length > 4) {
-                value = value.slice(0, 4) + ' ' + value.slice(4);
-                
-                if (value.length > 9) {
-                    value = value.slice(0, 9) + ' ' + value.slice(9);
-                }
-                
-                if (value.length > 14) {
-                    value = value.slice(0, 14) + ' ' + value.slice(14);
-                }
+                value = value.slice(0, 4) + ' ' + value.slice(4, 8) + ' ' + value.slice(8, 10) + ' ' + value.slice(10, 12);
             }
         }
         
@@ -270,7 +133,6 @@ const ClientFormContent = ({ isEdited }) => {
         if (client.companyName.trim()) newValidFields.companyName = true;
         if (client.email.trim() && /\S+@\S+\.\S+/.test(client.email)) newValidFields.email = true;
         
-        // Validate phone based on Middle Eastern standards (at least country code + 8 digits)
         const phoneDigits = client.phone.replace(/\D/g, '');
         if (client.phone.trim() && phoneDigits.length >= 9) newValidFields.phone = true;
         
@@ -305,7 +167,7 @@ const ClientFormContent = ({ isEdited }) => {
                     behavior: 'smooth', 
                     block: 'start' 
                 });
-            }, 100); // Small delay to ensure the section is rendered
+            }, 100);
         }
     }, [client.country]);
     
@@ -336,25 +198,28 @@ const ClientFormContent = ({ isEdited }) => {
 
     return (
         <>
-            {!isEdited && <Title>New Client</Title>}
-            {isEdited && (
-                <Title>
-                    Edit <Hashtag>#</Hashtag>
-                    {clientId}
-                </Title>
+            {!isEdited && (
+                <FormTitle>
+                    <Icon name="user" size={20} color={colors.purple} />
+                    New Client
+                </FormTitle>
             )}
-            <StyledForm id="client-form">
-                <Fieldset>
-                    <Legend>Client Information</Legend>
+            {isEdited && (
+                <FormTitle>
+                    <Icon name="edit" size={20} color={colors.purple} />
+                    Edit Client #{clientId}
+                </FormTitle>
+            )}
+
+            <FormSection>
+                <SectionTitle>
+                    <Icon name="building" size={14} color={colors.textSecondary} />
+                    Client Information
+                </SectionTitle>
+                <InputGroup>
                     <InputWrapper>
-                        <Label
-                            htmlFor="companyName"
-                            $error={errors?.companyName}
-                        >
+                        <Label htmlFor="companyName" $error={errors?.companyName}>
                             Company Name<RequiredIndicator>*</RequiredIndicator>
-                            {errors?.companyName && (
-                                <Error>can't be empty</Error>
-                            )}
                         </Label>
                         <Input
                             ref={companyNameRef}
@@ -364,91 +229,68 @@ const ClientFormContent = ({ isEdited }) => {
                             $error={errors?.companyName}
                             $valid={validFields.companyName}
                             onChange={handleClientChange}
+                            placeholder="Enter company name"
                             aria-required="true"
                             aria-invalid={errors?.companyName ? "true" : "false"}
                         />
+                        {errors?.companyName && (
+                            <ErrorMessage>Company name is required</ErrorMessage>
+                        )}
                     </InputWrapper>
+
                     <InputWrapper>
-                        <Label
-                            htmlFor="email"
-                            $error={errors?.email}
-                        >
+                        <Label htmlFor="email" $error={errors?.email}>
                             Email<RequiredIndicator>*</RequiredIndicator>
-                            {errors?.email && (
-                                <Error>invalid email</Error>
-                            )}
                         </Label>
                         <Input
                             ref={emailRef}
                             type="email"
-                            placeholder="e.g. email@example.com"
                             name="email"
                             value={client.email}
                             $error={errors?.email}
                             $valid={validFields.email}
                             onChange={handleClientChange}
+                            placeholder="email@example.com"
                             aria-required="true"
                             aria-invalid={errors?.email ? "true" : "false"}
                         />
+                        {errors?.email && (
+                            <ErrorMessage>Please enter a valid email address</ErrorMessage>
+                        )}
                     </InputWrapper>
-                </Fieldset>
+                </InputGroup>
+            </FormSection>
 
-                <Fieldset>
-                    <Legend>Contact Details</Legend>
+            <FormSection>
+                <SectionTitle>
+                    <Icon name="phone" size={14} color={colors.textSecondary} />
+                    Contact Details
+                </SectionTitle>
+                <InputGroup>
                     <InputWrapper>
-                        <Label 
-                            htmlFor="phone"
-                            $error={errors?.phone}
-                        >
+                        <Label htmlFor="phone" $error={errors?.phone}>
                             Phone<RequiredIndicator>*</RequiredIndicator>
-                            {errors?.phone && (
-                                <Error>can't be empty</Error>
-                            )}
                         </Label>
                         <Input
                             ref={phoneRef}
                             type="text"
-                            placeholder="e.g. +971 XX XXX XXXX"
                             name="phone"
                             value={client.phone}
                             $error={errors?.phone}
                             $valid={validFields.phone}
                             onChange={handlePhoneChange}
+                            placeholder="+971 XX XXX XXXX"
                             aria-required="true"
                             aria-invalid={errors?.phone ? "true" : "false"}
                         />
+                        {errors?.phone && (
+                            <ErrorMessage>Please enter a valid phone number</ErrorMessage>
+                        )}
                     </InputWrapper>
-                    <InputWrapper $fullWidth>
-                        <Label 
-                            htmlFor="address"
-                            $error={errors?.address}
-                        >
-                            Address<RequiredIndicator>*</RequiredIndicator>
-                            {errors?.address && (
-                                <Error>can't be empty</Error>
-                            )}
-                        </Label>
-                        <TextArea
-                            ref={addressRef}
-                            name="address"
-                            value={client.address}
-                            $error={errors?.address}
-                            $valid={validFields.address}
-                            onChange={handleClientChange}
-                            placeholder="Enter full address"
-                            aria-required="true"
-                            aria-invalid={errors?.address ? "true" : "false"}
-                        />
-                    </InputWrapper>
+
                     <InputWrapper>
-                        <Label 
-                            htmlFor="country"
-                            $error={errors?.country}
-                        >
+                        <Label htmlFor="country" $error={errors?.country}>
                             Country<RequiredIndicator>*</RequiredIndicator>
-                            {errors?.country && (
-                                <Error>must select a country</Error>
-                            )}
                         </Label>
                         <Select
                             ref={countryRef}
@@ -468,23 +310,45 @@ const ClientFormContent = ({ isEdited }) => {
                                 </option>
                             ))}
                         </Select>
+                        {errors?.country && (
+                            <ErrorMessage>Please select a country</ErrorMessage>
+                        )}
                     </InputWrapper>
-                </Fieldset>
+                </InputGroup>
 
-                {isUAE && (
-                    <Fieldset ref={uaeTaxSectionRef}>
-                        <Legend>UAE Tax Information</Legend>
+                <InputWrapper>
+                    <Label htmlFor="address" $error={errors?.address}>
+                        Address<RequiredIndicator>*</RequiredIndicator>
+                    </Label>
+                    <TextArea
+                        ref={addressRef}
+                        name="address"
+                        value={client.address}
+                        $error={errors?.address}
+                        $valid={validFields.address}
+                        onChange={handleClientChange}
+                        placeholder="Enter full address"
+                        aria-required="true"
+                        aria-invalid={errors?.address ? "true" : "false"}
+                    />
+                    {errors?.address && (
+                        <ErrorMessage>Please enter the client's address</ErrorMessage>
+                    )}
+                </InputWrapper>
+            </FormSection>
+
+            {isUAE && (
+                <FormSection ref={uaeTaxSectionRef}>
+                    <SectionTitle>
+                        <Icon name="receipt" size={14} color={colors.textSecondary} />
+                        UAE Tax Information
+                    </SectionTitle>
+                    <InputGroup>
                         <InputWrapperWithTooltip>
-                            <Label 
-                                htmlFor="trnNumber"
-                                $error={errors?.trnNumber}
-                            >
+                            <Label htmlFor="trnNumber" $error={errors?.trnNumber}>
                                 TRN Number<RequiredIndicator>*</RequiredIndicator>
-                                {errors?.trnNumber && (
-                                    <Error>TRN number is required</Error>
-                                )}
                             </Label>
-                            <Tooltip className="tooltip">
+                            <Tooltip>
                                 Tax Registration Number (TRN) is a unique identifier issued by the UAE Federal Tax Authority for VAT purposes
                             </Tooltip>
                             <Input
@@ -500,53 +364,55 @@ const ClientFormContent = ({ isEdited }) => {
                                 aria-invalid={errors?.trnNumber ? "true" : "false"}
                                 aria-describedby="trnHint"
                             />
-                            <div id="trnHint" style={{ fontSize: '0.75rem', marginTop: '4px', color: '#777' }}>
+                            <div id="trnHint" style={{ fontSize: '0.75rem', marginTop: '4px', color: colors.textSecondary }}>
                                 Format: 15-digit number (e.g., 100123456700003)
                             </div>
+                            {errors?.trnNumber && (
+                                <ErrorMessage>Please enter a valid TRN number</ErrorMessage>
+                            )}
                         </InputWrapperWithTooltip>
-                        <InputWrapperWithTooltip>
-                            <Label 
-                                htmlFor="vatPercentage"
-                                $error={errors?.vatPercentage}
-                            >
-                                VAT Percentage<RequiredIndicator>*</RequiredIndicator>
-                                {errors?.vatPercentage && (
-                                    <Error>must be a valid percentage</Error>
-                                )}
-                            </Label>
-                            <Tooltip className="tooltip">
-                                Standard VAT rate in UAE is 5%
-                            </Tooltip>
-                            <InputGroup>
-                                <Input
-                                    ref={vatPercentageRef}
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="0.01"
-                                    name="vatPercentage"
-                                    value={client.vatPercentage}
-                                    $error={errors?.vatPercentage}
-                                    $valid={validFields.vatPercentage}
-                                    onChange={handleClientChange}
-                                    placeholder="5"
-                                    aria-required="true"
-                                    aria-invalid={errors?.vatPercentage ? "true" : "false"}
-                                />
-                                <InputSuffix>%</InputSuffix>
-                            </InputGroup>
-                        </InputWrapperWithTooltip>
-                    </Fieldset>
-                )}
 
-                {messages.length > 0 && (
-                    <ErrorsWrapper>
-                        {messages.map((message, index) => (
-                            <Error key={index}>{message}</Error>
-                        ))}
-                    </ErrorsWrapper>
-                )}
-            </StyledForm>
+                        <InputWrapper>
+                            <Label htmlFor="vatPercentage" $error={errors?.vatPercentage}>
+                                VAT Percentage<RequiredIndicator>*</RequiredIndicator>
+                            </Label>
+                            <Input
+                                ref={vatPercentageRef}
+                                type="number"
+                                name="vatPercentage"
+                                value={client.vatPercentage}
+                                $error={errors?.vatPercentage}
+                                $valid={validFields.vatPercentage}
+                                onChange={handleClientChange}
+                                placeholder="Enter VAT percentage"
+                                aria-required="true"
+                                aria-invalid={errors?.vatPercentage ? "true" : "false"}
+                            />
+                            {errors?.vatPercentage && (
+                                <ErrorMessage>Please enter a valid VAT percentage</ErrorMessage>
+                            )}
+                        </InputWrapper>
+                    </InputGroup>
+                </FormSection>
+            )}
+
+            {messages.length > 0 && (
+                <div style={{ 
+                    padding: '12px 16px', 
+                    backgroundColor: colors.redLight, 
+                    borderRadius: '12px', 
+                    marginBottom: '20px',
+                    border: `1px solid ${colors.red}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    <Icon name="alert" size={14} color={colors.red} />
+                    {messages.map((message, index) => (
+                        <ErrorMessage key={index}>{message}</ErrorMessage>
+                    ))}
+                </div>
+            )}
         </>
     );
 };
