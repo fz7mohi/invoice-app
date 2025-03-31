@@ -1,0 +1,143 @@
+/* Loading spinner */
+.loading-spinner {
+  border: 2px solid rgba(124, 93, 250, 0.2);
+  border-top: 2px solid #7c5dfa;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile item details */
+.item-mobile-details {
+  font-weight: 500;
+}
+
+/* Force Total section to use brand purple background with white text for better contrast */
+.Total {
+  background-color: #7C5DFA !important;
+  color: white !important;
+}
+
+.Total p {
+  color: white !important;
+}
+
+/* Make ItemsHeader match the Total color */
+.ItemsHeader {
+  background-color: #7C5DFA !important;
+  color: white !important;
+}
+
+.ItemsHeader p {
+  color: white !important;
+}
+
+/* Dark mode styles - these will be applied with theme-based classes from the app */
+html[data-theme='dark'] .StyledQuotationView {
+  color-scheme: dark;
+}
+
+html[data-theme='dark'] .PrintButton {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme='dark'] .Item {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Minimalist Focus Styles */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #7c5dfa;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  html, body {
+    background-color: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+  
+  .StyledQuotationView {
+    padding: 0 !important;
+    background-color: white !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .MotionLink, 
+  .ButtonWrapper,
+  .PrintButton {
+    display: none !important;
+  }
+  
+  .Controller {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: white !important;
+    padding: 0 0 16px 0 !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .InfoCard {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: white !important;
+    padding: 0 !important;
+  }
+  
+  .InfoAddresses {
+    background-color: #f8f8f8 !important;
+    padding: 16px !important;
+    break-inside: avoid;
+  }
+  
+  .Details {
+    margin-top: 24px !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  .ItemsHeader {
+    display: grid !important;
+    background-color: #333 !important;
+    color: white !important;
+  }
+  
+  .Item {
+    display: grid !important;
+    grid-template-columns: 2fr 1fr 1fr 1fr !important;
+  }
+  
+  .ItemQty, .ItemPrice {
+    display: block !important;
+  }
+  
+  .item-mobile-details {
+    display: none !important;
+  }
+  
+  .Total {
+    background-color: #333 !important;
+    color: white !important;
+  }
+  
+  .TermsSection {
+    background-color: #f8f8f8 !important;
+    margin-top: 24px !important;
+    break-inside: avoid;
+  }
+
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+} 

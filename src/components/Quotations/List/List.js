@@ -177,7 +177,27 @@ const List = ({ isLoading, quotations, variant }) => {
                                         animate="visible"
                                         exit="exit"
                                     >
-                                        <Link to={`/quotation/${id}`}>
+                                        <Link to={`/quotation/${id}`} onClick={(e) => {
+                                            // Add more comprehensive debugging
+                                            console.log('Navigating to quotation with:');
+                                            console.log('- ID:', id);
+                                            console.log('- CustomID:', customId);
+                                            console.log('- Full quotation:', quotation);
+                                            
+                                            // Store the quotation in sessionStorage as a fallback
+                                            try {
+                                                const simplifiedQuotation = {
+                                                    ...quotation,
+                                                    // Convert dates to ISO strings to avoid circular references
+                                                    createdAt: quotation.createdAt instanceof Date ? quotation.createdAt.toISOString() : quotation.createdAt,
+                                                    paymentDue: quotation.paymentDue instanceof Date ? quotation.paymentDue.toISOString() : quotation.paymentDue
+                                                };
+                                                sessionStorage.setItem(`quotation_${id}`, JSON.stringify(simplifiedQuotation));
+                                                console.log('Stored quotation data in sessionStorage as fallback');
+                                            } catch (err) {
+                                                console.error('Failed to store in sessionStorage:', err);
+                                            }
+                                        }}>
                                             <PaymentDue>
                                                 {formatDate(quotation.createdAt || new Date())}
                                             </PaymentDue>

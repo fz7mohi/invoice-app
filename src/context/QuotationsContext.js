@@ -15,6 +15,16 @@ export const QuotationsProvider = ({ children }) => {
     refreshQuotations,
   } = useManageQuotations(state, dispatch);
 
+  // Create a function to ensure quotations are loaded
+  const ensureQuotationsLoaded = async () => {
+    if (!state.quotations || state.quotations.length === 0) {
+      console.log("No quotations found in state, refreshing from Firestore");
+      await refreshQuotations();
+    } else {
+      console.log(`${state.quotations.length} quotations already loaded in state`);
+    }
+  };
+
   const contextValue = {
     quotationState: state,
     dispatch,
@@ -23,10 +33,12 @@ export const QuotationsProvider = ({ children }) => {
     deleteQuotation,
     markQuotationAs,
     refreshQuotations,
+    ensureQuotationsLoaded,
   };
 
-  // Only fetch quotations once on mount
+  // Initial load of quotations
   useEffect(() => {
+    console.log('QuotationsProvider: Initial load - calling refreshQuotations');
     refreshQuotations();
   }, []);
 

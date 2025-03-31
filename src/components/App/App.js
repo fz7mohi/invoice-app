@@ -13,6 +13,7 @@ import Modal from '../Modal/Modal';
 import RouteError from '../RouteError/RouteError';
 import { useGlobalContext } from './context';
 import { AnimatePresence } from 'framer-motion';
+import QuotationView from '../QuotationView/QuotationView';
 
 // Create spinner animation keyframes
 const spinnerStyle = document.createElement('style');
@@ -61,7 +62,7 @@ const App = () => {
                         <Quotations />
                     </Route>
                     <Route path="/quotation/:id">
-                        <div>Quotation Details</div>
+                        <QuotationView />
                     </Route>
                     <Route path="*">
                         <RouteError />
