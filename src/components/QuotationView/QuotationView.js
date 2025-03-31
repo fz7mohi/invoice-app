@@ -475,16 +475,17 @@ const QuotationView = () => {
             letterhead.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div>
-                        <img src="images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                        <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
                     </div>
                     <div style="text-align: right; font-size: 17px; color: #000000;">
                         <div style="font-weight: bold; font-size: 19px; margin-bottom: 5px;">${companyProfile.name}</div>
                         <div>${companyProfile.address}</div>
                         <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
                     </div>
                 </div>
                 <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
-                <div style="text-align: center; margin-bottom: 5px;">
+                <div style="text-align: center; margin-top: 25px;">
                     <h1 style="font-size: 27px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
                 </div>
             `;
@@ -494,22 +495,12 @@ const QuotationView = () => {
             infoSection.style.cssText = `
                 display: flex;
                 justify-content: space-between;
-                margin-bottom: 20px;
+                margin-bottom: 5px;
                 padding: 0;
-                margin-top: 5px;
+                margin-top: 15px;
             `;
             
-            // Add quotation number and date
-            infoSection.innerHTML = `
-                <div>
-                    <div style="font-weight: bold; color: #004359; margin-bottom: 5px; font-size: 17px !important;">Quotation #</div>
-                    <div style="font-size: 21px !important; color: black;">${quotation.customId || id}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: bold; color: #004359; margin-bottom: 5px; font-size: 17px !important;">Quote Date</div>
-                    <div style="font-size: 17px !important; color: black;">${formatDate(quotation.createdAt)}</div>
-                </div>
-            `;
+        
             
             // Add letterhead to container
             pdfContainer.appendChild(letterhead);
@@ -1063,7 +1054,12 @@ const QuotationView = () => {
                         {renderClientSection()}
                         
                         <AddressGroup align="right">
+                            <AddressTitle>Quotation #</AddressTitle>
+                            <AddressText>
+                                {quotation.customId || id}
+                            </AddressText>
                             <AddressTitle>Quote Date</AddressTitle>
+                            <br />
                             <AddressText>
                                 {formatDate(quotation.createdAt)}
                             </AddressText>
