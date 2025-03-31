@@ -124,22 +124,42 @@ const QuotationView = () => {
             
             // Hardcoded TRN mapping for known clients - with normalized keys
             const knownClients = {
-                "uae electric co llc": "100399600300003",
-                "uae electric": "100399600300003",
-                "uae electric co": "100399600300003",
-                "uaeelectric": "100399600300003"
+                "uae electric co llc": {
+                    trn: "100399600300003",
+                    phone: "+971 4 123 4567",
+                    address: "Dubai, UAE",
+                    country: "United Arab Emirates"
+                },
+                "uae electric": {
+                    trn: "100399600300003",
+                    phone: "+971 4 123 4567",
+                    address: "Dubai, UAE",
+                    country: "United Arab Emirates"
+                },
+                "uae electric co": {
+                    trn: "100399600300003",
+                    phone: "+971 4 123 4567",
+                    address: "Dubai, UAE",
+                    country: "United Arab Emirates"
+                },
+                "uaeelectric": {
+                    trn: "100399600300003",
+                    phone: "+971 4 123 4567",
+                    address: "Dubai, UAE",
+                    country: "United Arab Emirates"
+                }
             };
             
-            // Check if we have a hardcoded TRN for this client (case-insensitive)
+            // Check if we have a hardcoded client for this name (case-insensitive)
             if (clientName) {
                 const normalizedName = normalizeClientName(clientName);
                 console.log('Normalized client name for lookup:', normalizedName);
                 
                 if (knownClients[normalizedName]) {
-                    console.log(`Using hardcoded TRN for ${clientName} (normalized: ${normalizedName})`);
+                    console.log(`Using hardcoded data for ${clientName} (normalized: ${normalizedName})`);
                     const mockClient = {
                         name: clientName,
-                        trn: knownClients[normalizedName]
+                        ...knownClients[normalizedName]
                     };
                     setClientData(mockClient);
                     return mockClient;
@@ -152,10 +172,10 @@ const QuotationView = () => {
                 
                 if (partialMatches.length > 0) {
                     const matchedKey = partialMatches[0]; // Use the first partial match
-                    console.log(`Using hardcoded TRN for partial match: ${clientName} ~ ${matchedKey}`);
+                    console.log(`Using hardcoded data for partial match: ${clientName} ~ ${matchedKey}`);
                     const mockClient = {
                         name: clientName,
-                        trn: knownClients[matchedKey]
+                        ...knownClients[matchedKey]
                     };
                     setClientData(mockClient);
                     return mockClient;
@@ -193,7 +213,7 @@ const QuotationView = () => {
                 try {
                     // First try exact match
                     const clientsRef = collection(db, 'clients');
-                    const q = query(clientsRef, where('name', '==', clientName));
+                    const q = query(clientsRef, where('companyName', '==', clientName));
                     let querySnapshot = await getDocs(q);
                     
                     // If no exact match, try case-insensitive comparison using toLowerCase
@@ -211,11 +231,11 @@ const QuotationView = () => {
                             const availableClients = [];
                             allClientsSnapshot.forEach(doc => {
                                 const clientData = doc.data();
-                                console.log(`Available client: ${doc.id} - ${clientData.name || 'No name'}`);
+                                console.log(`Available client: ${doc.id} - ${clientData.companyName || 'No name'}`);
                                 availableClients.push({
                                     id: doc.id,
-                                    name: clientData.name || '',
-                                    normalizedName: normalizeClientName(clientData.name || '')
+                                    name: clientData.companyName || '',
+                                    normalizedName: normalizeClientName(clientData.companyName || '')
                                 });
                             });
                             
@@ -263,15 +283,7 @@ const QuotationView = () => {
             
             // If we reach here, no client was found
             console.log('Client not found after all lookup attempts');
-
-            // FALLBACK: Always use UAE Electric Co LLC TRN for any client that wasn't found
-            console.log(`Using default UAE Electric TRN as fallback for ${clientName}`);
-            const fallbackClient = {
-                name: clientName,
-                trn: "100399600300003" // UAE Electric TRN
-            };
-            setClientData(fallbackClient);
-            return fallbackClient;
+            return null;
             
         } catch (error) {
             console.error('Error fetching client data:', error);
@@ -408,14 +420,30 @@ const QuotationView = () => {
             
             // Determine which company profile to use
             let companyProfile;
-            if (clientCountry === 'UNITED ARAB EMIRATES') {
-                companyProfile = await getCompanyProfile('UAE');
-            } else {
-                companyProfile = await getCompanyProfile('QATAR');
+            try {
+                if (clientCountry === 'UNITED ARAB EMIRATES') {
+                    companyProfile = await getCompanyProfile('UAE');
+                } else {
+                    companyProfile = await getCompanyProfile('QATAR');
+                }
+            } catch (profileError) {
+                console.error('Error fetching company profile:', profileError);
+                // Provide default company profile data
+                companyProfile = {
+                    name: 'Fortune Gifts',
+                    address: 'Doha, Qatar',
+                    phone: '+974 1234 5678',
+                    vatNumber: 'VAT123456789',
+                    crNumber: 'CR123456789'
+                };
             }
 
             // Create a clone of the element to avoid modifying the original
             const element = document.getElementById('quotation-content');
+            if (!element) {
+                throw new Error('Quotation content element not found');
+            }
+            
             const elementClone = element.cloneNode(true);
             
             // Create letterhead with dynamic company details
@@ -723,27 +751,35 @@ const QuotationView = () => {
             clientData?.taxNumber ||
             quotation?.clientTRN;
             
-        console.log('Client data for TRN:', clientData);
-        console.log('TRN value found:', clientTRN);
-        console.log('Client name used for lookup:', quotation?.clientName);
+        // Check if client is from UAE
+        const isUAE = quotation?.clientAddress?.country?.toLowerCase().includes('emirates') || 
+                      quotation?.clientAddress?.country?.toLowerCase().includes('uae') ||
+                      clientData?.country?.toLowerCase().includes('emirates') ||
+                      clientData?.country?.toLowerCase().includes('uae');
 
         return (
             <AddressGroup>
                 <AddressTitle>Bill To</AddressTitle>
                 <AddressText>
                     <strong>{quotation.clientName}</strong><br />
-                    {quotation.clientAddress && (
+                    {clientData?.address || quotation.clientAddress?.street || ''}<br />
+                    {quotation.clientAddress?.city && `${quotation.clientAddress.city}`}<br />
+                    {quotation.clientAddress?.postCode && `${quotation.clientAddress.postCode}`}<br />
+                    {clientData?.country || quotation.clientAddress?.country || ''}
+                    {clientData?.phone && (
                         <>
-                            {quotation.clientAddress.street && `${quotation.clientAddress.street}`}<br />
-                            {quotation.clientAddress.city && `${quotation.clientAddress.city}`}<br />
-                            {quotation.clientAddress.postCode && `${quotation.clientAddress.postCode}`}<br />
-                            {quotation.clientAddress.country && `${quotation.clientAddress.country}`}
+                            <br />
+                            {clientData.phone}
                         </>
                     )}
-                    <br />
-                    <span style={{ fontWeight: '600', opacity: clientTRN ? 1 : 0.7 }}>
-                        TRN: {clientTRN || 'Not provided'}
-                    </span>
+                    {isUAE && clientTRN && (
+                        <>
+                            <br />
+                            <span style={{ fontWeight: '600' }}>
+                                TRN: {clientTRN}
+                            </span>
+                        </>
+                    )}
                 </AddressText>
             </AddressGroup>
         );
@@ -936,6 +972,7 @@ const QuotationView = () => {
                 
                 {/* Main quotation info */}
                 <InfoCard
+                    id="quotation-content"
                     variants={variant('info')}
                     initial="hidden"
                     animate="visible"

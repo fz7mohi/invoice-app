@@ -40,22 +40,6 @@ const formValidation = (objectToValidate, itemsArray, isDraft = false) => {
         isError = true;
     }
     
-    // Check client address
-    if (objectToValidate.clientAddress) {
-        // Make post code and city optional but still validate other address fields
-        const requiredAddressFields = ['street', 'country'];
-        for (const field of requiredAddressFields) {
-            if (!objectToValidate.clientAddress[field] || objectToValidate.clientAddress[field] === '') {
-                if (!errors.clientAddress) errors.clientAddress = {};
-                errors.clientAddress[field] = true;
-                messages.push(`- Client ${field} cannot be empty`);
-                isError = true;
-            }
-        }
-        
-        // Post code and city are optional, so we don't validate them
-    }
-    
     // Validate items
     if (!itemsArray || itemsArray.length === 0) {
         errors.items = true;

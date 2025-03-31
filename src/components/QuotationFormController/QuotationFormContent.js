@@ -622,35 +622,42 @@ const QuotationFormContent = ({ isEdited }) => {
 
     // Initialize items when component mounts or quotation changes
     useEffect(() => {
-        let isMounted = true;
-        
         if (quotation?.items && quotation.items.length > 0) {
-            console.log('Initializing items from quotation:', quotation.items);
-            if (isMounted) {
+            // Only update if the items are different
+            if (JSON.stringify(quotation.items) !== JSON.stringify(localItems)) {
                 setLocalItems(quotation.items);
             }
         }
-        
-        return () => {
-            isMounted = false;
-        };
-    }, [quotation]);
+    }, [quotation?.items]); // Only depend on quotation.items
 
     // Sync changes from global state to local state
     useEffect(() => {
-        let isMounted = true;
-        
-        if (items && items.length > 0 && JSON.stringify(items) !== JSON.stringify(localItems)) {
-            console.log('Updating local items from global state:', items);
-            if (isMounted) {
+        if (items && items.length > 0) {
+            // Only update if the items are different
+            if (JSON.stringify(items) !== JSON.stringify(localItems)) {
                 setLocalItems(items);
             }
         }
-        
-        return () => {
-            isMounted = false;
-        };
-    }, [items]);
+    }, [items]); // Only depend on items
+
+    // Sync local items with global state
+    useEffect(() => {
+        if (localItems.length > 0 && typeof setItems === 'function') {
+            const processedItems = localItems.map(item => ({
+                name: item.name || '',
+                description: item.description || '',
+                quantity: parseFloat(item.quantity) || 0,
+                price: parseFloat(item.price) || 0,
+                total: parseFloat(item.total) || 0,
+                vat: parseFloat(item.vat) || 0
+            }));
+            
+            // Only update if the processed items are different from the current items
+            if (JSON.stringify(processedItems) !== JSON.stringify(items)) {
+                setItems(processedItems);
+            }
+        }
+    }, [localItems]); // Only depend on localItems
 
     // Close select dropdown when clicking outside
     useEffect(() => {
@@ -700,86 +707,64 @@ const QuotationFormContent = ({ isEdited }) => {
         // Reset dropdowns
         setIsClientDropdownExpanded(false);
 
+        // Validate required fields
+        if (!client.companyName || !client.email || !client.phone || !client.address) {
+            // Show error message or handle missing required fields
+            console.error('Selected client is missing required information');
+            return;
+        }
+
         // Update client name
-        const clientNameEvent = {
+        handleQuotationChange({
             target: {
                 name: 'clientName',
                 value: client.companyName
             }
-        };
-        handleQuotationChange(clientNameEvent, 'quotation');
+        }, 'quotation');
         
-        // Slight delay to ensure previous update completes
-        setTimeout(() => {
-            // Update client email
-            if (client.email) {
-                const emailEvent = {
-                    target: {
-                        name: 'clientEmail',
-                        value: client.email
-                    }
-                };
-                handleQuotationChange(emailEvent, 'quotation');
+        // Update client email
+        handleQuotationChange({
+            target: {
+                name: 'clientEmail',
+                value: client.email
             }
-            
-            // Update client address fields
-            if (client.address) {
-                // Split address into lines and clean them
-                const addressLines = client.address
-                    .split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line);
-                
-                // First line is street
-                const street = addressLines[0] || '';
-                
-                // Second line contains city and post code
-                let city = '';
-                let postCode = '';
-                if (addressLines[1]) {
-                    const cityLine = addressLines[1];
-                    // Try to find post code pattern (e.g., 5 digits or letters and numbers)
-                    const postCodeMatch = cityLine.match(/\b[A-Z0-9\s-]{3,}\b/);
-                    if (postCodeMatch) {
-                        postCode = postCodeMatch[0].trim();
-                        city = cityLine.replace(postCode, '').replace(/,/g, '').trim();
-                    } else {
-                        city = cityLine;
-                    }
-                }
-                
-                // Set street
-                handleQuotationChange({
-                    target: { name: 'street', value: street }
-                }, 'clientAddress');
-                
-                // Set city
-                handleQuotationChange({
-                    target: { name: 'city', value: city }
-                }, 'clientAddress');
-                
-                // Set post code
-                handleQuotationChange({
-                    target: { name: 'postCode', value: postCode }
-                }, 'clientAddress');
-            }
-            
-            // Country
-            if (client.country) {
-                handleQuotationChange({
-                    target: { name: 'country', value: client.country }
-                }, 'clientAddress');
-                
-                // Set currency based on country
-                const currency = getCurrencySymbol(client.country);
-                if (currency) {
-                    console.log('Setting quote currency to:', currency);
-                    handleQuotationChange({
-                        target: { name: 'currency', value: currency }
-                    }, 'quotation');
+        }, 'quotation');
+        
+        // Initialize clientAddress object with empty values
+        handleQuotationChange({
+            target: { 
+                name: 'clientAddress', 
+                value: {
+                    street: '',
+                    city: '',
+                    postCode: '',
+                    country: ''
                 }
             }
-        }, 100);
+        }, 'quotation');
+        
+        // Update client address fields
+        if (client.address) {
+            // Set the address in the clientAddress object
+            handleQuotationChange({
+                target: { name: 'street', value: client.address }
+            }, 'clientAddress');
+        }
+        
+        // Set country
+        if (client.country) {
+            handleQuotationChange({
+                target: { name: 'country', value: client.country }
+            }, 'clientAddress');
+            
+            // Set currency based on country
+            const currency = getCurrencySymbol(client.country);
+            if (currency) {
+                handleQuotationChange({
+                    target: { name: 'currency', value: currency }
+                }, 'quotation');
+            }
+        }
     };
 
     // Add a helper function to check if the client name is being properly set
@@ -816,19 +801,6 @@ const QuotationFormContent = ({ isEdited }) => {
                     
                     updatedItems[index].vat = vat;
                     updatedItems[index].total = subtotal + vat;
-                }
-                
-                // Update global state directly
-                if (typeof setItems === 'function') {
-                    const processedItems = updatedItems.map(item => ({
-                        name: item.name || '',
-                        description: item.description || '',
-                        quantity: parseFloat(item.quantity) || 0,
-                        price: parseFloat(item.price) || 0,
-                        total: parseFloat(item.total) || 0,
-                        vat: parseFloat(item.vat) || 0
-                    }));
-                    setItems(processedItems);
                 }
                 
                 return updatedItems;
@@ -954,33 +926,30 @@ const QuotationFormContent = ({ isEdited }) => {
                                     </InfoItem>
                                 )}
                                 
+                                {findSelectedClient()?.address && (
+                                    <InfoItem>
+                                        <InfoIcon>
+                                            <Icon name="delivery" size={12} color={colors.textSecondary} />
+                                        </InfoIcon>
+                                        <InfoValue>{findSelectedClient().address}</InfoValue>
+                                    </InfoItem>
+                                )}
+                                
+                                {findSelectedClient()?.country && (
+                                    <InfoItem>
+                                        <InfoIcon>
+                                            <Icon name="map" size={12} color={colors.textSecondary} />
+                                        </InfoIcon>
+                                        <InfoValue>{findSelectedClient().country}</InfoValue>
+                                    </InfoItem>
+                                )}
+                                
                                 {findSelectedClient()?.trnNumber && (
                                     <InfoItem>
                                         <InfoIcon>
                                             <Icon name="receipt" size={12} color={colors.textSecondary} />
                                         </InfoIcon>
                                         <InfoValue>TRN: {findSelectedClient().trnNumber}</InfoValue>
-                                    </InfoItem>
-                                )}
-                                
-                                {quotation.clientAddress?.street && (
-                                    <InfoItem>
-                                        <InfoIcon>
-                                            <Icon name="delivery" size={12} color={colors.textSecondary} />
-                                        </InfoIcon>
-                                        <InfoValue>
-                                            {quotation.clientAddress.street}
-                                            {(quotation.clientAddress.city || quotation.clientAddress.postCode) && (
-                                                <>
-                                                    {' '}{quotation.clientAddress.city || ''}
-                                                    {quotation.clientAddress.city && quotation.clientAddress.postCode && ', '}
-                                                    {quotation.clientAddress.postCode || ''}
-                                                </>
-                                            )}
-                                            {quotation.clientAddress.country && (
-                                                <>, {quotation.clientAddress.country}</>
-                                            )}
-                                        </InfoValue>
                                     </InfoItem>
                                 )}
                             </ClientInfo>
