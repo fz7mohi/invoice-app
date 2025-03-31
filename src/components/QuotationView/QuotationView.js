@@ -452,59 +452,69 @@ const QuotationView = () => {
             
             const elementClone = element.cloneNode(true);
             
+            // Create a container for PDF content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                width: 297mm;
+                min-height: 420mm;
+                padding: 5mm 20mm 20mm 20mm;
+                margin: 0;
+                background-color: white;
+                box-sizing: border-box;
+                position: relative;
+                font-family: Arial, sans-serif;
+            `;
+            
             // Create letterhead with dynamic company details
             const letterhead = document.createElement('div');
             letterhead.className = 'letterhead';
+            letterhead.style.cssText = `
+                margin-bottom: 5mm;
+            `;
+            
             letterhead.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div>
-                        <img src="images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='22px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                        <img src="images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
                     </div>
-                    <div style="text-align: right; font-size: 12px; color: #000000;">
-                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${companyProfile.name}</div>
+                    <div style="text-align: right; font-size: 17px; color: #000000;">
+                        <div style="font-weight: bold; font-size: 19px; margin-bottom: 5px;">${companyProfile.name}</div>
                         <div>${companyProfile.address}</div>
                         <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
                     </div>
                 </div>
-                <div style="height: 2px; background-color: #004359; margin-bottom: 15px;"></div>
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="font-size: 22px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
+                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
+                <div style="text-align: center; margin-bottom: 5px;">
+                    <h1 style="font-size: 27px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
                 </div>
             `;
             
-            // Remove the entire InfoHeader section (project description and created date)
-            const headerElement = elementClone.querySelector('.InfoHeader');
-            if (headerElement) {
-                headerElement.remove();
-            }
-            
-            // Find and remove the description if it exists
-            const descElement = elementClone.querySelector('.InfoDesc');
-            if (descElement) {
-                descElement.style.display = 'none';
-            }
-            
-            // Create a custom info section with quotation number and date only
+            // Create a custom info section with quotation number and date
             const infoSection = document.createElement('div');
-            infoSection.style.display = 'flex';
-            infoSection.style.justifyContent = 'flex-start';
-            infoSection.style.marginBottom = '30px';
-            infoSection.style.padding = '0 20px';
-            
-            // Add quotation number only
-            const quoteNumberDiv = document.createElement('div');
-            quoteNumberDiv.innerHTML = `
-                <div style="font-weight: bold; color: #004359; margin-bottom: 5px;">Quotation #</div>
-                <div style="font-size: 16px; color: black;">${quotation.customId || id}</div>
+            infoSection.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                padding: 0;
+                margin-top: 5px;
             `;
             
-            infoSection.appendChild(quoteNumberDiv);
+            // Add quotation number and date
+            infoSection.innerHTML = `
+                <div>
+                    <div style="font-weight: bold; color: #004359; margin-bottom: 5px; font-size: 17px !important;">Quotation #</div>
+                    <div style="font-size: 21px !important; color: black;">${quotation.customId || id}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: bold; color: #004359; margin-bottom: 5px; font-size: 17px !important;">Quote Date</div>
+                    <div style="font-size: 17px !important; color: black;">${formatDate(quotation.createdAt)}</div>
+                </div>
+            `;
             
-            // Create a container for PDF content
-            const pdfContainer = document.createElement('div');
-            pdfContainer.style.padding = '20px';
-            pdfContainer.style.backgroundColor = 'white';
+            // Add letterhead to container
             pdfContainer.appendChild(letterhead);
+
+            // Add info section to container
             pdfContainer.appendChild(infoSection);
             
             // Extract and clean up the client section
@@ -631,22 +641,31 @@ const QuotationView = () => {
             
             // Add signature section at the bottom
             const signatureSection = document.createElement('div');
-            signatureSection.style.marginTop = '60px';
-            signatureSection.style.display = 'flex';
-            signatureSection.style.justifyContent = 'space-between';
-            signatureSection.style.padding = '0 20px';
-            
+            signatureSection.style.cssText = `
+                position: absolute;
+                bottom: 30mm;
+                left: 20mm;
+                right: 20mm;
+                display: flex;
+                justify-content: space-between;
+            `;
+
             signatureSection.innerHTML = `
                 <div style="width: 45%;">
-                    <div style="border-bottom: 1px solid #004359; margin-bottom: 10px;"></div>
-                    <div style="font-weight: bold; color: #004359;">Authorized Signature</div>
+                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                    <div style="font-weight: bold; color: #004359; font-size: 17px !important;">Authorized Signature</div>
                 </div>
                 <div style="width: 45%;">
-                    <div style="border-bottom: 1px solid #004359; margin-bottom: 10px;"></div>
-                    <div style="font-weight: bold; color: #004359;">Client Acceptance</div>
+                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                    <div style="font-weight: bold; color: #004359; font-size: 17px !important;">Client Acceptance</div>
                 </div>
             `;
-            
+
+            // Add extra space before the signature section
+            const spacerDiv = document.createElement('div');
+            spacerDiv.style.height = '150px'; // Add space before signatures
+            pdfContainer.appendChild(spacerDiv);
+
             pdfContainer.appendChild(signatureSection);
             
             // Temporarily add to document to render
@@ -654,61 +673,30 @@ const QuotationView = () => {
             pdfContainer.style.left = '-9999px';
             document.body.appendChild(pdfContainer);
             
-            // Convert to canvas with better options for PDF
+            // Convert to canvas with A3 dimensions
             const canvas = await html2canvas(pdfContainer, {
                 scale: 2,
                 useCORS: true,
                 logging: false,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                width: 1122.5, // 297mm in pixels at 96 DPI
+                height: 1587.4 // 420mm in pixels at 96 DPI
             });
             
             // Remove temporary elements
             document.body.removeChild(pdfContainer);
             
-            // Calculate PDF dimensions (A4 format)
-            const imgData = canvas.toDataURL('image/png');
+            // Create PDF with A3 size
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
-                format: 'a4'
+                format: 'a3',
+                compress: true
             });
             
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const canvasRatio = canvas.height / canvas.width;
-            const imgWidth = pdfWidth;
-            const imgHeight = pdfWidth * canvasRatio;
-            
-            // If content is longer than a page, create multiple pages
-            if (imgHeight > pdfHeight) {
-                // Calculate the number of pages needed
-                const pageCount = Math.ceil(imgHeight / pdfHeight);
-                
-                // Add each portion of the image to separate pages
-                for (let i = 0; i < pageCount; i++) {
-                    if (i > 0) pdf.addPage();
-                    
-                    const sourceY = i * canvas.height / pageCount;
-                    const sourceHeight = canvas.height / pageCount;
-                    
-                    const tmpCanvas = document.createElement('canvas');
-                    tmpCanvas.width = canvas.width;
-                    tmpCanvas.height = sourceHeight;
-                    
-                    const ctx = tmpCanvas.getContext('2d');
-                    ctx.drawImage(
-                        canvas, 
-                        0, sourceY, canvas.width, sourceHeight,
-                        0, 0, tmpCanvas.width, tmpCanvas.height
-                    );
-                    
-                    const pageImgData = tmpCanvas.toDataURL('image/png');
-                    pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                }
-            } else {
-                // Add the image to the PDF
-                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            }
+            // Add the image to fit A3 page
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
             
             // Save the PDF
             pdf.save(`Quotation_${quotation.customId || id}.pdf`);
