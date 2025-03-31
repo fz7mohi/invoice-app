@@ -205,6 +205,9 @@ const List = ({ quotations, isLoading, variant }) => {
                             <PaymentDue>
                                 {formatDate(quotation.createdAt)}
                             </PaymentDue>
+                            <Description>
+                                {quotation.description || 'No description'}
+                            </Description>
                             <Uid>
                                 <Hashtag>#</Hashtag>
                                 {quotation.customId || quotation.id}
@@ -212,11 +215,8 @@ const List = ({ quotations, isLoading, variant }) => {
                             <ClientName>
                                 {quotation.clientName}
                             </ClientName>
-                            <Description>
-                                {quotation.description || 'No description'}
-                            </Description>
                         </Link>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: windowWidth <= 768 ? '8px' : '0' }}>
                             <StatusBadge status={quotation.status}>
                                 <StatusDot status={quotation.status} />
                                 {formatStatus(quotation.status)}
