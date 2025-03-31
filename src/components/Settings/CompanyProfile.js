@@ -18,7 +18,8 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
     country: '',
     vatNumber: '',
     crNumber: '',
-    gstNumber: ''
+    gstNumber: '',
+    website: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -51,7 +52,8 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
         country: editingCompany.country || '',
         vatNumber: editingCompany.vatNumber || '',
         crNumber: editingCompany.crNumber || '',
-        gstNumber: editingCompany.gstNumber || ''
+        gstNumber: editingCompany.gstNumber || '',
+        website: editingCompany.website || ''
       });
     }
   }, [editingCompany]);
@@ -66,7 +68,8 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
       country: '',
       vatNumber: '',
       crNumber: '',
-      gstNumber: ''
+      gstNumber: '',
+      website: ''
     });
     setError(null);
   };
@@ -198,6 +201,11 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
                   {company.address && (
                     <CompanyDetail>
                       <Label>Address:</Label> {company.address}
+                    </CompanyDetail>
+                  )}
+                  {company.website && (
+                    <CompanyDetail>
+                      <Label>Website:</Label> <a href={company.website} target="_blank" rel="noopener noreferrer">{company.website}</a>
                     </CompanyDetail>
                   )}
                   {company.vatNumber && (
@@ -355,6 +363,19 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
                   </FormGroup>
                 </FormRow>
               )}
+
+              <FormRow>
+                <FormGroup>
+                  <Label htmlFor="website">Website</Label>
+                  <Input
+                    type="text"
+                    id="website"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleChange}
+                  />
+                </FormGroup>
+              </FormRow>
 
               <ButtonGroup>
                 <CancelButton
