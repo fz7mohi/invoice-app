@@ -3,14 +3,25 @@
  * and return errors if it doesn't meet criteria.
  * @param    {object} objectToValidate    Object with form inputs values
  * @param    {array} itemsArray    Array of items to validate
+ * @param    {boolean} isDraft    Whether this is a draft submission
  * @return   {object}    Object with validation results
  */
-const formValidation = (objectToValidate, itemsArray) => {
+const formValidation = (objectToValidate, itemsArray, isDraft = false) => {
     let errors = {};
     let messages = [];
     let isError = false;
 
-    // Check if required fields exist on the object
+    // For draft submissions, only validate client name
+    if (isDraft) {
+        if (!objectToValidate.clientName || objectToValidate.clientName === '') {
+            errors.clientName = true;
+            messages.push('- Client name cannot be empty');
+            isError = true;
+        }
+        return { isError, err: errors, msg: messages };
+    }
+
+    // For regular submissions, validate all required fields
     const requiredFields = ['description', 'clientName', 'termsAndConditions'];
     for (const field of requiredFields) {
         if (!objectToValidate[field] || objectToValidate[field] === '') {
@@ -31,8 +42,8 @@ const formValidation = (objectToValidate, itemsArray) => {
     
     // Check client address
     if (objectToValidate.clientAddress) {
-        // Make post code optional but still validate other address fields
-        const requiredAddressFields = ['street', 'city', 'country'];
+        // Make post code and city optional but still validate other address fields
+        const requiredAddressFields = ['street', 'country'];
         for (const field of requiredAddressFields) {
             if (!objectToValidate.clientAddress[field] || objectToValidate.clientAddress[field] === '') {
                 if (!errors.clientAddress) errors.clientAddress = {};
@@ -42,7 +53,7 @@ const formValidation = (objectToValidate, itemsArray) => {
             }
         }
         
-        // Post code is optional, so we don't validate it
+        // Post code and city are optional, so we don't validate them
     }
     
     // Validate items

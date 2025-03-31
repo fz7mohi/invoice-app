@@ -403,17 +403,32 @@ const QuotationView = () => {
     // Download quotation as PDF
     const handleDownloadPDF = async () => {
         try {
-            // Create the letterhead as a separate element
+            // Get the client's country from the quotation
+            const clientCountry = quotation?.clientAddress?.country?.toUpperCase() || 'QATAR';
+            
+            // Determine which company profile to use
+            let companyProfile;
+            if (clientCountry === 'UNITED ARAB EMIRATES') {
+                companyProfile = await getCompanyProfile('UAE');
+            } else {
+                companyProfile = await getCompanyProfile('QATAR');
+            }
+
+            // Create a clone of the element to avoid modifying the original
+            const element = document.getElementById('quotation-content');
+            const elementClone = element.cloneNode(true);
+            
+            // Create letterhead with dynamic company details
             const letterhead = document.createElement('div');
             letterhead.className = 'letterhead';
             letterhead.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px 0;">
                     <div>
-                        <img src="images/invoice-logo.png" alt="Fortune Gifts Logo" style="max-height: 60px;" onerror="this.onerror=null; this.src=''; this.alt='Fortune Gifts'; this.style.fontSize='22px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                        <img src="images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 60px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='22px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
                     </div>
                     <div style="text-align: right; font-size: 12px; color: #000000;">
-                        <div>P.O Box 123456, Dubai, UAE</div>
-                        <div>Tel: +971 4 123 4567 | TRN: <span style="color: #FF4806;">100399501900003</span></div>
+                        <div>${companyProfile.address}</div>
+                        <div>Tel: ${companyProfile.phone} | ${clientCountry === 'UNITED ARAB EMIRATES' ? 'VAT' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry === 'UNITED ARAB EMIRATES' ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
                     </div>
                 </div>
                 <div style="height: 2px; background-color: #004359; margin-bottom: 15px;"></div>
@@ -421,13 +436,6 @@ const QuotationView = () => {
                     <h1 style="font-size: 22px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
                 </div>
             `;
-            
-            // Get the element to convert
-            const element = document.querySelector('.InfoCard');
-            if (!element) return;
-            
-            // Create a clone of the element to modify
-            const elementClone = element.cloneNode(true);
             
             // Remove the entire InfoHeader section (project description and created date)
             const headerElement = elementClone.querySelector('.InfoHeader');
@@ -813,6 +821,49 @@ const QuotationView = () => {
     };
 
     const { subtotal, vatAmount, grandTotal } = calculateTotals();
+
+    const getCompanyProfile = async (country) => {
+        try {
+            const companyProfilesRef = collection(db, 'companyProfiles');
+            const q = query(companyProfilesRef, where('country', '==', country));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                const profile = querySnapshot.docs[0].data();
+                return {
+                    name: profile.name || 'Fortune Gifts',
+                    address: profile.address || '',
+                    phone: profile.phone || '',
+                    vatNumber: profile.vatNumber || '',
+                    crNumber: profile.crNumber || ''
+                };
+            }
+            
+            // If no profile found for UAE, return Qatar profile as default
+            if (country === 'UAE') {
+                return getCompanyProfile('QATAR');
+            }
+            
+            // Default Qatar profile
+            return {
+                name: 'Fortune Gifts',
+                address: 'P.O Box 123456, Doha, Qatar',
+                phone: '+974 1234 5678',
+                vatNumber: '',
+                crNumber: 'CR123456789'
+            };
+        } catch (error) {
+            console.error('Error fetching company profile:', error);
+            // Return default Qatar profile in case of error
+            return {
+                name: 'Fortune Gifts',
+                address: 'P.O Box 123456, Doha, Qatar',
+                phone: '+974 1234 5678',
+                vatNumber: '',
+                crNumber: 'CR123456789'
+            };
+        }
+    };
 
     return (
         <StyledQuotationView className="StyledQuotationView">

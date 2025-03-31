@@ -437,92 +437,25 @@ const useManageQuotations = () => {
     const handleSubmit = async (type) => {
         try {
             console.log('Starting quotation submission with type:', type);
+            console.log('Current quotation state:', quotation);
+            console.log('Current items:', items);
             
-            // For draft submissions, bypass validation
-            if (type === 'draft') {
-                console.log('Processing draft submission - bypassing validation');
-                
-                // Set default values for draft
-                const draftQuotation = {
-                    ...quotation,
-                    description: quotation.description || 'Draft Quotation',
-                    termsAndConditions: quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS,
-                    currency: quotation.currency || 'USD',
-                    items: quotation.items.length > 0 
-                        ? quotation.items.map(item => ({
-                            name: item.name || 'Draft Item',
-                            description: item.description || '',
-                            quantity: parseFloat(item.quantity) || 0,
-                            price: parseFloat(item.price) || 0,
-                            vat: parseFloat(item.vat) || 0,
-                            total: parseFloat(item.total) || 0
-                        }))
-                        : [{
-                            name: 'Draft Item',
-                            description: '',
-                            quantity: 0,
-                            price: 0,
-                            vat: 0,
-                            total: 0
-                        }]
-                };
-                
-                // Only validate client selection for draft
-                if (!draftQuotation.clientName) {
-                    dispatch({
-                        type: ACTIONS.SET_ERRORS,
-                        payload: {
-                            isError: true,
-                            fields: { clientName: true },
-                            messages: ['- Client name is required']
-                        }
-                    });
-                    return;
-                }
-                
-                // Update quotation state with draft values
-                setQuotation(draftQuotation);
-                
-                // Generate a unique ID for the quotation
-                const quotationId = generateId();
-                
-                // Create the quotation document
-                const quotationDoc = {
-                    ...draftQuotation,
-                    id: quotationId,
-                    customId: quotationId,
-                    status: 'draft',
-                    createdAt: new Date(),
-                    paymentDue: new Date(),
-                    total: draftQuotation.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
-                };
-                
-                // Add to Firestore
-                const docRef = await addDoc(collection(db, 'quotations'), quotationDoc);
-                console.log('Draft quotation added with ID:', docRef.id);
-                
-                // Update local state
-                dispatch({
-                    type: ACTIONS.ADD_QUOTATION,
-                    payload: quotationDoc
-                });
-                
-                // Reset form and close modal
-                resetForm();
-                dispatch({ type: 'DISCARD_QUOTATION' });
-                
-                // Refresh quotations list immediately
-                await refreshQuotations();
-                
-                return;
+            // Ensure terms and conditions are set for regular submissions
+            if (type !== 'draft' && !quotation.termsAndConditions) {
+                console.log('Setting default terms and conditions');
+                setQuotation(prev => ({
+                    ...prev,
+                    termsAndConditions: DEFAULT_TERMS_AND_CONDITIONS
+                }));
             }
             
             // For regular submissions, validate all fields
-            const validationResult = formValidation(quotation, items);
+            const validationResult = formValidation(quotation, items, type === 'draft');
             
             if (validationResult.isError) {
+                console.log('Validation failed:', validationResult);
                 dispatch({
-                    type: ACTIONS.SET_ERRORS,
+                    type: ACTIONS.SET_QUOTATION_ERRORS,
                     payload: {
                         isError: true,
                         fields: validationResult.err,
@@ -531,6 +464,8 @@ const useManageQuotations = () => {
                 });
                 return;
             }
+
+            console.log('Validation passed, processing items...');
 
             // Process items for regular submission
             const processedItems = items.map(item => ({
@@ -553,7 +488,7 @@ const useManageQuotations = () => {
                 ...quotation,
                 id: quotationId,
                 customId: quotationId,
-                status: 'pending',
+                status: type === 'draft' ? 'draft' : 'pending',
                 items: processedItems,
                 total: totalAmount,
                 createdAt: new Date(),
@@ -562,33 +497,92 @@ const useManageQuotations = () => {
                 termsAndConditions: quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS
             };
 
-            // Add to Firestore
-            const docRef = await addDoc(collection(db, 'quotations'), quotationDoc);
-            console.log('Quotation added with ID:', docRef.id);
+            console.log('Prepared quotation document:', quotationDoc);
 
-            // Update local state
-            dispatch({
-                type: ACTIONS.ADD_QUOTATION,
-                payload: quotationDoc
-            });
+            try {
+                console.log('Attempting to add to Firestore...');
+                
+                // Create the Firestore document data
+                const firestoreDoc = {
+                    ...quotationDoc,
+                    createdAt: Timestamp.fromDate(quotationDoc.createdAt),
+                    paymentDue: Timestamp.fromDate(quotationDoc.paymentDue),
+                    // Ensure all required fields are present and properly formatted
+                    clientName: quotationDoc.clientName || '',
+                    clientEmail: quotationDoc.clientEmail || '',
+                    description: quotationDoc.description || '',
+                    paymentTerms: quotationDoc.paymentTerms || '30',
+                    status: type === 'draft' ? 'draft' : 'pending',
+                    items: processedItems,
+                    total: totalAmount,
+                    currency: quotationDoc.currency || 'USD',
+                    termsAndConditions: quotationDoc.termsAndConditions || '',
+                    clientAddress: quotationDoc.clientAddress || {},
+                    senderAddress: quotationDoc.senderAddress || {}
+                };
 
-            // Reset form and close modal
-            resetForm();
-            dispatch({ type: 'DISCARD_QUOTATION' });
+                console.log('Firestore document prepared:', firestoreDoc);
 
-            // Refresh quotations list immediately
-            await refreshQuotations();
+                // Get reference to quotations collection
+                const quotationsRef = collection(db, 'quotations');
+                console.log('Got collection reference');
+
+                // Add the document
+                const docRef = await addDoc(quotationsRef, firestoreDoc);
+                console.log('Document written with ID:', docRef.id);
+                
+                // Update the document with the Firestore ID
+                const finalDoc = {
+                    ...quotationDoc,
+                    id: docRef.id
+                };
+                
+                console.log('Updating local state with:', finalDoc);
+
+                // Update local state
+                dispatch({
+                    type: ACTIONS.ADD_QUOTATION,
+                    payload: finalDoc
+                });
+                
+                // Wait for state update
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Reset form and close modal
+                resetForm();
+                dispatch({ type: ACTIONS.DISCARD_QUOTATION });
+                
+                // Refresh quotations list immediately
+                await refreshQuotations();
+
+                console.log('Quotation submission completed successfully');
+                return true;
+            } catch (firebaseError) {
+                console.error('Error adding quotation to Firestore:', firebaseError);
+                console.error('Error details:', {
+                    code: firebaseError.code,
+                    message: firebaseError.message,
+                    stack: firebaseError.stack
+                });
+                throw firebaseError;
+            }
             
         } catch (error) {
             console.error('Error submitting quotation:', error);
+            console.error('Error details:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
             dispatch({
-                type: ACTIONS.SET_ERRORS,
+                type: ACTIONS.SET_QUOTATION_ERRORS,
                 payload: {
                     isError: true,
                     fields: {},
                     messages: ['Error submitting quotation: ' + error.message]
                 }
             });
+            throw error;
         }
     };
 
@@ -772,30 +766,26 @@ const useManageQuotations = () => {
 
     return {
         state,
+        dispatch,
         quotation,
         senderAddress,
         clientAddress,
         items,
         handleQuotationChange,
+        handleSubmit,
         addQuotationItem,
         removeQuotationItem,
-        handleSubmit,
+        refreshQuotations,
         handleApprove,
         handleDelete,
         editQuotation,
+        resetForm,
         discardChanges,
         toggleModal,
         createQuotation,
-        // Add direct state setters for component use
-        setQuotation,
-        setSenderAddress,
-        setClientAddress,
-        setItems,
-        // Add the new direct functions
         addNewItem,
         removeItemAtIndex,
-        // Add the refresh function
-        refreshQuotations
+        setItems
     };
 };
 

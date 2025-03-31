@@ -6,14 +6,29 @@ import { quotationsReducer, initialState } from '../store/reducers/quotationsRed
 export const QuotationsContext = createContext();
 
 export const QuotationsProvider = ({ children }) => {
-  const { state, dispatch } = useReducer(quotationsReducer, initialState);
   const {
-    addQuotation,
-    editQuotation,
-    deleteQuotation,
-    markQuotationAs,
+    state,
+    dispatch,
+    quotation,
+    senderAddress,
+    clientAddress,
+    items,
+    handleQuotationChange,
+    handleSubmit,
+    addQuotationItem,
+    removeQuotationItem,
     refreshQuotations,
-  } = useManageQuotations(state, dispatch);
+    handleApprove,
+    handleDelete,
+    editQuotation,
+    resetForm,
+    discardChanges,
+    toggleModal,
+    createQuotation,
+    addNewItem,
+    removeItemAtIndex,
+    setItems
+  } = useManageQuotations();
 
   // Create a function to ensure quotations are loaded
   const ensureQuotationsLoaded = async () => {
@@ -27,12 +42,25 @@ export const QuotationsProvider = ({ children }) => {
 
   const contextValue = {
     quotationState: state,
-    dispatch,
-    addQuotation,
-    editQuotation,
-    deleteQuotation,
-    markQuotationAs,
+    quotation,
+    senderAddress,
+    clientAddress,
+    items,
+    handleQuotationChange,
+    handleQuotationSubmit: handleSubmit,
+    addQuotationItem,
+    removeQuotationItem,
     refreshQuotations,
+    handleApprove,
+    handleDelete,
+    editQuotation,
+    resetForm,
+    discardQuotationChanges: discardChanges,
+    toggleQuotationModal: toggleModal,
+    createQuotation,
+    addNewItem,
+    removeItemAtIndex,
+    setItems,
     ensureQuotationsLoaded,
   };
 

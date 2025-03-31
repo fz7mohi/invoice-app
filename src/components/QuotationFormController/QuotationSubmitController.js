@@ -9,26 +9,43 @@ const QuotationSubmitController = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmitWithLogging = async (type) => {
+        if (isSubmitting) {
+            console.log('Already submitting, ignoring click');
+            return;
+        }
+        
         try {
-            // Prevent double submissions
-            if (isSubmitting) return;
-            
             setIsSubmitting(true);
             console.log('QuotationSubmitController: Submit button clicked with type:', type);
             console.log('Current quotation state before submit:', quotationState);
             
             // Call the submit function and await its completion
-            await handleQuotationSubmit(type);
+            const result = await handleQuotationSubmit(type);
+            console.log('handleQuotationSubmit result:', result);
             
-            console.log('Quotation submitted successfully, closing form...');
-            
-            // After submit completes, close the form with a small delay to ensure state updates
-            setTimeout(() => {
+            if (result === true) {
+                console.log('Quotation submitted successfully, waiting before closing form...');
+                
+                // Wait for a longer time to ensure all state updates are complete
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                console.log('Closing form after successful submission');
                 discardQuotationChanges();
-                console.log('Form closed after submission');
-            }, 300);
+            } else {
+                console.log('Submission did not return success, keeping form open');
+                // Show validation errors if they exist
+                if (quotationState.errors?.isError && quotationState.errors?.messages?.length > 0) {
+                    console.log('Validation errors:', quotationState.errors.messages);
+                }
+            }
         } catch (error) {
             console.error('Error during form submission:', error);
+            console.error('Error details:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
+            // Don't close the form on error
         } finally {
             setIsSubmitting(false);
         }
@@ -48,13 +65,9 @@ const QuotationSubmitController = () => {
             {!isQuotationEdited && (
                 <Button
                     type="button"
-                    form="quotation-form"
                     $small
                     $save
-                    onClick={(e) => {
-                        e.preventDefault();
-                        handleSubmitWithLogging('draft');
-                    }}
+                    onClick={() => handleSubmitWithLogging('draft')}
                     disabled={isSubmitting}
                 >
                     {isSubmitting ? 'Saving...' : 'Save as Draft'}
@@ -62,13 +75,9 @@ const QuotationSubmitController = () => {
             )}
             <Button
                 type="button"
-                form="quotation-form"
                 $small
                 $primary
-                onClick={(e) => {
-                    e.preventDefault();
-                    handleSubmitWithLogging(isQuotationEdited ? 'change' : 'new');
-                }}
+                onClick={() => handleSubmitWithLogging(isQuotationEdited ? 'change' : 'new')}
                 disabled={isSubmitting}
             >
                 {isSubmitting ? 'Saving...' : `Save ${!isQuotationEdited ? '& Send' : 'Changes'}`}

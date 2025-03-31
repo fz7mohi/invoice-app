@@ -42,18 +42,14 @@ export const quotationsReducer = (state = initialState, action) => {
             };
             
         case ACTION_TYPES.ADD_QUOTATION:
+            console.log('Adding quotation to state:', action.payload);
             return {
                 ...state,
-                quotations: [...state.quotations, action.payload.quotation],
+                quotations: [...state.quotations, action.payload],
                 form: {
                     isEditing: false,
                     isCreating: false,
-                },
-                errors: {
-                    isError: false,
-                    fields: {},
-                    messages: [],
-                },
+                }
             };
 
         case ACTION_TYPES.SAVE_QUOTATION_CHANGES:

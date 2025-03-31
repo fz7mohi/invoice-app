@@ -602,7 +602,8 @@ const QuotationFormContent = ({ isEdited }) => {
         addNewItem,
         removeItemAtIndex,
         handleQuotationSubmit,
-        toggleQuotationModal
+        toggleQuotationModal,
+        dispatch
     } = useGlobalContext();
     
     const [isDropdownExpanded, setIsDropdownExpanded] = useState(false);
@@ -711,17 +712,28 @@ const QuotationFormContent = ({ isEdited }) => {
             
             // Update client address fields
             if (client.address) {
-                let street = client.address;
+                // Split address into lines and clean them
+                const addressLines = client.address
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line);
+                
+                // First line is street
+                const street = addressLines[0] || '';
+                
+                // Second line contains city and post code
                 let city = '';
                 let postCode = '';
-                
-                if (client.address.includes('\n')) {
-                    const addressLines = client.address.split('\n');
-                    street = addressLines[0] || '';
-                    const cityLine = addressLines[1] || '';
-                    const cityParts = cityLine.split(',');
-                    city = cityParts[0] ? cityParts[0].trim() : '';
-                    postCode = cityParts[1] ? cityParts[1].trim() : '';
+                if (addressLines[1]) {
+                    const cityLine = addressLines[1];
+                    // Try to find post code pattern (e.g., 5 digits or letters and numbers)
+                    const postCodeMatch = cityLine.match(/\b[A-Z0-9\s-]{3,}\b/);
+                    if (postCodeMatch) {
+                        postCode = postCodeMatch[0].trim();
+                        city = cityLine.replace(postCode, '').replace(/,/g, '').trim();
+                    } else {
+                        city = cityLine;
+                    }
                 }
                 
                 // Set street
@@ -729,18 +741,12 @@ const QuotationFormContent = ({ isEdited }) => {
                     target: { name: 'street', value: street }
                 }, 'clientAddress');
                 
-                // City
-                if (city) {
-                    handleQuotationChange({
-                        target: { name: 'city', value: city }
-                    }, 'clientAddress');
-                } else {
-                    handleQuotationChange({
-                        target: { name: 'city', value: '' }
-                    }, 'clientAddress');
-                }
+                // Set city
+                handleQuotationChange({
+                    target: { name: 'city', value: city }
+                }, 'clientAddress');
                 
-                // Always set post code, even if empty
+                // Set post code
                 handleQuotationChange({
                     target: { name: 'postCode', value: postCode }
                 }, 'clientAddress');
@@ -760,10 +766,6 @@ const QuotationFormContent = ({ isEdited }) => {
                         target: { name: 'currency', value: currency }
                     }, 'quotation');
                 }
-            } else {
-                handleQuotationChange({
-                    target: { name: 'country', value: '' }
-                }, 'clientAddress');
             }
         }, 100);
     };
@@ -837,138 +839,6 @@ const QuotationFormContent = ({ isEdited }) => {
         }
     }, []); // Empty dependency array means this runs once when component mounts
 
-    // Update the handleFormSubmit function to handle different submission types
-    const handleFormSubmit = async (e, type = 'new') => {
-        e.preventDefault();
-        console.log('Form submission initiated with type:', type);
-        
-        // Create a copy of the current quotation state
-        const updatedQuotation = { ...quotation };
-        
-        // For draft, only validate client selection and set default values
-        if (type === 'draft') {
-            if (!updatedQuotation.clientName) {
-                console.error('Client name is required');
-                return;
-            }
-            
-            // Set default values for draft without validation
-            updatedQuotation.description = updatedQuotation.description || 'Draft Quotation';
-            updatedQuotation.termsAndConditions = DEFAULT_TERMS_AND_CONDITIONS;
-            updatedQuotation.currency = updatedQuotation.currency || 'USD';
-            
-            // Process items with default values for draft
-            updatedQuotation.items = localItems.length > 0 
-                ? localItems.map(item => ({
-                    name: item.name || 'Draft Item',
-                    description: item.description || '',
-                    quantity: parseFloat(item.quantity) || 0,
-                    price: parseFloat(item.price) || 0,
-                    vat: parseFloat(item.vat) || 0,
-                    total: parseFloat(item.total) || 0
-                }))
-                : [{
-                    name: 'Draft Item',
-                    description: '',
-                    quantity: 0,
-                    price: 0,
-                    vat: 0,
-                    total: 0
-                }];
-            
-            // Update the quotation state with all the processed data
-            Object.entries(updatedQuotation).forEach(([key, value]) => {
-                handleQuotationChange({
-                    target: {
-                        name: key,
-                        value: value
-                    }
-                }, 'quotation');
-            });
-            
-            try {
-                // Call handleQuotationSubmit with the draft type
-                await handleQuotationSubmit('draft');
-                
-                // Close the modal after successful submission
-                toggleQuotationModal();
-                
-                // Refresh the quotations list
-                if (typeof refreshQuotations === 'function') {
-                    await refreshQuotations();
-                }
-            } catch (error) {
-                console.error('Error submitting quotation:', error);
-            }
-            
-            return;
-        }
-        
-        // For regular submission, validate all required fields
-        if (!updatedQuotation.termsAndConditions) {
-            console.log('Setting terms and conditions value:', DEFAULT_TERMS_AND_CONDITIONS);
-            updatedQuotation.termsAndConditions = DEFAULT_TERMS_AND_CONDITIONS;
-        }
-        
-        if (!updatedQuotation.currency) {
-            const clientCountry = updatedQuotation?.clientAddress?.country;
-            const currency = clientCountry ? getCurrencySymbol(clientCountry) : 'USD';
-            console.log('Setting currency value:', currency);
-            updatedQuotation.currency = currency;
-        }
-        
-        if (!updatedQuotation.description) {
-            updatedQuotation.description = 'Quotation for goods/services';
-        }
-        
-        if (!updatedQuotation.clientName) {
-            console.error('Client name is required');
-            return;
-        }
-        
-        // Process items for regular submission
-        updatedQuotation.items = localItems.map(item => ({
-            name: item.name || '',
-            description: item.description || '',
-            quantity: parseFloat(item.quantity) || 0,
-            price: parseFloat(item.price) || 0,
-            vat: parseFloat(item.vat) || 0,
-            total: parseFloat(item.total) || 0
-        }));
-        
-        // Update the quotation state with all the processed data
-        Object.entries(updatedQuotation).forEach(([key, value]) => {
-            handleQuotationChange({
-                target: {
-                    name: key,
-                    value: value
-                }
-            }, 'quotation');
-        });
-        
-        try {
-            // Call handleQuotationSubmit with the appropriate type
-            await handleQuotationSubmit(type);
-            
-            // Close the modal after successful submission
-            toggleQuotationModal();
-            
-            // Refresh the quotations list
-            if (typeof refreshQuotations === 'function') {
-                await refreshQuotations();
-            }
-        } catch (error) {
-            console.error('Error submitting quotation:', error);
-        }
-    };
-
-    // Update the handleAddItem function
-    const handleAddItem = () => {
-        const newIndex = localItems.length;
-        addNewItem();
-        scrollToNewItem(newIndex);
-    };
-
     return (
         <FormContainer>
             {!isEdited && <Title>New Quotation</Title>}
@@ -981,11 +851,6 @@ const QuotationFormContent = ({ isEdited }) => {
             <QuotationForm
                 id="quotation-form"
                 noValidate
-                autoComplete="off"
-                onSubmit={(e) => {
-                    // Handle save and send
-                    handleFormSubmit(e, isEdited ? 'change' : 'new');
-                }}
             >
                 {/* Bill To Section */}
                 <Fieldset>
@@ -1446,37 +1311,6 @@ const QuotationFormContent = ({ isEdited }) => {
                     </ErrorsWrapper>
                 )}
             </QuotationForm>
-            
-            <StyledFloatingButtons>
-                <Button
-                    type="button"
-                    onClick={() => {
-                        // Handle discard
-                        toggleQuotationModal();
-                    }}
-                >
-                    Discard
-                </Button>
-                <Button
-                    type="button"
-                    onClick={(e) => {
-                        // Handle save as draft
-                        handleFormSubmit(e, 'draft');
-                    }}
-                >
-                    Save as Draft
-                </Button>
-                <Button
-                    type="submit"
-                    form="quotation-form"
-                    onClick={(e) => {
-                        // Handle save and send
-                        handleFormSubmit(e, isEdited ? 'change' : 'new');
-                    }}
-                >
-                    Save & Send
-                </Button>
-            </StyledFloatingButtons>
         </FormContainer>
     );
 };
