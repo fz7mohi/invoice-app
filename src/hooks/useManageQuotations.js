@@ -1,6 +1,6 @@
 import { useState, useEffect, useReducer } from 'react';
 import { quotationsReducer } from '../store/reducers/quotationsReducer';
-import * as ACTIONS from '../store/actions/quotationsActions';
+import { add, approved, change, create, discard, edit, errors, modal, remove } from '../store/actions/quotationsActions';
 import allowOnlyNumbers from '../utilities/allowOnlyNumbers';
 import formValidation from '../utilities/formValidation';
 import { 
@@ -454,14 +454,7 @@ const useManageQuotations = () => {
             
             if (validationResult.isError) {
                 console.log('Validation failed:', validationResult);
-                dispatch({
-                    type: ACTIONS.SET_QUOTATION_ERRORS,
-                    payload: {
-                        isError: true,
-                        fields: validationResult.err,
-                        messages: validationResult.msg
-                    }
-                });
+                dispatch(errors(validationResult.err, validationResult.msg));
                 return;
             }
 
@@ -540,17 +533,14 @@ const useManageQuotations = () => {
                 console.log('Updating local state with:', finalDoc);
 
                 // Update local state
-                dispatch({
-                    type: ACTIONS.ADD_QUOTATION,
-                    payload: finalDoc
-                });
+                dispatch(add(quotation, state, type));
                 
                 // Wait for state update
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
                 // Reset form and close modal
                 resetForm();
-                dispatch({ type: ACTIONS.DISCARD_QUOTATION });
+                dispatch(discard());
                 
                 // Refresh quotations list immediately
                 await refreshQuotations();
@@ -574,14 +564,7 @@ const useManageQuotations = () => {
                 message: error.message,
                 stack: error.stack
             });
-            dispatch({
-                type: ACTIONS.SET_QUOTATION_ERRORS,
-                payload: {
-                    isError: true,
-                    fields: {},
-                    messages: ['Error submitting quotation: ' + error.message]
-                }
-            });
+            dispatch(errors({}, ['Error submitting quotation: ' + error.message]));
             throw error;
         }
     };
@@ -701,7 +684,7 @@ const useManageQuotations = () => {
         // If we have an ID and name, we're opening the modal
         // If we don't have an ID or name, we're closing it
         const isOpening = Boolean(id && name);
-        dispatch(ACTIONS.modal(isOpening ? id : null, isOpening ? name : null));
+        dispatch(modal(isOpening ? id : null, isOpening ? name : null));
         console.log('Dispatched modal action');
     };
 
