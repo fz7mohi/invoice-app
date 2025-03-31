@@ -48,7 +48,7 @@ import {
     MetaItem,
     DownloadButton
 } from './QuotationViewStyles';
-import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 
 // Use same variants as invoices for consistent animations
@@ -415,17 +415,22 @@ const QuotationView = () => {
     // Download quotation as PDF
     const handleDownloadPDF = async () => {
         try {
-            // Get the client's country from the quotation
-            const clientCountry = quotation?.clientAddress?.country?.toUpperCase() || 'QATAR';
+            // Get the client's country from the quotation or client data
+            const clientCountry = quotation?.clientAddress?.country || 
+                                clientData?.country || 
+                                'qatar';
+            console.log('Client country from quotation/client data:', clientCountry);
             
             // Determine which company profile to use
             let companyProfile;
             try {
-                if (clientCountry === 'UNITED ARAB EMIRATES') {
-                    companyProfile = await getCompanyProfile('UAE');
+                console.log('Attempting to fetch company profile for:', clientCountry);
+                if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
+                    companyProfile = await getCompanyProfile('uae');
                 } else {
-                    companyProfile = await getCompanyProfile('QATAR');
+                    companyProfile = await getCompanyProfile('qatar');
                 }
+                console.log('Retrieved company profile:', companyProfile);
             } catch (profileError) {
                 console.error('Error fetching company profile:', profileError);
                 // Provide default company profile data
@@ -436,6 +441,7 @@ const QuotationView = () => {
                     vatNumber: 'VAT123456789',
                     crNumber: 'CR123456789'
                 };
+                console.log('Using fallback company profile:', companyProfile);
             }
 
             // Create a clone of the element to avoid modifying the original
@@ -455,8 +461,9 @@ const QuotationView = () => {
                         <img src="images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 60px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='22px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
                     </div>
                     <div style="text-align: right; font-size: 12px; color: #000000;">
+                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${companyProfile.name}</div>
                         <div>${companyProfile.address}</div>
-                        <div>Tel: ${companyProfile.phone} | ${clientCountry === 'UNITED ARAB EMIRATES' ? 'VAT' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry === 'UNITED ARAB EMIRATES' ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                        <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
                     </div>
                 </div>
                 <div style="height: 2px; background-color: #004359; margin-bottom: 15px;"></div>
@@ -860,12 +867,35 @@ const QuotationView = () => {
 
     const getCompanyProfile = async (country) => {
         try {
+            // Convert country to lowercase for database query
+            const countryLower = country.toLowerCase();
+            console.log('Fetching company profile for country:', countryLower);
+            
             const companyProfilesRef = collection(db, 'companyProfiles');
-            const q = query(companyProfilesRef, where('country', '==', country));
+            
+            // Log all available company profiles for debugging
+            const allProfilesQuery = query(companyProfilesRef);
+            const allProfilesSnapshot = await getDocs(allProfilesQuery);
+            console.log('All available company profiles:', allProfilesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })));
+            
+            // If no profiles exist, initialize them
+            if (allProfilesSnapshot.empty) {
+                console.log('No company profiles found, initializing...');
+                await initializeCompanyProfiles();
+            }
+            
+            // Query for the specific country
+            const q = query(companyProfilesRef, where('country', '==', countryLower));
             const querySnapshot = await getDocs(q);
+            
+            console.log('Query snapshot size:', querySnapshot.size);
             
             if (!querySnapshot.empty) {
                 const profile = querySnapshot.docs[0].data();
+                console.log('Found company profile:', profile);
                 return {
                     name: profile.name || 'Fortune Gifts',
                     address: profile.address || '',
@@ -875,12 +905,16 @@ const QuotationView = () => {
                 };
             }
             
+            console.log(`No profile found for ${countryLower}, checking fallback options`);
+            
             // If no profile found for UAE, return Qatar profile as default
-            if (country === 'UAE') {
-                return getCompanyProfile('QATAR');
+            if (countryLower === 'uae') {
+                console.log('Falling back to Qatar profile for UAE');
+                return getCompanyProfile('qatar');
             }
             
             // Default Qatar profile
+            console.log('Using default Qatar profile');
             return {
                 name: 'Fortune Gifts',
                 address: 'P.O Box 123456, Doha, Qatar',
@@ -891,6 +925,7 @@ const QuotationView = () => {
         } catch (error) {
             console.error('Error fetching company profile:', error);
             // Return default Qatar profile in case of error
+            console.log('Error occurred, using default Qatar profile');
             return {
                 name: 'Fortune Gifts',
                 address: 'P.O Box 123456, Doha, Qatar',
@@ -898,6 +933,47 @@ const QuotationView = () => {
                 vatNumber: '',
                 crNumber: 'CR123456789'
             };
+        }
+    };
+
+    // Add function to initialize company profiles
+    const initializeCompanyProfiles = async () => {
+        try {
+            const companyProfilesRef = collection(db, 'companyProfiles');
+            
+            // Qatar company profile
+            const qatarProfile = {
+                name: 'Fortune Gifts Trading W.L.L',
+                address: 'Old Salata Doha - Qatar',
+                phone: '+974 7001 39 84',
+                email: 'sales@fortunegiftz.com',
+                country: 'qatar',
+                crNumber: '213288',
+                vatNumber: '',
+                gstNumber: '',
+                createdAt: new Date()
+            };
+            
+            // UAE company profile
+            const uaeProfile = {
+                name: 'Fortune Gifts Trading L.L.C',
+                address: 'MBZ City, Musaffah Abu Dhabi - UAE',
+                phone: '+971503997860',
+                email: 'sales@fortunegiftz.com',
+                country: 'uae',
+                crNumber: '',
+                vatNumber: '100430961100003',
+                gstNumber: '',
+                createdAt: new Date()
+            };
+            
+            // Add profiles to database
+            await addDoc(companyProfilesRef, qatarProfile);
+            await addDoc(companyProfilesRef, uaeProfile);
+            
+            console.log('Company profiles initialized successfully');
+        } catch (error) {
+            console.error('Error initializing company profiles:', error);
         }
     };
 

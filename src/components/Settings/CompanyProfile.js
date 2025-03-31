@@ -25,7 +25,7 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
 
   // Define countries with their VAT/GST information
   const countries = [
-    { value: 'uae', label: 'United Arab Emirates (5% VAT)', hasVat: true },
+    { value: 'uae', label: 'United Arab Emirates', hasVat: true },
     { value: 'qatar', label: 'Qatar', hasCr: true },
     { value: 'china', label: 'China' },
     { value: 'india', label: 'India (GST 18%)', hasGst: true }
