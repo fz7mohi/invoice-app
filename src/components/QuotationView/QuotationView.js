@@ -458,7 +458,7 @@ const QuotationView = () => {
             letterhead.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px 0;">
                     <div>
-                        <img src="images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 60px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='22px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                        <img src="images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='22px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
                     </div>
                     <div style="text-align: right; font-size: 12px; color: #000000;">
                         <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">${companyProfile.name}</div>
