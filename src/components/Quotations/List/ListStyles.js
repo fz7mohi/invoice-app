@@ -1,129 +1,181 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { Link as RouterLink } from 'react-router-dom';
 
-export const StyledList = styled(motion.ul)`
+export const StyledList = styled(motion.div)`
     display: flex;
-    flex-flow: column;
+    flex-direction: column;
     gap: 16px;
     width: 100%;
-    margin-bottom: 104px;
-
-    @media (min-width: 768px) {
-        gap: 16px;
-        margin-bottom: 56px;
-    }
 `;
 
-export const Item = styled(motion.li)`
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
+export const Item = styled(motion.div)`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background-color: #252945;
+    border: 1px solid #252945;
     border-radius: 8px;
-    box-shadow: ${({ theme }) => theme.colors.boxShadow};
-    transition: outline 0.2s;
+    padding: 16px 24px;
+    transition: all 0.2s ease;
+    cursor: pointer;
 
     &:hover {
-        outline: 1px solid ${({ theme }) => theme.colors.purple};
+        border-color: #7C5DFA;
     }
-    
-    @media (min-width: 1024px) {
-        min-height: 80px;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px;
     }
 `;
 
-export const Link = styled(RouterLink)`
-    display: grid;
-    grid-template-areas:
-        'date id'
-        'client description'
-        'price status';
-    grid-template-columns: 1fr 1fr;
-    text-decoration: none;
-    padding: 24px;
-    gap: 15px 10px;
+export const Link = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
 
-    @media (min-width: 768px) {
-        grid-template-areas: 'date id client description price status icon';
-        grid-template-columns: 110px 110px 150px 1fr 120px 120px 20px;
-        align-items: center;
-        padding: 16px 24px;
-        gap: 0;
-    }
-
-    @media (min-width: 1024px) {
-        grid-template-columns: 120px 120px 180px 1fr 150px 140px 20px;
-        padding: 16px 32px;
-    }
-    
-    @media (min-width: 1440px) {
-        grid-template-columns: 140px 140px 220px 1fr 180px 160px 20px;
+    @media (max-width: 768px) {
+        width: 100%;
+        justify-content: space-between;
     }
 `;
 
 export const Uid = styled.div`
-    grid-area: id;
-    font-weight: 700;
-    font-size: 12px;
-    color: ${({ theme }) => theme.colors.textPrimary};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 14px;
+    min-width: 100px;
+
+    @media (max-width: 768px) {
+        font-size: 13px;
+    }
 `;
 
 export const Hashtag = styled.span`
-    color: ${({ theme }) => theme.colors.textQuaternary};
+    color: #888EB0;
 `;
 
 export const PaymentDue = styled.div`
-    grid-area: date;
-    font-size: 12px;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: #DFE3FA;
+    font-size: 13px;
+    min-width: 100px;
 
-    @media (min-width: 768px) {
-        justify-self: start;
+    @media (max-width: 768px) {
+        font-size: 12px;
     }
 `;
 
 export const ClientName = styled.div`
-    grid-area: client;
-    font-size: 12px;
-    text-align: right;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: #DFE3FA;
+    font-size: 13px;
+    min-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
-    @media (min-width: 768px) {
-        text-align: left;
+    @media (max-width: 768px) {
+        font-size: 12px;
+        min-width: 100px;
     }
 `;
 
 export const TotalPrice = styled.div`
-    grid-area: price;
-    font-size: 16px;
-    font-weight: 700;
-    text-align: right;
-    color: ${({ theme }) => theme.colors.textPrimary};
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 14px;
 
-    @media (min-width: 768px) {
-        text-align: right;
+    @media (max-width: 768px) {
+        font-size: 13px;
+        width: 100%;
+        justify-content: space-between;
     }
 `;
 
 export const Description = styled.div`
-    grid-area: description;
-    font-size: 12px;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: #DFE3FA;
+    font-size: 13px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 100%;
-    padding-right: 10px;
+    max-width: 200px;
 
-    @media (min-width: 768px) {
-        text-align: left;
-        font-size: 13px;
+    @media (max-width: 768px) {
+        font-size: 12px;
+        max-width: 100%;
         white-space: normal;
         display: -webkit-box;
-        -webkit-line-clamp: 1;
+        -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
     }
-    
-    @media (min-width: 1024px) {
-        -webkit-line-clamp: 2;
-        line-height: 1.4;
+`;
+
+export const StatusBadge = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 100px;
+    justify-content: center;
+    background-color: ${({ status }) => {
+        switch (status) {
+            case 'pending':
+                return 'rgba(255, 143, 0, 0.1)';
+            case 'invoiced':
+                return 'rgba(51, 214, 159, 0.1)';
+            case 'draft':
+                return 'rgba(223, 227, 250, 0.1)';
+            default:
+                return 'rgba(223, 227, 250, 0.1)';
+        }
+    }};
+    color: ${({ status }) => {
+        switch (status) {
+            case 'pending':
+                return '#FF8F00';
+            case 'invoiced':
+                return '#33D69F';
+            case 'draft':
+                return '#DFE3FA';
+            default:
+                return '#DFE3FA';
+        }
+    }};
+
+    @media (max-width: 768px) {
+        font-size: 11px;
+        padding: 4px 8px;
+        min-width: 80px;
     }
+`;
+
+export const StatusDot = styled.div`
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: ${({ status }) => {
+        switch (status) {
+            case 'pending':
+                return '#FF8F00';
+            case 'invoiced':
+                return '#33D69F';
+            case 'draft':
+                return '#DFE3FA';
+            default:
+                return '#DFE3FA';
+        }
+    }};
 `; 

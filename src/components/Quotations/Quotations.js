@@ -38,11 +38,12 @@ const Quotations = () => {
     // Filter quotations based on status and search query
     const filteredQuotations = useMemo(() => {
         let filtered = rawQuotations.filter(quotation => {
-            if (filterType === 'all') return true;
-            if (filterType === 'pending') return quotation.status === 'pending';
-            if (filterType === 'paid') return quotation.status === 'paid';
-            if (filterType === 'draft') return quotation.status === 'draft';
-            return true;
+            const matchesStatus = filterType === 'all' || quotation.status === filterType;
+            const matchesSearch = !searchQuery || searchableFields.some(field => {
+                const value = quotation[field]?.toString().toLowerCase() || '';
+                return value.includes(searchQuery.toLowerCase());
+            });
+            return matchesStatus && matchesSearch;
         });
 
         // Apply search filter if there's a search query

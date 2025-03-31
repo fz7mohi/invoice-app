@@ -1,3 +1,4 @@
+import { Link as RouterLink } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import { useState } from 'react';
 import Icon from '../../shared/Icon/Icon';
@@ -17,6 +18,8 @@ import {
     ClientName,
     TotalPrice,
     Description,
+    StatusBadge,
+    StatusDot
 } from './ListStyles';
 import styled from 'styled-components';
 
@@ -72,7 +75,7 @@ const HeaderItem = styled.div`
     &.status { grid-area: status; text-align: center; }
 `;
 
-const List = ({ isLoading, quotations, variant }) => {
+const List = ({ quotations, isLoading, variant }) => {
     const { colors } = useTheme();
     const { windowWidth } = useGlobalContext();
     const isDesktop = windowWidth >= 768;
@@ -130,106 +133,103 @@ const List = ({ isLoading, quotations, variant }) => {
         }
     };
 
+    // Function to format status text
+    const formatStatus = (status) => {
+        switch (status) {
+            case 'pending':
+                return 'Pending';
+            case 'invoiced':
+                return 'Invoiced';
+            case 'draft':
+                return 'Draft';
+            default:
+                return 'Draft';
+        }
+    };
+
     // Choose which data to display
     const dataToDisplay = directData.length > 0 ? directData : quotations;
     const showEmptyState = dataToDisplay.length === 0 && !loading;
     
-    return (
-        <>
-            {isEmpty && <ForceLoadButton onClick={fetchDirectly} />}
-            {loading && <p style={{textAlign: 'center'}}>Loading directly from Firebase...</p>}
-            
-            {showEmptyState && <ErrorMessage variant={variant} />}
-            {dataToDisplay.length > 0 && (
-                <>
-                    <ListHeader>
-                        <HeaderItem className="date">Date</HeaderItem>
-                        <HeaderItem className="id">Quote ID</HeaderItem>
-                        <HeaderItem className="client">Client Name</HeaderItem>
-                        <HeaderItem className="description">Project Description</HeaderItem>
-                        <HeaderItem className="price">Total</HeaderItem>
-                        <HeaderItem className="status">Status</HeaderItem>
-                    </ListHeader>
-                    <StyledList>
-                        {dataToDisplay.map(
-                            (quotation, index) => {
-                                // Extract properties safely with defaults
-                                const {
-                                    id = 'Unknown',
-                                    customId,
-                                    paymentDue,
-                                    clientName = 'Unnamed Client',
-                                    status = 'pending',
-                                    total = 0,
-                                    description,
-                                    currency,
-                                } = quotation || {};
-                                
-                                // Add detailed debug logging
-                                console.log(`Quotation ${customId} has currency:`, currency);
+    if (isLoading) {
+        return (
+            <StyledList
+                variants={variant('list', 0)}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+            >
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    padding: '40px',
+                    color: '#DFE3FA',
+                    fontSize: '14px'
+                }}>
+                    Loading quotations...
+                </div>
+            </StyledList>
+        );
+    }
 
-                                return (
-                                    <Item
-                                        key={id}
-                                        layout
-                                        variants={variant('list', index)}
-                                        initial="hidden"
-                                        animate="visible"
-                                        exit="exit"
-                                    >
-                                        <Link to={`/quotation/${id}`} onClick={(e) => {
-                                            // Add more comprehensive debugging
-                                            console.log('Navigating to quotation with:');
-                                            console.log('- ID:', id);
-                                            console.log('- CustomID:', customId);
-                                            console.log('- Full quotation:', quotation);
-                                            
-                                            // Store the quotation in sessionStorage as a fallback
-                                            try {
-                                                const simplifiedQuotation = {
-                                                    ...quotation,
-                                                    // Convert dates to ISO strings to avoid circular references
-                                                    createdAt: quotation.createdAt instanceof Date ? quotation.createdAt.toISOString() : quotation.createdAt,
-                                                    paymentDue: quotation.paymentDue instanceof Date ? quotation.paymentDue.toISOString() : quotation.paymentDue
-                                                };
-                                                sessionStorage.setItem(`quotation_${id}`, JSON.stringify(simplifiedQuotation));
-                                                console.log('Stored quotation data in sessionStorage as fallback');
-                                            } catch (err) {
-                                                console.error('Failed to store in sessionStorage:', err);
-                                            }
-                                        }}>
-                                            <PaymentDue>
-                                                {formatDate(quotation.createdAt || new Date())}
-                                            </PaymentDue>
-                                            <Uid>
-                                                <Hashtag>#</Hashtag>
-                                                {customId || 'Unknown ID'}
-                                            </Uid>
-                                            <ClientName>{clientName}</ClientName>
-                                            <Description>
-                                                {description || 'No description'}
-                                            </Description>
-                                            <TotalPrice>
-                                                {console.log(`Formatting price for ${customId} with currency:`, currency)}
-                                                {formatPrice(total, currency || 'USD')}
-                                            </TotalPrice>
-                                            <Status currStatus={status} $grid />
-                                            {isDesktop && (
-                                                <Icon
-                                                    name={'arrow-right'}
-                                                    size={10}
-                                                    color={colors.purple}
-                                                />
-                                            )}
-                                        </Link>
-                                    </Item>
-                                );
-                            }
-                        )}
-                    </StyledList>
-                </>
-            )}
-        </>
+    if (isEmpty) {
+        return (
+            <>
+                {showEmptyState && <ErrorMessage variant={variant} />}
+                <ForceLoadButton onClick={fetchDirectly} />
+            </>
+        );
+    }
+
+    return (
+        <StyledList
+            variants={variant('list', 0)}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+        >
+            {dataToDisplay.map((quotation, index) => (
+                <RouterLink 
+                    to={`/quotation/${quotation.id}`} 
+                    key={quotation.id}
+                    style={{ textDecoration: 'none' }}
+                >
+                    <Item
+                        variants={variant('list', index)}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                    >
+                        <Link>
+                            <PaymentDue>
+                                {formatDate(quotation.createdAt)}
+                            </PaymentDue>
+                            <Uid>
+                                <Hashtag>#</Hashtag>
+                                {quotation.customId || quotation.id}
+                            </Uid>
+                            <ClientName>
+                                {quotation.clientName}
+                            </ClientName>
+                            <Description>
+                                {quotation.description || 'No description'}
+                            </Description>
+                        </Link>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <StatusBadge status={quotation.status}>
+                                <StatusDot status={quotation.status} />
+                                {formatStatus(quotation.status)}
+                            </StatusBadge>
+                            <TotalPrice>
+                                {formatPrice(quotation.total, quotation.currency)}
+                                <Icon name="arrow-right" size={12} color="#7C5DFA" />
+                            </TotalPrice>
+                        </div>
+                    </Item>
+                </RouterLink>
+            ))}
+        </StyledList>
     );
 };
 
