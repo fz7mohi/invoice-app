@@ -200,7 +200,8 @@ export const ItemsHeader = styled.div`
     
     @media (min-width: 768px) {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr ${props => props.showVat ? '1fr' : ''} 1fr;
+        grid-template-columns: 2.5fr 0.7fr 1fr ${props => props.showVat ? '1fr' : ''} 1.2fr;
+        grid-column-gap: 24px;
         padding: 16px 24px;
         background-color: ${({ theme }) => theme.colors.backgroundDetails || theme.colors.backgroundAlt || theme.colors.background};
         border-radius: 8px 8px 0 0;
@@ -213,8 +214,12 @@ export const HeaderCell = styled.p`
     color: ${({ theme }) => theme.colors.textSecondary};
     margin: 0;
     
-    &:nth-child(3), &:nth-child(4), &:nth-child(5), &:nth-child(6) {
-        text-align: right;
+    &:nth-child(3), &:nth-child(4), &:nth-child(5) {
+        text-align: left;
+    }
+    
+    &:last-child {
+        text-align: left;
     }
 `;
 
@@ -246,7 +251,8 @@ export const Item = styled.div`
     }
     
     @media (min-width: 768px) {
-        grid-template-columns: 2fr 1fr 1fr 1fr ${props => props.showVat ? '1fr' : ''} 1fr;
+        grid-template-columns: 2.5fr 0.7fr 1fr ${props => props.showVat ? '1fr' : ''} 1.2fr;
+        grid-column-gap: 24px;
         margin-bottom: 12px;
     }
     
@@ -293,7 +299,7 @@ export const ItemPrice = styled.p`
     font-size: 13px;
     color: ${({ theme }) => theme.colors.textTertiary};
     margin: 0;
-    text-align: right;
+    text-align: left;
     display: none;
     
     @media (min-width: 768px) {
@@ -306,14 +312,14 @@ export const ItemTotal = styled.p`
     font-size: 13px;
     color: ${({ theme }) => theme.colors.textPrimary};
     margin: 0;
-    text-align: right;
+    text-align: left;
 `;
 
 export const ItemVat = styled.p`
     font-size: 13px;
     color: ${({ theme }) => theme.colors.textTertiary};
     margin: 0;
-    text-align: right;
+    text-align: left;
     display: none;
     
     @media (min-width: 768px) {
@@ -493,4 +499,4 @@ export const PrintButton = styled.button`
     @media (max-width: 767px) {
         display: none;
     }
-`; 
+`;
