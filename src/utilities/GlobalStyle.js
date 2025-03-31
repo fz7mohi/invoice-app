@@ -25,8 +25,8 @@ const GlobalStyle = createGlobalStyle`
     font-weight: 500;
     line-height: 1.5;
     letter-spacing: -0.25px;
-    color: ${({ theme }) => theme?.text?.primary || (theme?.mode === 'dark' ? '#ffffff' : '#0c0e16')};
-    background-color: ${({ theme }) => theme?.backgrounds?.main || (theme?.mode === 'dark' ? '#141625' : '#f8f8fb')};
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background-color: ${({ theme }) => theme.colors.background};
     transition: color 400ms ease-in-out, background-color 400ms ease-in-out;
   }
 
@@ -39,6 +39,7 @@ const GlobalStyle = createGlobalStyle`
   h1 {
     font-size: 2rem;
     letter-spacing: -1px;
+    color: ${({ theme }) => theme.colors.textPrimary};
 
     @media (min-width: 768px) {
       font-size: 2.4rem;
@@ -48,7 +49,7 @@ const GlobalStyle = createGlobalStyle`
   h2 {
     font-size: 1.5rem;
     letter-spacing: -0.75px;
-    color: ${({ theme }) => theme?.text?.primary || (theme?.mode === 'dark' ? '#ffffff' : '#0c0e16')};
+    color: ${({ theme }) => theme.colors.textPrimary};
 
     @media (min-width: 768px) {
       font-size: 2rem;
@@ -58,7 +59,7 @@ const GlobalStyle = createGlobalStyle`
   h3 {
     font-size: 1.2rem;
     letter-spacing: -0.63px;
-    color: ${({ theme }) => theme?.text?.primary || (theme?.mode === 'dark' ? '#ffffff' : '#0c0e16')};
+    color: ${({ theme }) => theme.colors.textPrimary};
 
     @media (min-width: 768px) {
       font-size: 1.6rem;
@@ -68,26 +69,26 @@ const GlobalStyle = createGlobalStyle`
   h4 {
     font-size: 1.2rem;
     letter-spacing: -0.25px;
-    color: ${({ theme }) => theme?.text?.primary || (theme?.mode === 'dark' ? '#ffffff' : '#0c0e16')};
+    color: ${({ theme }) => theme.colors.textPrimary};
   }
 
   /* Data theme attributes for additional CSS control */
   [data-theme="dark"] {
-    --color-bg-main: #141625;
-    --color-bg-card: #1e2139;
-    --color-bg-input: #252945;
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #dfe3fa;
-    --color-border: #252945;
+    --color-bg-main: ${({ theme }) => theme.colors.background};
+    --color-bg-card: ${({ theme }) => theme.colors.backgroundItem};
+    --color-bg-input: ${({ theme }) => theme.colors.bgInput};
+    --color-text-primary: ${({ theme }) => theme.colors.textPrimary};
+    --color-text-secondary: ${({ theme }) => theme.colors.textSecondary};
+    --color-border: ${({ theme }) => theme.colors.bgInputBorder};
   }
 
   [data-theme="light"] {
-    --color-bg-main: #f8f8fb;
-    --color-bg-card: #ffffff;
-    --color-bg-input: #ffffff;
-    --color-text-primary: #0c0e16;
-    --color-text-secondary: #7e88c3;
-    --color-border: #dfe3fa;
+    --color-bg-main: ${({ theme }) => theme.colors.background};
+    --color-bg-card: ${({ theme }) => theme.colors.backgroundItem};
+    --color-bg-input: ${({ theme }) => theme.colors.bgInput};
+    --color-text-primary: ${({ theme }) => theme.colors.textPrimary};
+    --color-text-secondary: ${({ theme }) => theme.colors.textSecondary};
+    --color-border: ${({ theme }) => theme.colors.bgInputBorder};
   }
 
   /* Add a focus style for accessibility */
@@ -102,13 +103,11 @@ const GlobalStyle = createGlobalStyle`
   }
 
   ::-webkit-scrollbar-track {
-    background: ${({ theme }) => 
-      theme?.mode === 'dark' ? '#252945' : '#f8f8fb'};
+    background: ${({ theme }) => theme.colors.background};
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => 
-      theme?.mode === 'dark' ? '#7e88c3' : '#dfe3fa'};
+    background: ${({ theme }) => theme.colors.textSecondary};
     border-radius: 4px;
   }
 

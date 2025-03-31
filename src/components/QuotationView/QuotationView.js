@@ -95,7 +95,14 @@ const QuotationView = () => {
     
     // Update HTML data-theme attribute for CSS selectors
     useEffect(() => {
+        // Set theme immediately
         document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+        
+        // Add a class to the body to ensure theme is applied
+        document.body.classList.toggle('dark-theme', darkMode);
+        
+        // Force a reflow to ensure styles are applied
+        document.body.offsetHeight;
     }, [darkMode]);
     
     // Variant selector for animations

@@ -113,7 +113,7 @@ const MenuItem = styled(NavLink)`
     display: flex;
     justify-content: center;
     align-items: center;
-    color: ${props => props.theme?.text?.secondary || '#888eb0'};
+    color: ${props => props.theme?.colors?.textSecondary || '#888eb0'};
     font-size: 20px;
     transition: color 0.2s ease;
     

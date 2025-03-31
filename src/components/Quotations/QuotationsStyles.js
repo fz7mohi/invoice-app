@@ -11,17 +11,17 @@ export const Container = styled.section`
         width: 100%;
         max-width: 95%;
         margin: 0 auto 40px auto;
-        padding: 56px 0;
+        padding: 56px 24px;
     }
     
     @media (min-width: 1024px) {
         max-width: 90%;
-        padding: 72px 0 40px;
+        padding: 72px 32px 40px;
     }
     
     @media (min-width: 1440px) {
         max-width: 1300px;
-        padding: 72px 0 40px;
+        padding: 72px 40px 40px;
     }
 `;
 

@@ -40,16 +40,30 @@
 
 /* Dark mode styles - these will be applied with theme-based classes from the app */
 html[data-theme='dark'] .StyledQuotationView {
-  color-scheme: dark;
+    color-scheme: dark;
+    color: var(--color-text-primary);
 }
 
 html[data-theme='dark'] .PrintButton {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 html[data-theme='dark'] .Item {
-  border-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Ensure text colors are properly set in dark mode */
+html[data-theme='dark'] .InfoCard {
+    color: var(--color-text-primary);
+}
+
+html[data-theme='dark'] .InfoDesc {
+    color: var(--color-text-secondary);
+}
+
+html[data-theme='dark'] .AddressText {
+    color: var(--color-text-secondary);
 }
 
 /* Minimalist Focus Styles */
