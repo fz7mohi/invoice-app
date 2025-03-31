@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { useReducedMotion } from 'framer-motion';
 import ModalDelete from './ModalDelete';
 import ModalStatus from './ModalStatus';
+import ModalDeleteQuotation from './ModalDeleteQuotation';
 import { modalVariants } from '../../utilities/framerVariants';
 import { useGlobalContext } from '../App/context';
 import { StyledModal } from './ModalStyles';
@@ -18,6 +19,26 @@ const Modal = () => {
     const isDeleteModal = state.isModalOpen.name === 'delete';
     const isStatusModal = state.isModalOpen.name === 'status';
     const isQuotationModal = quotationState?.form?.isCreating || quotationState?.form?.isEditing;
+    const isQuotationDeleteModal = quotationState?.modal?.isOpen && quotationState?.modal?.name === 'delete';
+    
+    console.log('Modal component state:', {
+        isDeleteModal,
+        isStatusModal,
+        isQuotationModal,
+        isQuotationDeleteModal,
+        quotationStateModal: quotationState?.modal,
+        quotationStateForm: quotationState?.form,
+        state: state,
+        quotationState: quotationState
+    });
+
+    // Add effect to track state changes
+    useEffect(() => {
+        console.log('Modal state changed:', {
+            quotationStateModal: quotationState?.modal,
+            state: state
+        });
+    }, [quotationState?.modal, state]);
     
     const modalRef = useRef();
     const shouldReduceMotion = useReducedMotion();
@@ -33,7 +54,7 @@ const Modal = () => {
      */
     const focusTrap = (event) => {
         if (event.key === 'Escape') {
-            if (isQuotationModal) {
+            if (isQuotationModal || isQuotationDeleteModal) {
                 toggleQuotationModal();
             } else {
                 toggleModal();
@@ -64,7 +85,7 @@ const Modal = () => {
     const handleClickOutsideModal = (event) => {
         const target = event.target;
         if (target === modalRef.current) {
-            if (isQuotationModal) {
+            if (isQuotationModal || isQuotationDeleteModal) {
                 toggleQuotationModal();
             } else {
                 toggleModal();
@@ -85,7 +106,7 @@ const Modal = () => {
             document.removeEventListener('click', handleClickOutsideModal);
             document.body.style.overflow = 'unset';
         };
-    }, [isQuotationModal]); // Add isQuotationModal to dependencies
+    }, [isQuotationModal, isQuotationDeleteModal]);
 
     const modal = (
         <StyledModal
@@ -102,6 +123,7 @@ const Modal = () => {
             {isDeleteModal && <ModalDelete variants={containerVariant} />}
             {isStatusModal && <ModalStatus variants={containerVariant} />}
             {isQuotationModal && <QuotationFormController variants={containerVariant} />}
+            {isQuotationDeleteModal && <ModalDeleteQuotation variants={containerVariant} />}
         </StyledModal>
     );
 

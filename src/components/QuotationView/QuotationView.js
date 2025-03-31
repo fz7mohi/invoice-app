@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Redirect } from 'react-router-dom';
+import { useParams, Redirect, useHistory } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import { useReducedMotion } from 'framer-motion';
 import Icon from '../shared/Icon/Icon';
@@ -48,7 +48,7 @@ import {
     MetaItem,
     DownloadButton
 } from './QuotationViewStyles';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 
 // Use same variants as invoices for consistent animations
@@ -76,7 +76,7 @@ const quotationViewVariants = {
 };
 
 const QuotationView = () => {
-    const { quotationState, toggleModal, editQuotation, windowWidth, refreshQuotations } = useGlobalContext();
+    const { quotationState, toggleQuotationModal, editQuotation, windowWidth, refreshQuotations } = useGlobalContext();
     const { colors } = useTheme();
     const { id } = useParams();
     const [quotation, setQuotation] = useState(null);
@@ -85,6 +85,7 @@ const QuotationView = () => {
     const [isDirectlyFetching, setIsDirectlyFetching] = useState(false);
     const [isClientFetching, setIsClientFetching] = useState(false);
     const [clientHasVAT, setClientHasVAT] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const isLoading = quotationState?.isLoading || isDirectlyFetching || isClientFetching;
     const quotationNotFound = !isLoading && !quotation;
     const isPending = quotation?.status === 'pending';
@@ -92,6 +93,7 @@ const QuotationView = () => {
     const isApproved = quotation?.status === 'approved';
     const isDesktop = windowWidth >= 768;
     const shouldReduceMotion = useReducedMotion();
+    const history = useHistory();
     
     // Variant selector for animations
     const variant = (element) => {
@@ -749,6 +751,29 @@ const QuotationView = () => {
         );
     };
 
+    // Add handleDeleteClick function
+    const handleDeleteClick = () => {
+        setShowDeleteModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        try {
+            setIsDeleting(true);
+            const quotationRef = doc(db, 'quotations', id);
+            await deleteDoc(quotationRef);
+            history.push('/quotations');
+        } catch (error) {
+            console.error('Error deleting quotation:', error);
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setShowDeleteModal(false);
+    };
+
     // Show loading state
     if (isLoading || !quotation) {
         return (
@@ -849,10 +874,7 @@ const QuotationView = () => {
                                 </Button>
                                 <Button
                                     $delete
-                                    onClick={() => {
-                                        toggleModal(id, 'delete');
-                                        setIsDeleting(true);
-                                    }}
+                                    onClick={handleDeleteClick}
                                     disabled={isLoading}
                                 >
                                     Delete
@@ -860,7 +882,7 @@ const QuotationView = () => {
                                 {isPending && (
                                     <Button
                                         $primary
-                                        onClick={() => toggleModal(id, 'approve')}
+                                        onClick={() => toggleQuotationModal(id, 'approve')}
                                         disabled={isLoading}
                                     >
                                         Approve
@@ -1003,10 +1025,7 @@ const QuotationView = () => {
                     </Button>
                     <Button
                         $delete
-                        onClick={() => {
-                            toggleModal(id, 'delete');
-                            setIsDeleting(true);
-                        }}
+                        onClick={handleDeleteClick}
                         disabled={isLoading}
                     >
                         Delete
@@ -1014,13 +1033,110 @@ const QuotationView = () => {
                     {isPending && (
                         <Button
                             $primary
-                            onClick={() => toggleModal(id, 'approve')}
+                            onClick={() => toggleQuotationModal(id, 'approve')}
                             disabled={isLoading}
                         >
                             Approve
                         </Button>
                     )}
                 </ButtonWrapper>
+            )}
+
+            {/* Simple Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: colors.background,
+                        padding: '2rem',
+                        borderRadius: '12px',
+                        maxWidth: '400px',
+                        width: '90%',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        border: `1px solid ${colors.border}`
+                    }}>
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            marginBottom: '1.5rem',
+                            gap: '12px'
+                        }}>
+                            <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                backgroundColor: '#FFE5E5',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <Icon name="trash" size={20} color="#FF4806" />
+                            </div>
+                            <h2 style={{ 
+                                margin: 0,
+                                fontSize: '1.5rem',
+                                color: colors.text,
+                                fontWeight: '600'
+                            }}>Delete Quotation</h2>
+                        </div>
+                        <p style={{ 
+                            marginBottom: '2rem',
+                            color: colors.text,
+                            fontSize: '0.95rem',
+                            lineHeight: '1.5'
+                        }}>
+                            Are you sure you want to delete quotation #{quotation?.customId || id}? This action cannot be undone.
+                        </p>
+                        <div style={{ 
+                            display: 'flex', 
+                            gap: '12px', 
+                            justifyContent: 'flex-end'
+                        }}>
+                            <Button 
+                                $secondary 
+                                onClick={handleCancelDelete}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    border: `1px solid ${colors.border}`,
+                                    backgroundColor: 'transparent',
+                                    color: colors.text,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button 
+                                $delete 
+                                onClick={handleConfirmDelete} 
+                                disabled={isDeleting}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#FF4806',
+                                    color: 'white',
+                                    border: 'none',
+                                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                                    opacity: isDeleting ? 0.7 : 1,
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             )}
         </StyledQuotationView>
     );

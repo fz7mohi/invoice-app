@@ -124,10 +124,11 @@ export const quotationsReducer = (state = initialState, action) => {
             };
 
         case ACTION_TYPES.TOGGLE_QUOTATION_MODAL:
+            console.log('Toggling quotation modal in reducer:', action.payload);
             return {
                 ...state,
                 modal: {
-                    isOpen: !state.modal.isOpen,
+                    isOpen: true,
                     id: action.payload.id,
                     name: action.payload.name,
                 },

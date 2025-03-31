@@ -102,6 +102,7 @@ export const discard = () => {
  * @return   {object}    Action to dispatch
  */
 export const modal = (id, name) => {
+    console.log('Creating modal action with:', { id, name });
     return {
         type: ACTION_TYPES.TOGGLE_QUOTATION_MODAL,
         payload: {

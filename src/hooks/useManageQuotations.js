@@ -628,19 +628,38 @@ const useManageQuotations = () => {
      */
     const handleDelete = async () => {
         try {
+            console.log('handleDelete called in useManageQuotations');
+            console.log('Current modal state:', state.modal);
+            
+            // Find the quotation to delete
+            const quotationToDelete = state.quotations.find(
+                (q) => q.id === state.modal.id
+            );
+            
+            console.log('Quotation to delete:', quotationToDelete);
+            
+            if (!quotationToDelete) {
+                console.error('Quotation not found with ID:', state.modal.id);
+                return;
+            }
+            
             // Try to delete from Firestore first
             try {
-                const quotationRef = doc(db, 'quotations', state.modal.id);
+                console.log('Attempting to delete from Firestore:', quotationToDelete.id);
+                const quotationRef = doc(db, 'quotations', quotationToDelete.id);
                 await deleteDoc(quotationRef);
+                console.log('Successfully deleted from Firestore');
             } catch (firebaseError) {
                 console.error('Firebase delete error:', firebaseError);
                 // Will continue with local state update even if Firebase fails
             }
             
             // Update local state
+            console.log('Dispatching DELETE_QUOTATION action');
             dispatch({ type: 'DELETE_QUOTATION' });
+            console.log('Local state updated');
         } catch (error) {
-            console.error('Error deleting quotation:', error);
+            console.error('Error in handleDelete:', error);
         }
     };
 
@@ -684,7 +703,12 @@ const useManageQuotations = () => {
      * @param    {string} name    String with action name (delete or approve)
      */
     const toggleModal = (id, name) => {
-        dispatch({ type: 'TOGGLE_QUOTATION_MODAL', payload: { id, name } });
+        console.log('Toggling quotation modal with:', { id, name });
+        // If we have an ID and name, we're opening the modal
+        // If we don't have an ID or name, we're closing it
+        const isOpening = Boolean(id && name);
+        dispatch(ACTIONS.modal(isOpening ? id : null, isOpening ? name : null));
+        console.log('Dispatched modal action');
     };
 
     /**
