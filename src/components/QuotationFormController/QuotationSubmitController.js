@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../shared/Button/Button';
 import { useGlobalContext } from '../App/context';
 import { StyledSubmitController } from '../FormController/SubmitController/SubmitControllerStyles';
@@ -14,20 +14,27 @@ const QuotationSubmitController = () => {
             return;
         }
         
+        let isMounted = true;
+        
         try {
             setIsSubmitting(true);
             console.log('QuotationSubmitController: Submit button clicked with type:', type);
             console.log('Current quotation state before submit:', quotationState);
+            console.log('Is quotation being edited:', isQuotationEdited);
             
             // Call the submit function and await its completion
             const result = await handleQuotationSubmit(type);
             console.log('handleQuotationSubmit result:', result);
+            
+            if (!isMounted) return;
             
             if (result === true) {
                 console.log('Quotation submitted successfully, waiting before closing form...');
                 
                 // Wait for a longer time to ensure all state updates are complete
                 await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (!isMounted) return;
                 
                 console.log('Closing form after successful submission');
                 discardQuotationChanges();
@@ -39,6 +46,8 @@ const QuotationSubmitController = () => {
                 }
             }
         } catch (error) {
+            if (!isMounted) return;
+            
             console.error('Error during form submission:', error);
             console.error('Error details:', {
                 code: error.code,
@@ -47,9 +56,19 @@ const QuotationSubmitController = () => {
             });
             // Don't close the form on error
         } finally {
-            setIsSubmitting(false);
+            if (isMounted) {
+                setIsSubmitting(false);
+            }
         }
     };
+
+    // Cleanup function
+    useEffect(() => {
+        return () => {
+            // This will be called when the component unmounts
+            setIsSubmitting(false);
+        };
+    }, []);
 
     return (
         <StyledSubmitController $isEdited={isQuotationEdited}>

@@ -14,7 +14,8 @@ import {
     query,
     where,
     Timestamp,
-    limit
+    limit,
+    getDoc
 } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 
@@ -119,13 +120,6 @@ const useManageQuotations = () => {
     const [senderAddress, setSenderAddress] = useState(initialAddress);
     const [clientAddress, setClientAddress] = useState(initialAddress);
     const [items, setItems] = useState([]);
-
-    // Update quotation state everytime dependency array has changed.
-    useEffect(() => {
-        setQuotation((oldState) => {
-            return { ...oldState, senderAddress, clientAddress, items };
-        });
-    }, [senderAddress, clientAddress, items]);
 
     // Load quotations from Firestore when the component mounts
     useEffect(() => {
@@ -436,29 +430,14 @@ const useManageQuotations = () => {
      */
     const handleSubmit = async (type) => {
         try {
-            console.log('Starting quotation submission with type:', type);
-            console.log('Current quotation state:', quotation);
-            console.log('Current items:', items);
-            
-            // Ensure terms and conditions are set for regular submissions
-            if (type !== 'draft' && !quotation.termsAndConditions) {
-                console.log('Setting default terms and conditions');
-                setQuotation(prev => ({
-                    ...prev,
-                    termsAndConditions: DEFAULT_TERMS_AND_CONDITIONS
-                }));
-            }
-            
-            // For regular submissions, validate all fields
-            const validationResult = formValidation(quotation, items, type === 'draft');
+            // Validate form
+            const validationResult = formValidation(quotation, items);
+            console.log('Validation result:', validationResult);
             
             if (validationResult.isError) {
-                console.log('Validation failed:', validationResult);
                 dispatch(errors(validationResult.err, validationResult.msg));
-                return;
+                return false;
             }
-
-            console.log('Validation passed, processing items...');
 
             // Process items for regular submission
             const processedItems = items.map(item => ({
@@ -473,27 +452,41 @@ const useManageQuotations = () => {
             // Calculate total
             const totalAmount = processedItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
 
-            // Generate a unique ID for the quotation
-            const quotationId = generateId();
+            // Check if we're editing an existing quotation
+            const isEditing = state.form.isEditing || Boolean(quotation.id || state.modal.id);
+            console.log('Is editing:', isEditing, 'Modal ID:', state.modal.id, 'Quotation ID:', quotation.id, 'Current quotation:', quotation);
+            console.log('Form state:', state.form);
 
             // Create the quotation document
             const quotationDoc = {
                 ...quotation,
-                id: quotationId,
-                customId: quotationId,
-                status: type === 'draft' ? 'draft' : 'pending',
                 items: processedItems,
                 total: totalAmount,
-                createdAt: new Date(),
-                paymentDue: new Date(),
                 currency: quotation.currency || 'USD',
                 termsAndConditions: quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS
             };
 
+            // Only set these fields for new quotations
+            if (!isEditing) {
+                quotationDoc.id = generateId();
+                quotationDoc.customId = quotationDoc.id;
+                quotationDoc.status = type === 'draft' ? 'draft' : 'pending';
+                quotationDoc.createdAt = new Date();
+                quotationDoc.paymentDue = new Date();
+            } else {
+                // Preserve the existing ID and customId for editing
+                quotationDoc.id = quotation.id || state.modal.id;
+                quotationDoc.customId = quotation.customId || quotationDoc.id;
+                // Preserve the original status and dates
+                quotationDoc.status = quotation.status || 'pending';
+                quotationDoc.createdAt = quotation.createdAt || new Date();
+                quotationDoc.paymentDue = quotation.paymentDue || new Date();
+            }
+
             console.log('Prepared quotation document:', quotationDoc);
 
             try {
-                console.log('Attempting to add to Firestore...');
+                console.log('Attempting to save to Firestore...');
                 
                 // Create the Firestore document data
                 const firestoreDoc = {
@@ -505,7 +498,7 @@ const useManageQuotations = () => {
                     clientEmail: quotationDoc.clientEmail || '',
                     description: quotationDoc.description || '',
                     paymentTerms: quotationDoc.paymentTerms || '30',
-                    status: type === 'draft' ? 'draft' : 'pending',
+                    status: quotationDoc.status || (type === 'draft' ? 'draft' : 'pending'),
                     items: processedItems,
                     total: totalAmount,
                     currency: quotationDoc.currency || 'USD',
@@ -516,39 +509,63 @@ const useManageQuotations = () => {
 
                 console.log('Firestore document prepared:', firestoreDoc);
 
-                // Get reference to quotations collection
-                const quotationsRef = collection(db, 'quotations');
-                console.log('Got collection reference');
-
-                // Add the document
-                const docRef = await addDoc(quotationsRef, firestoreDoc);
-                console.log('Document written with ID:', docRef.id);
-                
-                // Update the document with the Firestore ID
-                const finalDoc = {
-                    ...quotationDoc,
-                    id: docRef.id
-                };
-                
-                console.log('Updating local state with:', finalDoc);
-
-                // Update local state
-                dispatch(add(quotation, state, type));
-                
-                // Wait for state update
-                await new Promise(resolve => setTimeout(resolve, 500));
+                if (isEditing) {
+                    // Update existing document
+                    const documentId = quotation.id || state.modal.id;
+                    if (!documentId) {
+                        console.error('No document ID found for editing');
+                        throw new Error('No document ID found for editing');
+                    }
+                    const quotationRef = doc(db, 'quotations', documentId);
+                    await updateDoc(quotationRef, firestoreDoc);
+                    console.log('Document updated with ID:', documentId);
+                    
+                    // Update local state immediately
+                    const updatedQuotation = {
+                        ...quotationDoc,
+                        id: documentId,
+                        customId: quotationDoc.customId || documentId,
+                        createdAt: quotationDoc.createdAt,
+                        paymentDue: quotationDoc.paymentDue
+                    };
+                    
+                    // Update the quotations array in state
+                    const updatedQuotations = state.quotations.map(q => 
+                        q.id === documentId ? updatedQuotation : q
+                    );
+                    
+                    // Update all relevant state in sequence
+                    dispatch({ type: 'SET_QUOTATIONS', payload: updatedQuotations });
+                    dispatch(change(updatedQuotation));
+                    
+                    // Force a refresh of the quotations list
+                    await refreshQuotations();
+                } else {
+                    // Add new document
+                    const quotationsRef = collection(db, 'quotations');
+                    const docRef = await addDoc(quotationsRef, firestoreDoc);
+                    console.log('New document written with ID:', docRef.id);
+                    
+                    // Update local state for new quotation
+                    const newQuotation = {
+                        ...quotationDoc,
+                        id: docRef.id,
+                        customId: quotationDoc.customId || docRef.id
+                    };
+                    dispatch(add(newQuotation, state, type));
+                }
                 
                 // Reset form and close modal
                 resetForm();
                 dispatch(discard());
                 
-                // Refresh quotations list immediately
+                // Final refresh to ensure everything is in sync
                 await refreshQuotations();
 
                 console.log('Quotation submission completed successfully');
                 return true;
             } catch (firebaseError) {
-                console.error('Error adding quotation to Firestore:', firebaseError);
+                console.error('Error saving quotation to Firestore:', firebaseError);
                 console.error('Error details:', {
                     code: firebaseError.code,
                     message: firebaseError.message,
@@ -644,17 +661,77 @@ const useManageQuotations = () => {
      * Function to edit existing quotation. Get data from quotations state and fill form with it.
      * @param    {string} id    String with quotation ID
      */
-    const editQuotation = (id) => {
-        const quotationToEdit = state.quotations.find((q) => q.id === id);
-        if (!quotationToEdit) return;
+    const editQuotation = async (id) => {
+        console.log('=== editQuotation called with id:', id);
         
-        setQuotation(quotationToEdit);
-        setSenderAddress(quotationToEdit.senderAddress);
-        setClientAddress(quotationToEdit.clientAddress);
-        setItems(quotationToEdit.items);
-        
-        dispatch({ type: 'EDIT_QUOTATION', payload: { id } });
+        try {
+            // Fetch directly from Firestore
+            const quotationRef = doc(db, 'quotations', id);
+            const docSnap = await getDoc(quotationRef);
+            
+            if (!docSnap.exists()) {
+                console.log('No quotation found in Firestore with id:', id);
+                return;
+            }
+
+            const data = docSnap.data();
+            console.log('Fetched quotation from Firestore:', data);
+            
+            // Convert Firestore Timestamp back to Date object safely
+            let createdAt = new Date();
+            let paymentDue = new Date();
+            
+            try {
+                createdAt = data.createdAt?.toDate() || new Date();
+                paymentDue = data.paymentDue?.toDate() || new Date();
+            } catch (dateError) {
+                console.error('Error converting dates:', dateError);
+            }
+            
+            // Create a complete quotation object
+            const quotationToEdit = {
+                ...data,
+                id: docSnap.id,
+                customId: data.customId || docSnap.id,
+                createdAt,
+                paymentDue,
+                items: Array.isArray(data.items) ? data.items : [],
+                currency: data.currency || 'USD'
+            };
+            
+            console.log('Processed quotation for editing:', quotationToEdit);
+            
+            // Set the quotation state
+            setQuotation(quotationToEdit);
+            
+            // Set the items
+            if (quotationToEdit.items && quotationToEdit.items.length > 0) {
+                console.log('Setting items from quotation:', quotationToEdit.items);
+                setItems(quotationToEdit.items);
+            }
+            
+            // Set addresses
+            setSenderAddress(quotationToEdit.senderAddress || initialAddress);
+            setClientAddress(quotationToEdit.clientAddress || initialAddress);
+            
+            // Finally dispatch the edit action
+            dispatch({ type: 'EDIT_QUOTATION', payload: { id } });
+            
+        } catch (error) {
+            console.error('Error fetching quotation from Firestore:', error);
+        }
     };
+
+    // Remove the useEffect that updates quotation state since we're handling it directly
+    useEffect(() => {
+        // Only update quotation state if items change
+        if (items.length > 0) {
+            setQuotation(prev => ({
+                ...prev,
+                items: items
+            }));
+        }
+    }, [items]);
 
     /**
      * Function to reset form back to initial state.

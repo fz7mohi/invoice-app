@@ -617,38 +617,48 @@ const QuotationFormContent = ({ isEdited }) => {
     const errors = quotationState?.errors?.fields || {};
     const errorMessages = quotationState?.errors?.messages || [];
     
-    // Add local state for items with useState
-    const [localItems, setLocalItems] = useState(items || []);
+    // Initialize local items state
+    const [localItems, setLocalItems] = useState([]);
 
-    // Use useEffect to sync changes from global state to local state
+    // Initialize items when component mounts or quotation changes
     useEffect(() => {
-        setLocalItems(items || []);
+        let isMounted = true;
+        
+        if (quotation?.items && quotation.items.length > 0) {
+            console.log('Initializing items from quotation:', quotation.items);
+            if (isMounted) {
+                setLocalItems(quotation.items);
+            }
+        }
+        
+        return () => {
+            isMounted = false;
+        };
+    }, [quotation]);
+
+    // Sync changes from global state to local state
+    useEffect(() => {
+        let isMounted = true;
+        
+        if (items && items.length > 0 && JSON.stringify(items) !== JSON.stringify(localItems)) {
+            console.log('Updating local items from global state:', items);
+            if (isMounted) {
+                setLocalItems(items);
+            }
+        }
+        
+        return () => {
+            isMounted = false;
+        };
     }, [items]);
 
-    // Use useEffect to sync changes from local state to global state
-    useEffect(() => {
-        if (JSON.stringify(localItems) !== JSON.stringify(items) && typeof setItems === 'function') {
-            console.log('Syncing local items to global state:', localItems);
-            console.log('Current global items:', items);
-            console.log('Are they different?', localItems !== items);
-            
-            // Ensure items have proper numeric values for calculations
-            const processedItems = localItems.map(item => ({
-                ...item,
-                quantity: parseFloat(item.quantity) || 0,
-                price: parseFloat(item.price) || 0,
-                total: parseFloat(item.total) || 0,
-                vat: parseFloat(item.vat) || 0
-            }));
-            
-            setItems(processedItems);
-            console.log('Processed items sent to global state:', processedItems);
-        }
-    }, [localItems, items, setItems]);
-    
     // Close select dropdown when clicking outside
     useEffect(() => {
+        let isMounted = true;
+        
         const checkIfClickedOutside = (event) => {
+            if (!isMounted) return;
+            
             const target = event.target;
             if (isDropdownExpanded && selectRef.current && !selectRef.current.contains(target)) {
                 setIsDropdownExpanded(false);
@@ -660,9 +670,11 @@ const QuotationFormContent = ({ isEdited }) => {
                 setIsCurrencyDropdownExpanded(false);
             }
         };
+        
         document.addEventListener('click', checkIfClickedOutside);
 
         return () => {
+            isMounted = false;
             document.removeEventListener('click', checkIfClickedOutside);
         };
     }, [isDropdownExpanded, isClientDropdownExpanded, isCurrencyDropdownExpanded]);
@@ -806,6 +818,19 @@ const QuotationFormContent = ({ isEdited }) => {
                     updatedItems[index].total = subtotal + vat;
                 }
                 
+                // Update global state directly
+                if (typeof setItems === 'function') {
+                    const processedItems = updatedItems.map(item => ({
+                        name: item.name || '',
+                        description: item.description || '',
+                        quantity: parseFloat(item.quantity) || 0,
+                        price: parseFloat(item.price) || 0,
+                        total: parseFloat(item.total) || 0,
+                        vat: parseFloat(item.vat) || 0
+                    }));
+                    setItems(processedItems);
+                }
+                
                 return updatedItems;
             });
         } else {
@@ -828,7 +853,9 @@ const QuotationFormContent = ({ isEdited }) => {
 
     // Add useEffect to set default terms and conditions when component mounts
     useEffect(() => {
-        if (!quotation.termsAndConditions) {
+        let isMounted = true;
+        
+        if (!quotation.termsAndConditions && isMounted) {
             console.log('Setting default terms and conditions');
             handleQuotationChange({
                 target: {
@@ -837,6 +864,10 @@ const QuotationFormContent = ({ isEdited }) => {
                 }
             }, 'quotation');
         }
+        
+        return () => {
+            isMounted = false;
+        };
     }, []); // Empty dependency array means this runs once when component mounts
 
     return (
