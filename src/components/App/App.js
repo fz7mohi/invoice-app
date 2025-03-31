@@ -56,9 +56,6 @@ const App = () => {
 
     // Use the appropriate theme based on user preference
     const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
-    
-    console.log('Current theme mode:', theme);
-    console.log('Applied theme object:', currentTheme);
 
     // Apply the current theme to document body when the theme changes
     useEffect(() => {
