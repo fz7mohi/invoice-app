@@ -91,7 +91,6 @@ const AppProvider = ({ children }) => {
 
     useEffect(() => {
         if (typeof refreshQuotations === 'function') {
-            console.log('App context mounted - refreshing quotations data');
             refreshQuotations();
         }
     }, []);

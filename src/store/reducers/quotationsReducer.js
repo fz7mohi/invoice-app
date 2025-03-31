@@ -42,7 +42,6 @@ export const quotationsReducer = (state = initialState, action) => {
             };
             
         case ACTION_TYPES.ADD_QUOTATION:
-            console.log('Adding quotation to state:', action.payload);
             return {
                 ...state,
                 quotations: [...state.quotations, action.payload],
@@ -120,7 +119,6 @@ export const quotationsReducer = (state = initialState, action) => {
             };
 
         case ACTION_TYPES.TOGGLE_QUOTATION_MODAL:
-            console.log('Toggling quotation modal in reducer:', action.payload);
             return {
                 ...state,
                 modal: {
