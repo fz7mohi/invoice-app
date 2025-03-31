@@ -762,10 +762,10 @@ const QuotationView = () => {
                 <AddressTitle>Bill To</AddressTitle>
                 <AddressText>
                     <strong>{quotation.clientName}</strong><br />
-                    {clientData?.address || quotation.clientAddress?.street || ''}<br />
-                    {quotation.clientAddress?.city && `${quotation.clientAddress.city}`}<br />
-                    {quotation.clientAddress?.postCode && `${quotation.clientAddress.postCode}`}<br />
-                    {clientData?.country || quotation.clientAddress?.country || ''}
+                    {clientData?.address || quotation.clientAddress?.street || ''}
+                    {quotation.clientAddress?.city && `, ${quotation.clientAddress.city}`}
+                    {quotation.clientAddress?.postCode && `, ${quotation.clientAddress.postCode}`}
+                    {clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
                     {clientData?.phone && (
                         <>
                             <br />
