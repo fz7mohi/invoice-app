@@ -1058,8 +1058,9 @@ const QuotationView = () => {
                             <AddressText>
                                 {quotation.customId || id}
                             </AddressText>
-                            <AddressTitle>Quote Date</AddressTitle>
                             <br />
+                            <AddressTitle>Quote Date</AddressTitle>
+                           
                             <AddressText>
                                 {formatDate(quotation.createdAt)}
                             </AddressText>
