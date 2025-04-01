@@ -1127,7 +1127,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         </StatusBadge>
                         <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
                             <Icon name="download" size={13} />
-                            Download PDF
+                            Share
                         </DownloadButton>
                     </div>
                     
