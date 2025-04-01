@@ -17,7 +17,7 @@ export const StyledList = styled.ul`
 export const Item = styled(motion.li)`
     background-color: ${({ theme }) => theme.colors.bgInvoiceItem};
     border-radius: 8px;
-    border: 1px solid ${({ theme }) => theme.colors.bgInvoiceItemBorder};
+     border: 1px solid rgba(223, 227, 250, 0.1);
     transition: transform 200ms ease-in-out;
     
     &:hover {
