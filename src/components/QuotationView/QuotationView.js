@@ -437,8 +437,8 @@ const QuotationView = () => {
                     <div>
                         <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
                     </div>
-                    <div style="text-align: right; font-size: 17px; color: #000000;">
-                        <div style="font-weight: bold; font-size: 19px; margin-bottom: 5px;">${companyProfile.name}</div>
+                    <div style="text-align: right; font-size: 19px; color: #000000;">
+                        <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
                         <div>${companyProfile.address}</div>
                         <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
                         <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
@@ -446,7 +446,7 @@ const QuotationView = () => {
                 </div>
                 <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
                 <div style="text-align: center; margin-top: 25px;">
-                    <h1 style="font-size: 27px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
+                    <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
                 </div>
             `;
             
@@ -476,27 +476,31 @@ const QuotationView = () => {
                 if (clientAddressTitle) {
                     clientAddressTitle.style.color = '#004359';
                     clientAddressTitle.style.fontWeight = 'bold';
+                    clientAddressTitle.style.fontSize = '18px';
                 }
                 
                 // Set ALL text within the client address section to black
                 const addressTextElements = clientSection.querySelectorAll('.AddressText');
                 addressTextElements.forEach(element => {
                     element.style.color = 'black';
+                    element.style.fontSize = '16px';
                     
                     // Also set all child elements' text to black
                     const childElements = element.querySelectorAll('*');
                     childElements.forEach(child => {
                         child.style.color = 'black';
+                        child.style.fontSize = '16px';
                     });
                     
                     // Make sure the TRN span has the right color
                     const trnSpan = element.querySelector('span');
                     if (trnSpan) {
                         trnSpan.style.color = 'black';
+                        trnSpan.style.fontSize = '16px';
                     }
                     
                     // Set any inline styles directly on the element
-                    element.setAttribute('style', element.getAttribute('style') + '; color: black !important;');
+                    element.setAttribute('style', element.getAttribute('style') + '; color: black !important; font-size: 16px !important;');
                 });
                 
                 // Remove the quote date section as we've already added it above
@@ -504,6 +508,22 @@ const QuotationView = () => {
                 if (dateSection) {
                     dateSection.remove();
                 }
+
+                // Add white background and border to client section
+                clientSection.style.backgroundColor = 'white';
+                clientSection.style.border = '1px solid #e0e0e0';
+                clientSection.style.borderRadius = '4px';
+                clientSection.style.padding = '20px';
+                clientSection.style.marginBottom = '20px';
+
+                // Set all text in the section to black
+                const allTextElements = clientSection.querySelectorAll('*');
+                allTextElements.forEach(element => {
+                    if (element.tagName !== 'STRONG' && !element.classList.contains('AddressTitle')) {
+                        element.style.color = 'black';
+                        element.style.fontSize = '16px';
+                    }
+                });
                 
                 pdfContainer.appendChild(clientSection);
             }
@@ -515,12 +535,14 @@ const QuotationView = () => {
                 if (emailTitle) {
                     emailTitle.style.color = '#004359';
                     emailTitle.style.fontWeight = 'bold';
+                    emailTitle.style.fontSize = '18px';
                 }
                 
                 // Set all regular text to black in the email section
                 const addressTextElements = clientEmailSection.querySelectorAll('.AddressText');
                 addressTextElements.forEach(element => {
                     element.style.color = 'black';
+                    element.style.fontSize = '16px';
                 });
                 
                 // Update any icon colors to match Fortune Gifts branding
@@ -528,6 +550,22 @@ const QuotationView = () => {
                 icons.forEach(icon => {
                     if (icon.style && icon.style.color) {
                         icon.style.color = '#004359';
+                    }
+                });
+
+                // Add white background and border to email section
+                clientEmailSection.style.backgroundColor = 'white';
+                clientEmailSection.style.border = '1px solid #e0e0e0';
+                clientEmailSection.style.borderRadius = '4px';
+                clientEmailSection.style.padding = '20px';
+                clientEmailSection.style.marginBottom = '20px';
+
+                // Set all text in the section to black
+                const allTextElements = clientEmailSection.querySelectorAll('*');
+                allTextElements.forEach(element => {
+                    if (element.tagName !== 'STRONG' && !element.classList.contains('AddressTitle')) {
+                        element.style.color = 'black';
+                        element.style.fontSize = '16px';
                     }
                 });
                 
@@ -541,32 +579,59 @@ const QuotationView = () => {
                 const itemNames = itemsSection.querySelectorAll('.ItemName');
                 itemNames.forEach(element => {
                     element.style.color = 'black';
+                    element.style.fontSize = '16px';
                 });
                 
                 const itemDescriptions = itemsSection.querySelectorAll('.ItemDescription');
                 itemDescriptions.forEach(element => {
                     element.style.color = 'black';
+                    element.style.fontSize = '14px';
                 });
                 
                 // Set all prices, quantities, and totals to black except in the header and grand total
                 const itemPrices = itemsSection.querySelectorAll('.ItemPrice:not(.ItemsHeader .ItemPrice)');
                 itemPrices.forEach(element => {
                     element.style.color = 'black';
+                    element.style.fontSize = '16px';
                 });
                 
                 const itemQtys = itemsSection.querySelectorAll('.ItemQty:not(.ItemsHeader .ItemQty)');
                 itemQtys.forEach(element => {
                     element.style.color = 'black';
+                    element.style.fontSize = '16px';
                 });
                 
                 const itemVats = itemsSection.querySelectorAll('.ItemVat:not(.ItemsHeader .ItemVat)');
                 itemVats.forEach(element => {
                     element.style.color = 'black';
+                    element.style.fontSize = '16px';
                 });
                 
                 const itemTotals = itemsSection.querySelectorAll('.ItemTotal:not(.ItemsHeader .ItemTotal)');
                 itemTotals.forEach(element => {
                     element.style.color = 'black';
+                    element.style.fontSize = '16px';
+                });
+
+                // Set header text size
+                const headerCells = itemsSection.querySelectorAll('.ItemsHeader .HeaderCell');
+                headerCells.forEach(element => {
+                    element.style.fontSize = '18px';
+                });
+
+                // Add white background and border to items section
+                itemsSection.style.backgroundColor = 'white';
+                itemsSection.style.border = '1px solid #e0e0e0';
+                itemsSection.style.borderRadius = '4px';
+                itemsSection.style.marginBottom = '20px';
+
+                // Set all text in the section to black except headers
+                const allTextElements = itemsSection.querySelectorAll('*');
+                allTextElements.forEach(element => {
+                    if (!element.classList.contains('ItemsHeader') && !element.classList.contains('Total')) {
+                        element.style.color = 'black';
+                        element.style.fontSize = '16px';
+                    }
                 });
                 
                 pdfContainer.appendChild(itemsSection);
@@ -579,13 +644,31 @@ const QuotationView = () => {
                 if (termsTitle) {
                     termsTitle.style.color = '#004359';
                     termsTitle.style.fontWeight = 'bold';
+                    termsTitle.style.fontSize = '18px';
                 }
                 
                 // Set the terms text to black
                 const termsText = termsSection.querySelector('.TermsText');
                 if (termsText) {
                     termsText.style.color = 'black';
+                    termsText.style.fontSize = '16px';
                 }
+
+                // Add white background and border to terms section
+                termsSection.style.backgroundColor = 'white';
+                termsSection.style.border = '1px solid #e0e0e0';
+                termsSection.style.borderRadius = '4px';
+                termsSection.style.padding = '20px';
+                termsSection.style.marginBottom = '20px';
+
+                // Set all text in the section to black except title
+                const allTextElements = termsSection.querySelectorAll('*');
+                allTextElements.forEach(element => {
+                    if (!element.classList.contains('TermsTitle')) {
+                        element.style.color = 'black';
+                        element.style.fontSize = '16px';
+                    }
+                });
                 
                 pdfContainer.appendChild(termsSection);
             }
@@ -604,11 +687,11 @@ const QuotationView = () => {
             signatureSection.innerHTML = `
                 <div style="width: 45%;">
                     <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                    <div style="font-weight: bold; color: #004359; font-size: 17px !important;">Authorized Signature</div>
+                    <div style="font-weight: bold; color: #004359; font-size: 19px !important;">Authorized Signature</div>
                 </div>
                 <div style="width: 45%;">
                     <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                    <div style="font-weight: bold; color: #004359; font-size: 17px !important;">Client Acceptance</div>
+                    <div style="font-weight: bold; color: #004359; font-size: 19px !important;">Client Acceptance</div>
                 </div>
             `;
 
