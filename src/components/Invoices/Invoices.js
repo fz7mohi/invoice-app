@@ -1,25 +1,89 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { useGlobalContext } from '../App/context';
 import Filter from './Filter/Filter';
 import List from './List/List';
 import Button from '../shared/Button/Button';
+import Icon from '../shared/Icon/Icon';
 import invoicesLengthMessage from '../../utilities/invoicesLengthMessage';
 import { invoicesVariants } from '../../utilities/framerVariants';
-import { Container, Header, Info, Title, Text } from './InvoicesStyles';
+import { 
+    Container, 
+    Header, 
+    HeaderTop,
+    Info, 
+    Title, 
+    Text,
+    SearchBar,
+    SearchContainer,
+    SearchInput,
+    SearchIcon
+} from './InvoicesStyles';
 
 const Invoices = () => {
-    const { windowWidth, createInvoice, filteredInvoices, filterType, invoiceState } =
-        useGlobalContext();
-    const isDesktop = windowWidth >= 768;
+    const [filterType, setFilterType] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const shouldReduceMotion = useReducedMotion();
+    const { windowWidth, invoiceState, createInvoice } = useGlobalContext();
     
-    // Safely access isLoading
     const isLoading = invoiceState?.isLoading || false;
-    
-    const variant = (element) => {
-        return shouldReduceMotion
-            ? invoicesVariants.reduced
-            : invoicesVariants[element];
+    const rawInvoices = invoiceState?.invoices || [];
+    const isDesktop = windowWidth >= 768;
+
+    // Filter invoices based on status and search query
+    const filteredInvoices = useMemo(() => {
+        let filtered = rawInvoices.filter(invoice => {
+            const matchesStatus = filterType === 'all' || invoice.status === filterType;
+            const matchesSearch = !searchQuery || searchableFields.some(field => {
+                const value = invoice[field]?.toString().toLowerCase() || '';
+                return value.includes(searchQuery.toLowerCase());
+            });
+            return matchesStatus && matchesSearch;
+        });
+
+        // Apply search filter if there's a search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(invoice => {
+                const searchableFields = [
+                    invoice.customId || invoice.id, // Invoice ID
+                    invoice.clientName,              // Client Name
+                    invoice.description              // Project Description
+                ].filter(Boolean);
+                
+                return searchableFields.some(field => 
+                    field.toLowerCase().includes(query)
+                );
+            });
+        }
+
+        return filtered;
+    }, [rawInvoices, filterType, searchQuery]);
+
+    // Update document title based on filter
+    useEffect(() => {
+        const message = invoicesLengthMessage(
+            filteredInvoices.length,
+            filterType,
+            windowWidth
+        );
+        document.title = `Invoice App | ${message}`;
+    }, [filteredInvoices.length, filterType, windowWidth]);
+
+    // Define variant based on element type and reduced motion preference
+    const variant = (type, index) => {
+        if (shouldReduceMotion) return invoicesVariants.reduced;
+        
+        if (type === 'container') return invoicesVariants.container;
+        if (type === 'header') return invoicesVariants.header;
+        if (type === 'list') return invoicesVariants.list(index);
+        if (type === 'error') return invoicesVariants.errorMessage;
+        
+        return {};
+    };
+
+    const handleSearch = (e) => {
+        setSearchQuery(e.target.value);
     };
 
     return (
@@ -30,30 +94,57 @@ const Invoices = () => {
                 animate="visible"
                 exit="exit"
             >
-                <Info>
-                    <Title>Invoices</Title>
-                    <Text>
-                        {isLoading 
-                            ? "Loading invoices..."
-                            : invoicesLengthMessage(
-                                filteredInvoices,
-                                filterType,
-                                windowWidth
-                            )
-                        }
-                    </Text>
-                </Info>
-                <Filter isDesktop={isDesktop} />
-                <Button 
-                    type="button" 
-                    $newInvoice 
-                    onClick={createInvoice}
-                    disabled={isLoading}
-                >
-                    New {isDesktop && 'Invoice'}
-                </Button>
+                <HeaderTop>
+                    <Info>
+                        <Title>Invoices</Title>
+                        <Text>
+                            {isLoading 
+                                ? "Loading invoices..."
+                                : invoicesLengthMessage(
+                                    filteredInvoices.length,
+                                    filterType,
+                                    windowWidth
+                                )
+                            }
+                        </Text>
+                    </Info>
+                    
+                    <Filter 
+                        filterType={filterType} 
+                        setFilterType={setFilterType} 
+                    />
+                    
+                    <Button 
+                        type="button" 
+                        $primary 
+                        onClick={createInvoice}
+                        disabled={isLoading}
+                    >
+                        New {isDesktop && 'Invoice'}
+                    </Button>
+                </HeaderTop>
+
+                <SearchBar>
+                    <SearchContainer>
+                        <SearchIcon>
+                            <Icon name="search" size={16} />
+                        </SearchIcon>
+                        <SearchInput
+                            type="text"
+                            placeholder="Search by Invoice ID, Client Name, or Project Description"
+                            value={searchQuery}
+                            onChange={handleSearch}
+                            aria-label="Search invoices by ID, client name, or project description"
+                        />
+                    </SearchContainer>
+                </SearchBar>
             </Header>
-            <List isLoading={isLoading} />
+
+            <List 
+                isLoading={isLoading}
+                invoices={filteredInvoices} 
+                variant={variant}
+            />
         </Container>
     );
 };
