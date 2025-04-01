@@ -10,6 +10,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'fireb
 import { db } from '../../firebase/firebase';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import styled from 'styled-components';
 import {
     StyledInvoiceView,
     Container,
@@ -63,7 +64,106 @@ import {
     HeaderTitle,
     DownloadButton
 } from './InvoiceViewStyles';
-import styled from 'styled-components';
+
+// Add ModalOverlay styled component
+const ModalOverlay = styled.div`
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 24px;
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    z-index: 100;
+`;
+
+const ModalContent = styled.div`
+    width: 100%;
+    max-width: 480px;
+    padding: 32px;
+    border-radius: 8px;
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+`;
+
+const ModalHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+`;
+
+const ModalIconWrapper = styled.div`
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 72, 6, 0.1);
+    border-radius: 50%;
+`;
+
+const ModalTitle = styled.h2`
+    font-size: 24px;
+    font-weight: 700;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    margin: 0;
+`;
+
+const ModalText = styled.p`
+    font-size: 15px;
+    line-height: 1.84;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+    margin-bottom: 24px;
+`;
+
+const FormGroup = styled.div`
+    margin-bottom: 24px;
+`;
+
+const FormLabel = styled.label`
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+    margin-bottom: 8px;
+`;
+
+const TextArea = styled.textarea`
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    border-radius: 4px;
+    background-color: ${({ theme }) => theme?.backgrounds?.input || '#1E2139'};
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+
+    &:focus {
+        outline: none;
+        border-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+    }
+`;
+
+const ModalActions = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 24px;
+
+    button {
+        min-width: 100px;
+        padding: 16px 24px;
+        border-radius: 24px;
+        font-weight: 700;
+        font-size: 15px;
+        transition: all 0.3s ease;
+    }
+`;
 
 // Animation variants
 const invoiceViewVariants = {

@@ -1007,7 +1007,7 @@ const QuotationView = () => {
                         </StatusBadge>
                         <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
                             <Icon name="download" size={13} />
-                            Download PDF
+                                    Share
                         </DownloadButton>
                     </div>
                     
