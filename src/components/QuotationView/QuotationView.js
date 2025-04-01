@@ -394,7 +394,6 @@ const QuotationView = () => {
                     companyProfile = await getCompanyProfile('qatar');
                 }
             } catch (profileError) {
-                // Provide default company profile data
                 companyProfile = {
                     name: 'Fortune Gifts',
                     address: 'Doha, Qatar',
@@ -404,15 +403,7 @@ const QuotationView = () => {
                 };
             }
 
-            // Create a clone of the element to avoid modifying the original
-            const element = document.getElementById('quotation-content');
-            if (!element) {
-                throw new Error('Quotation content element not found');
-            }
-            
-            const elementClone = element.cloneNode(true);
-            
-            // Create a container for PDF content
+            // Create a new container for PDF content
             const pdfContainer = document.createElement('div');
             pdfContainer.style.cssText = `
                 width: 297mm;
@@ -424,15 +415,9 @@ const QuotationView = () => {
                 position: relative;
                 font-family: Arial, sans-serif;
             `;
-            
-            // Create letterhead with dynamic company details
-            const letterhead = document.createElement('div');
-            letterhead.className = 'letterhead';
-            letterhead.style.cssText = `
-                margin-bottom: 5mm;
-            `;
-            
-            letterhead.innerHTML = `
+
+            // Add header
+            pdfContainer.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div>
                         <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
@@ -449,240 +434,147 @@ const QuotationView = () => {
                     <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
                 </div>
             `;
-            
-            // Create a custom info section with quotation number and date
-            const infoSection = document.createElement('div');
-            infoSection.style.cssText = `
+
+            // Add client section
+            const clientSection = document.createElement('div');
+            clientSection.style.cssText = `
                 display: flex;
                 justify-content: space-between;
-                margin-bottom: 5px;
-                padding: 0;
-                margin-top: 15px;
+                margin-bottom: 20px;
+                padding: 20px;
+                background-color: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
             `;
-            
-        
-            
-            // Add letterhead to container
-            pdfContainer.appendChild(letterhead);
+            clientSection.innerHTML = `
+                <div style="flex: 1;">
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
+                    <div style="color: black; font-size: 16px;">
+                        <strong>${quotation.clientName}</strong><br />
+                        ${clientData?.address || quotation.clientAddress?.street || ''}
+                        ${quotation.clientAddress?.city ? `, ${quotation.clientAddress.city}` : ''}
+                        ${quotation.clientAddress?.postCode ? `, ${quotation.clientAddress.postCode}` : ''}
+                        ${clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
+                        ${clientData?.phone ? `<br />${clientData.phone}` : ''}
+                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && clientData?.trn ? 
+                            `<br /><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Quotation #</div>
+                    <div style="color: black; font-size: 16px; margin-bottom: 15px;">${quotation.customId || id}</div>
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Quote Date</div>
+                    <div style="color: black; font-size: 16px;">${formatDate(quotation.createdAt)}</div>
+                </div>
+            `;
+            pdfContainer.appendChild(clientSection);
 
-            // Add info section to container
-            pdfContainer.appendChild(infoSection);
-            
-            // Extract and clean up the client section
-            const clientSection = elementClone.querySelector('.InfoAddresses');
-            if (clientSection) {
-                // Set the section title (Bill To) to Fortune Gifts blue
-                const clientAddressTitle = clientSection.querySelector('.AddressTitle');
-                if (clientAddressTitle) {
-                    clientAddressTitle.style.color = '#004359';
-                    clientAddressTitle.style.fontWeight = 'bold';
-                    clientAddressTitle.style.fontSize = '18px';
-                }
-                
-                // Set ALL text within the client address section to black
-                const addressTextElements = clientSection.querySelectorAll('.AddressText');
-                addressTextElements.forEach(element => {
-                    element.style.color = 'black';
-                    element.style.fontSize = '16px';
-                    
-                    // Also set all child elements' text to black
-                    const childElements = element.querySelectorAll('*');
-                    childElements.forEach(child => {
-                        child.style.color = 'black';
-                        child.style.fontSize = '16px';
-                    });
-                    
-                    // Make sure the TRN span has the right color
-                    const trnSpan = element.querySelector('span');
-                    if (trnSpan) {
-                        trnSpan.style.color = 'black';
-                        trnSpan.style.fontSize = '16px';
-                    }
-                    
-                    // Set any inline styles directly on the element
-                    element.setAttribute('style', element.getAttribute('style') + '; color: black !important; font-size: 16px !important;');
-                });
-                
-                // Remove the quote date section as we've already added it above
-                const dateSection = clientSection.querySelector('[align="right"]');
-                if (dateSection) {
-                    dateSection.remove();
-                }
+           
 
-                // Add white background and border to client section
-                clientSection.style.backgroundColor = 'white';
-                clientSection.style.border = '1px solid #e0e0e0';
-                clientSection.style.borderRadius = '4px';
-                clientSection.style.padding = '20px';
-                clientSection.style.marginBottom = '20px';
+            // Add items table
+            const itemsTable = document.createElement('table');
+            itemsTable.style.cssText = `
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                background-color: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+            `;
+            itemsTable.innerHTML = `
+                <thead style="background-color: #004359; color: white;">
+                    <tr>
+                        <th style="padding: 15px; text-align: left; font-size: 18px;">Item Name</th>
+                        <th style="padding: 15px; text-align: center; font-size: 18px;">QTY.</th>
+                        <th style="padding: 15px; text-align: right; font-size: 18px;">Price</th>
+                        ${clientHasVAT ? '<th style="padding: 15px; text-align: right; font-size: 18px;">VAT (5%)</th>' : ''}
+                        <th style="padding: 15px; text-align: right; font-size: 18px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${quotation.items.map(item => {
+                        const itemVAT = clientHasVAT ? calculateVAT(item.total || 0) : 0;
+                        return `
+                            <tr style="border-bottom: 1px solid #e0e0e0;">
+                                <td style="padding: 15px; color: black; font-size: 16px;">
+                                    ${item.name}
+                                    ${item.description ? `<div style="font-size: 14px; color: #666;">${item.description}</div>` : ''}
+                                </td>
+                                <td style="padding: 15px; text-align: center; color: black; font-size: 16px;">${item.quantity || 0}</td>
+                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.price || 0, quotation.currency)}</td>
+                                ${clientHasVAT ? `<td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(itemVAT, quotation.currency)}</td>` : ''}
+                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(clientHasVAT ? calculateTotalWithVAT(item.total || 0) : (item.total || 0), quotation.currency)}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            `;
+            pdfContainer.appendChild(itemsTable);
 
-                // Set all text in the section to black
-                const allTextElements = clientSection.querySelectorAll('*');
-                allTextElements.forEach(element => {
-                    if (element.tagName !== 'STRONG' && !element.classList.contains('AddressTitle')) {
-                        element.style.color = 'black';
-                        element.style.fontSize = '16px';
-                    }
-                });
-                
-                pdfContainer.appendChild(clientSection);
-            }
-            
-            // Extract and append the client email section if it exists
-            const clientEmailSection = elementClone.querySelector('.AddressGroup:not(.InfoAddresses)');
-            if (clientEmailSection) {
-                const emailTitle = clientEmailSection.querySelector('.AddressTitle');
-                if (emailTitle) {
-                    emailTitle.style.color = '#004359';
-                    emailTitle.style.fontWeight = 'bold';
-                    emailTitle.style.fontSize = '18px';
-                }
-                
-                // Set all regular text to black in the email section
-                const addressTextElements = clientEmailSection.querySelectorAll('.AddressText');
-                addressTextElements.forEach(element => {
-                    element.style.color = 'black';
-                    element.style.fontSize = '16px';
-                });
-                
-                // Update any icon colors to match Fortune Gifts branding
-                const icons = clientEmailSection.querySelectorAll('svg');
-                icons.forEach(icon => {
-                    if (icon.style && icon.style.color) {
-                        icon.style.color = '#004359';
-                    }
-                });
+            // Add total section
+            const totalSection = document.createElement('div');
+            totalSection.style.cssText = `
+                background-color: #004359;
+                color: white;
+                padding: 15px;
+                text-align: right;
+                border-radius: 0 0 4px 4px;
+            `;
+            totalSection.innerHTML = `
+                <div style="font-size: 18px; margin-bottom: 4px;">Grand Total</div>
+                ${clientHasVAT ? `<div style="font-size: 11px; opacity: 0.8;">Includes VAT: ${formatPrice(vatAmount, quotation.currency)}</div>` : ''}
+                <div style="font-size: 24px; font-weight: bold;">${formatPrice(grandTotal, quotation.currency)}</div>
+            `;
+            pdfContainer.appendChild(totalSection);
 
-                // Add white background and border to email section
-                clientEmailSection.style.backgroundColor = 'white';
-                clientEmailSection.style.border = '1px solid #e0e0e0';
-                clientEmailSection.style.borderRadius = '4px';
-                clientEmailSection.style.padding = '20px';
-                clientEmailSection.style.marginBottom = '20px';
+            // Add terms section if exists
+            if (quotation.termsAndConditions) {
+                const termsSection = document.createElement('div');
+                termsSection.style.cssText = `
+                    padding: 20px;
+                    background-color: white;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 4px;
+                    margin-bottom: 20px;
+                `;
+                
+                // Format the terms and conditions text
+                const formattedTerms = quotation.termsAndConditions
+                    .split('\n') // Split by newlines
+                    .map(line => line.trim()) // Trim whitespace
+                    .filter(line => line.length > 0) // Remove empty lines
+                    .map(line => {
+                        // Check if line starts with a number (for numbered lists)
+                        if (/^\d+\./.test(line)) {
+                            return `<div style="margin-bottom: 8px; color: black; font-size: 16px;">${line}</div>`;
+                        }
+                        // Check if line is a heading (all caps or starts with common heading words)
+                        else if (line.toUpperCase() === line || 
+                                /^(Terms|Conditions|Payment|Delivery|Warranty|Cancellation|Force Majeure|Governing Law)/i.test(line)) {
+                            return `<div style="margin-top: 16px; margin-bottom: 8px; color: #004359; font-weight: bold; font-size: 18px;">${line}</div>`;
+                        }
+                        // Regular paragraph
+                        else {
+                            return `<div style="margin-bottom: 8px; color: black; font-size: 16px;">${line}</div>`;
+                        }
+                    })
+                    .join('');
 
-                // Set all text in the section to black
-                const allTextElements = clientEmailSection.querySelectorAll('*');
-                allTextElements.forEach(element => {
-                    if (element.tagName !== 'STRONG' && !element.classList.contains('AddressTitle')) {
-                        element.style.color = 'black';
-                        element.style.fontSize = '16px';
-                    }
-                });
-                
-                pdfContainer.appendChild(clientEmailSection);
-            }
-            
-            // Extract and append the items section
-            const itemsSection = elementClone.querySelector('.Details');
-            if (itemsSection) {
-                // Set all item names and descriptions to black
-                const itemNames = itemsSection.querySelectorAll('.ItemName');
-                itemNames.forEach(element => {
-                    element.style.color = 'black';
-                    element.style.fontSize = '16px';
-                });
-                
-                const itemDescriptions = itemsSection.querySelectorAll('.ItemDescription');
-                itemDescriptions.forEach(element => {
-                    element.style.color = 'black';
-                    element.style.fontSize = '14px';
-                });
-                
-                // Set all prices, quantities, and totals to black except in the header and grand total
-                const itemPrices = itemsSection.querySelectorAll('.ItemPrice:not(.ItemsHeader .ItemPrice)');
-                itemPrices.forEach(element => {
-                    element.style.color = 'black';
-                    element.style.fontSize = '16px';
-                });
-                
-                const itemQtys = itemsSection.querySelectorAll('.ItemQty:not(.ItemsHeader .ItemQty)');
-                itemQtys.forEach(element => {
-                    element.style.color = 'black';
-                    element.style.fontSize = '16px';
-                });
-                
-                const itemVats = itemsSection.querySelectorAll('.ItemVat:not(.ItemsHeader .ItemVat)');
-                itemVats.forEach(element => {
-                    element.style.color = 'black';
-                    element.style.fontSize = '16px';
-                });
-                
-                const itemTotals = itemsSection.querySelectorAll('.ItemTotal:not(.ItemsHeader .ItemTotal)');
-                itemTotals.forEach(element => {
-                    element.style.color = 'black';
-                    element.style.fontSize = '16px';
-                });
-
-                // Set header text size
-                const headerCells = itemsSection.querySelectorAll('.ItemsHeader .HeaderCell');
-                headerCells.forEach(element => {
-                    element.style.fontSize = '18px';
-                });
-
-                // Add white background and border to items section
-                itemsSection.style.backgroundColor = 'white';
-                itemsSection.style.border = '1px solid #e0e0e0';
-                itemsSection.style.borderRadius = '4px';
-                itemsSection.style.marginBottom = '20px';
-
-                // Set all text in the section to black except headers
-                const allTextElements = itemsSection.querySelectorAll('*');
-                allTextElements.forEach(element => {
-                    if (!element.classList.contains('ItemsHeader') && !element.classList.contains('Total')) {
-                        element.style.color = 'black';
-                        element.style.fontSize = '16px';
-                    }
-                });
-
-                // Set Total section text to white
-                const totalSection = itemsSection.querySelector('.Total');
-                if (totalSection) {
-                    const totalTexts = totalSection.querySelectorAll('*');
-                    totalTexts.forEach(element => {
-                        element.style.color = 'white';
-                    });
-                }
-                
-                pdfContainer.appendChild(itemsSection);
-            }
-            
-            // Extract and append the terms and conditions section if it exists
-            const termsSection = elementClone.querySelector('.TermsSection');
-            if (termsSection) {
-                const termsTitle = termsSection.querySelector('.TermsTitle');
-                if (termsTitle) {
-                    termsTitle.style.color = '#004359';
-                    termsTitle.style.fontWeight = 'bold';
-                    termsTitle.style.fontSize = '18px';
-                }
-                
-                // Set the terms text to black
-                const termsText = termsSection.querySelector('.TermsText');
-                if (termsText) {
-                    termsText.style.color = 'black';
-                    termsText.style.fontSize = '16px';
-                }
-
-                // Add white background and border to terms section
-                termsSection.style.backgroundColor = 'white';
-                termsSection.style.border = '1px solid #e0e0e0';
-                termsSection.style.borderRadius = '4px';
-                termsSection.style.padding = '20px';
-                termsSection.style.marginBottom = '20px';
-
-                // Set all text in the section to black except title
-                const allTextElements = termsSection.querySelectorAll('*');
-                allTextElements.forEach(element => {
-                    if (!element.classList.contains('TermsTitle')) {
-                        element.style.color = 'black';
-                        element.style.fontSize = '16px';
-                    }
-                });
-                
+                termsSection.innerHTML = `
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 16px;">Terms and Conditions</div>
+                    <div style="color: black; font-size: 16px; line-height: 1.5;">
+                        ${formattedTerms}
+                    </div>
+                `;
                 pdfContainer.appendChild(termsSection);
             }
-            
-            // Add signature section at the bottom
+
+            // Add spacer for signature section
+            const spacer = document.createElement('div');
+            spacer.style.height = '150px';
+            pdfContainer.appendChild(spacer);
+
+            // Add signature section
             const signatureSection = document.createElement('div');
             signatureSection.style.cssText = `
                 position: absolute;
@@ -692,30 +584,23 @@ const QuotationView = () => {
                 display: flex;
                 justify-content: space-between;
             `;
-
             signatureSection.innerHTML = `
                 <div style="width: 45%;">
                     <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                    <div style="font-weight: bold; color: #004359; font-size: 19px !important;">Authorized Signature</div>
+                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
                 </div>
                 <div style="width: 45%;">
                     <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                    <div style="font-weight: bold; color: #004359; font-size: 19px !important;">Client Acceptance</div>
+                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
                 </div>
             `;
-
-            // Add extra space before the signature section
-            const spacerDiv = document.createElement('div');
-            spacerDiv.style.height = '150px'; // Add space before signatures
-            pdfContainer.appendChild(spacerDiv);
-
             pdfContainer.appendChild(signatureSection);
-            
+
             // Temporarily add to document to render
             pdfContainer.style.position = 'absolute';
             pdfContainer.style.left = '-9999px';
             document.body.appendChild(pdfContainer);
-            
+
             // Convert to canvas with A3 dimensions
             const canvas = await html2canvas(pdfContainer, {
                 scale: 2,
@@ -725,10 +610,10 @@ const QuotationView = () => {
                 width: 1122.5, // 297mm in pixels at 96 DPI
                 height: 1587.4 // 420mm in pixels at 96 DPI
             });
-            
+
             // Remove temporary elements
             document.body.removeChild(pdfContainer);
-            
+
             // Create PDF with A3 size
             const pdf = new jsPDF({
                 orientation: 'portrait',
@@ -736,11 +621,11 @@ const QuotationView = () => {
                 format: 'a3',
                 compress: true
             });
-            
+
             // Add the image to fit A3 page
             const imgData = canvas.toDataURL('image/png');
             pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
-            
+
             // Save the PDF
             pdf.save(`Quotation_${quotation.customId || id}.pdf`);
         } catch (error) {
@@ -1080,50 +965,47 @@ const QuotationView = () => {
                     exit="exit"
                     className="Controller"
                 >
-                    <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <StatusBadge status={quotation.status}>
                             <span>
                                 {quotation.status === 'approved' ? 'Approved' : 
                                  quotation.status === 'pending' ? 'Pending' : 'Draft'}
                             </span>
                         </StatusBadge>
-                    </div>
-                    
-                    <div style={{ display: 'flex', gap: '12px' }}>
                         <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
                             <Icon name="download" size={13} />
                             Download PDF
                         </DownloadButton>
-                        
-                        {isDesktop && (
-                            <ButtonWrapper className="ButtonWrapper">
-                                <Button
-                                    $secondary
-                                    onClick={() => editQuotation(id)}
-                                    disabled={isLoading || isApproved}
-                                >
-                                    Edit
-                                </Button>
-                                <Button
-                                    $delete
-                                    onClick={handleDeleteClick}
-                                    disabled={isLoading}
-                                >
-                                    Delete
-                                </Button>
-                                {isPending && (
-                                    <Button
-                                        $primary
-                                        onClick={handleConvertToInvoice}
-                                        disabled={isLoading || isConverting}
-                                    >
-                                        <Icon name="arrow-right" size={13} style={{ marginRight: '6px' }} />
-                                        {isConverting ? 'Converting...' : 'Invoice'}
-                                    </Button>
-                                )}
-                            </ButtonWrapper>
-                        )}
                     </div>
+                    
+                    {isDesktop && (
+                        <ButtonWrapper className="ButtonWrapper">
+                            <Button
+                                $secondary
+                                onClick={() => editQuotation(id)}
+                                disabled={isLoading || isApproved}
+                            >
+                                Edit
+                            </Button>
+                            <Button
+                                $delete
+                                onClick={handleDeleteClick}
+                                disabled={isLoading}
+                            >
+                                Delete
+                            </Button>
+                            {isPending && (
+                                <Button
+                                    $primary
+                                    onClick={handleConvertToInvoice}
+                                    disabled={isLoading || isConverting}
+                                >
+                                    <Icon name="arrow-right" size={13} style={{ marginRight: '6px' }} />
+                                    {isConverting ? 'Converting...' : 'Invoice'}
+                                </Button>
+                            )}
+                        </ButtonWrapper>
+                    )}
                 </Controller>
                 
                 {/* Main quotation info */}

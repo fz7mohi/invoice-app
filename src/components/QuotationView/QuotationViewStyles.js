@@ -493,29 +493,31 @@ export const PrintButton = styled.button`
 `;
 
 export const DownloadButton = styled.button`
-    background-color: #004359;
-    border: none;
-    color: white;
-    border-radius: 4px;
-    padding: 8px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
     display: flex;
     align-items: center;
-    margin-left: auto;
-    transition: all 0.2s ease;
-    
-    svg {
-        margin-right: 6px;
-    }
-    
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 24px;
+    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 14px;
+    font-weight: 700;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    cursor: pointer;
+    transition: all 0.3s ease;
+
     &:hover {
-        background-color: #005E7C;
+        background-color: ${({ theme }) => theme.colors.backgroundItemHover};
     }
-    
-    @media (max-width: 767px) {
-        display: none;
+
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    @media (min-width: 768px) {
+        padding: 8px 24px;
+        font-size: 15px;
     }
 `;
 
