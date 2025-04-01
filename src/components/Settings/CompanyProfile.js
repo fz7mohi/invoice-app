@@ -19,7 +19,13 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
     vatNumber: '',
     crNumber: '',
     gstNumber: '',
-    website: ''
+    website: '',
+    bankName: '',
+    branchName: '',
+    accountName: '',
+    accountNumber: '',
+    iban: '',
+    chequesPayableTo: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -53,7 +59,13 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
         vatNumber: editingCompany.vatNumber || '',
         crNumber: editingCompany.crNumber || '',
         gstNumber: editingCompany.gstNumber || '',
-        website: editingCompany.website || ''
+        website: editingCompany.website || '',
+        bankName: editingCompany.bankName || '',
+        branchName: editingCompany.branchName || '',
+        accountName: editingCompany.accountName || '',
+        accountNumber: editingCompany.accountNumber || '',
+        iban: editingCompany.iban || '',
+        chequesPayableTo: editingCompany.chequesPayableTo || ''
       });
     }
   }, [editingCompany]);
@@ -69,7 +81,13 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
       vatNumber: '',
       crNumber: '',
       gstNumber: '',
-      website: ''
+      website: '',
+      bankName: '',
+      branchName: '',
+      accountName: '',
+      accountNumber: '',
+      iban: '',
+      chequesPayableTo: ''
     });
     setError(null);
   };
@@ -373,6 +391,86 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
                     name="website"
                     value={formData.website}
                     onChange={handleChange}
+                  />
+                </FormGroup>
+              </FormRow>
+
+              {/* Bank Transfer Details Section */}
+              <SectionDivider>
+                <SectionTitle>Bank Transfer Details</SectionTitle>
+              </SectionDivider>
+
+              <FormRow>
+                <FormGroup>
+                  <Label htmlFor="bankName">Bank Name</Label>
+                  <Input
+                    type="text"
+                    id="bankName"
+                    name="bankName"
+                    value={formData.bankName}
+                    onChange={handleChange}
+                    placeholder="Enter bank name"
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <Label htmlFor="branchName">Branch Name</Label>
+                  <Input
+                    type="text"
+                    id="branchName"
+                    name="branchName"
+                    value={formData.branchName}
+                    onChange={handleChange}
+                    placeholder="Enter branch name"
+                  />
+                </FormGroup>
+              </FormRow>
+
+              <FormRow>
+                <FormGroup>
+                  <Label htmlFor="accountName">Account Name</Label>
+                  <Input
+                    type="text"
+                    id="accountName"
+                    name="accountName"
+                    value={formData.accountName}
+                    onChange={handleChange}
+                    placeholder="Enter account name"
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <Label htmlFor="accountNumber">Account Number</Label>
+                  <Input
+                    type="text"
+                    id="accountNumber"
+                    name="accountNumber"
+                    value={formData.accountNumber}
+                    onChange={handleChange}
+                    placeholder="Enter account number"
+                  />
+                </FormGroup>
+              </FormRow>
+
+              <FormRow>
+                <FormGroup>
+                  <Label htmlFor="iban">IBAN</Label>
+                  <Input
+                    type="text"
+                    id="iban"
+                    name="iban"
+                    value={formData.iban}
+                    onChange={handleChange}
+                    placeholder="Enter IBAN"
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <Label htmlFor="chequesPayableTo">Cheques Payable To</Label>
+                  <Input
+                    type="text"
+                    id="chequesPayableTo"
+                    name="chequesPayableTo"
+                    value={formData.chequesPayableTo}
+                    onChange={handleChange}
+                    placeholder="Enter name for cheques"
                   />
                 </FormGroup>
               </FormRow>
@@ -709,6 +807,19 @@ const Select = styled.select`
     background-color: ${({ theme }) => theme?.mode === 'dark' ? '#1e2139' : '#ffffff'};
     color: ${({ theme }) => theme?.mode === 'dark' ? '#ffffff' : '#004359'};
   }
+`;
+
+const SectionDivider = styled.div`
+  margin: 32px 0 24px;
+  border-top: 1px solid ${({ theme }) => theme?.borders || '#dfe3fa'};
+  padding-top: 24px;
+`;
+
+const SectionTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${({ theme }) => theme?.mode === 'dark' ? '#ffffff' : '#004359'};
+  margin: 0;
 `;
 
 export default CompanyProfile;

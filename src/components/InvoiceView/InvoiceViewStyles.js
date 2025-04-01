@@ -653,3 +653,32 @@ export const HeaderTitle = styled.h1`
         font-size: 24px;
     }
 `;
+
+export const DownloadButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 24px;
+    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 14px;
+    font-weight: 700;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background-color: ${({ theme }) => theme.colors.backgroundItemHover};
+    }
+
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    @media (min-width: 768px) {
+        padding: 8px 24px;
+        font-size: 15px;
+    }
+`;
