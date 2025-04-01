@@ -789,3 +789,61 @@ export const InfoSectionsGrid = styled.div`
         grid-template-columns: 1fr 1fr;
     }
 `;
+
+export const PaymentDetailsSection = styled.div`
+    margin-top: 32px;
+    margin-bottom: 32px;
+    padding: 24px;
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
+    border-radius: 8px;
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+`;
+
+export const PaymentDetailsHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+`;
+
+export const PaymentDetailsTitle = styled.h3`
+    ${primaryFontStyles}
+    font-size: 1.25rem;
+    color: ${({ theme }) => theme?.colors?.text || '#DFE3FA'};
+    margin: 0;
+`;
+
+export const PaymentDetailsGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+`;
+
+export const PaymentDetailItem = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+export const PaymentDetailLabel = styled.span`
+    font-size: 0.875rem;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#888EB0'};
+`;
+
+export const PaymentDetailValue = styled.span`
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: ${({ theme }) => theme?.colors?.text || '#DFE3FA'};
+`;
+
+export const PaymentDetailDueDate = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: ${({ theme, isOverdue }) => 
+        isOverdue 
+            ? theme?.colors?.error || '#EC5757'
+            : theme?.colors?.text || '#DFE3FA'};
+    font-size: 1.25rem;
+    font-weight: 700;
+`;

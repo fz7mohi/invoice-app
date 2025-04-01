@@ -62,7 +62,15 @@ import {
     InfoSectionsGrid,
     HeaderSection,
     HeaderTitle,
-    DownloadButton
+    DownloadButton,
+    PaymentDetailsSection,
+    PaymentDetailsHeader,
+    PaymentDetailsTitle,
+    PaymentDetailsGrid,
+    PaymentDetailItem,
+    PaymentDetailLabel,
+    PaymentDetailValue,
+    PaymentDetailDueDate
 } from './InvoiceViewStyles';
 
 // Add ModalOverlay styled component
@@ -509,13 +517,68 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
     const handleStatusChange = async (newStatus) => {
         try {
             if (newStatus === 'paid') {
+                // Update payment details when marking as paid
+                const invoiceRef = doc(db, 'invoices', id);
+                await updateDoc(invoiceRef, {
+                    status: 'paid',
+                    paidAmount: invoice.total, // Set paid amount to total
+                    paymentDate: new Date(),
+                    lastModified: new Date()
+                });
+                
+                // Update local state
+                setInvoice(prev => ({
+                    ...prev,
+                    status: 'paid',
+                    paidAmount: prev.total,
+                    paymentDate: new Date()
+                }));
+                
                 toggleModal(id, 'status');
                 await handleMarkAsPaid();
+            } else if (newStatus === 'partially_paid') {
+                // Update payment details when marking as partially paid
+                const invoiceRef = doc(db, 'invoices', id);
+                await updateDoc(invoiceRef, {
+                    status: 'partially_paid',
+                    lastModified: new Date()
+                });
+                
+                // Update local state
+                setInvoice(prev => ({
+                    ...prev,
+                    status: 'partially_paid'
+                }));
             } else if (newStatus === 'edit') {
                 editInvoice(id);
             }
         } catch (error) {
             console.error('Error updating invoice status:', error);
+        }
+    };
+
+    // Add function to update payment amount
+    const handlePaymentAmountUpdate = async (amount) => {
+        try {
+            const invoiceRef = doc(db, 'invoices', id);
+            const newStatus = amount >= invoice.total ? 'paid' : 'partially_paid';
+            
+            await updateDoc(invoiceRef, {
+                paidAmount: amount,
+                status: newStatus,
+                paymentDate: newStatus === 'paid' ? new Date() : null,
+                lastModified: new Date()
+            });
+            
+            // Update local state
+            setInvoice(prev => ({
+                ...prev,
+                paidAmount: amount,
+                status: newStatus,
+                paymentDate: newStatus === 'paid' ? new Date() : null
+            }));
+        } catch (error) {
+            console.error('Error updating payment amount:', error);
         }
     };
 
@@ -1155,6 +1218,66 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         }
     };
 
+    const renderPaymentDetails = () => {
+        const { total, paidAmount, dueDate, currency } = invoice;
+        const balanceDue = total - (paidAmount || 0);
+        const isOverdue = dueDate && new Date(dueDate) < new Date();
+
+        return (
+            <PaymentDetailsSection>
+                <PaymentDetailsHeader>
+                    <PaymentDetailsTitle>Payment Details</PaymentDetailsTitle>
+                </PaymentDetailsHeader>
+                <PaymentDetailsGrid>
+                    <PaymentDetailItem>
+                        <PaymentDetailLabel>Total Amount Due</PaymentDetailLabel>
+                        <PaymentDetailValue>{formatPrice(total, currency)}</PaymentDetailValue>
+                    </PaymentDetailItem>
+                    <PaymentDetailItem>
+                        <PaymentDetailLabel>Amount Paid</PaymentDetailLabel>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <PaymentDetailValue>{formatPrice(paidAmount || 0, currency)}</PaymentDetailValue>
+                            {!isPaid && !isVoid && (
+                                <Button
+                                    onClick={() => {
+                                        const amount = prompt('Enter payment amount:', paidAmount || 0);
+                                        if (amount !== null) {
+                                            const numAmount = parseFloat(amount);
+                                            if (!isNaN(numAmount) && numAmount >= 0) {
+                                                handlePaymentAmountUpdate(numAmount);
+                                            }
+                                        }
+                                    }}
+                                    $secondary
+                                    style={{ 
+                                        padding: '4px 8px',
+                                        fontSize: '12px',
+                                        backgroundColor: 'transparent',
+                                        border: '1px solid #e0e0e0'
+                                    }}
+                                >
+                                    <Icon name="edit" size={12} />
+                                    Update
+                                </Button>
+                            )}
+                        </div>
+                    </PaymentDetailItem>
+                    <PaymentDetailItem>
+                        <PaymentDetailLabel>Balance Due</PaymentDetailLabel>
+                        <PaymentDetailValue>{formatPrice(balanceDue, currency)}</PaymentDetailValue>
+                    </PaymentDetailItem>
+                    <PaymentDetailItem>
+                        <PaymentDetailLabel>Due Date</PaymentDetailLabel>
+                        <PaymentDetailDueDate isOverdue={isOverdue}>
+                            {dueDate ? formatDate(dueDate) : 'Not set'}
+                            {isOverdue && <Icon name="warning" size={20} />}
+                        </PaymentDetailDueDate>
+                    </PaymentDetailItem>
+                </PaymentDetailsGrid>
+            </PaymentDetailsSection>
+        );
+    };
+
     // Show loading state
     if (isLoading || !invoice) {
         return (
@@ -1315,6 +1438,8 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         </ButtonWrapper>
                     )}
                 </Controller>
+
+                {renderPaymentDetails()}
 
                 <InfoCard
                     id="invoice-content"
