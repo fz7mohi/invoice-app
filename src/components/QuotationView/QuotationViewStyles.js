@@ -521,6 +521,31 @@ export const DownloadButton = styled.button`
     }
 `;
 
+export const HeaderSection = styled.div`
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+
+    @media (min-width: 768px) {
+        margin-bottom: 32px;
+        padding-bottom: 20px;
+    }
+`;
+
+export const HeaderTitle = styled.h1`
+    font-size: 20px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    margin: 0;
+    letter-spacing: -0.3px;
+
+    @media (min-width: 768px) {
+        font-size: 24px;
+    }
+`;
+
 // Add the Fortune Gifts colors to the theme
 export const fortuneGiftsTheme = {
     primary: '#004359',

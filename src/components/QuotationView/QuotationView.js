@@ -46,7 +46,22 @@ import {
     StatusBadge,
     MetaInfo,
     MetaItem,
-    DownloadButton
+    DownloadButton,
+    ActionButtons,
+    StatusDot,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalIconWrapper,
+    ModalTitle,
+    ModalText,
+    FormGroup,
+    FormLabel,
+    TextArea,
+    ModalActions,
+    StatusContainer,
+    HeaderSection,
+    HeaderTitle,
 } from './QuotationViewStyles';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
@@ -833,6 +848,10 @@ const QuotationView = () => {
                         Go back
                     </MotionLink>
                     
+                    <HeaderSection>
+                        <HeaderTitle>Quotation</HeaderTitle>
+                    </HeaderSection>
+                    
                     <Controller
                         variants={variant('controller')}
                         initial="hidden"
@@ -966,6 +985,10 @@ const QuotationView = () => {
                     <Icon name={'arrow-left'} size={10} color={colors.purple} />
                     Go back
                 </MotionLink>
+                
+                <HeaderSection>
+                    <HeaderTitle>Quotation</HeaderTitle>
+                </HeaderSection>
                 
                 {/* Status bar with action buttons */}
                 <Controller

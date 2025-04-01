@@ -57,6 +57,8 @@ import {
     TextArea,
     ModalActions,
     StatusContainer,
+    HeaderSection,
+    HeaderTitle,
 } from './InvoiceViewStyles';
 
 // Animation variants
@@ -571,9 +573,13 @@ const InvoiceView = () => {
                     animate="visible"
                     exit="exit"
                 >
-                    <Icon name="arrow-left" size={10} color={colors.purple} />
+                    <Icon name="arrow-left" size={16} color="inherit" />
                     Go back
                 </MotionLink>
+
+                <HeaderSection>
+                    <HeaderTitle>Invoice</HeaderTitle>
+                </HeaderSection>
 
                 <Controller
                     variants={variant('controller')}
