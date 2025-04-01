@@ -16,6 +16,17 @@ const pulseAnimation = keyframes`
     }
 `;
 
+const modalSlideIn = keyframes`
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+`;
+
 export const StyledInvoiceView = styled.main`
     padding: 28px 24px 0;
     width: 100%;
@@ -328,68 +339,173 @@ export const ActionButtons = styled.div`
 
 export const ButtonWrapper = styled.div`
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 20px 24px;
-    background-color: ${({ theme }) => theme.colors.background};
-    border-top: 1px solid ${({ theme }) => theme.colors.border};
+    padding: 12px;
+    background-color: rgba(30, 33, 57, 0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 10;
+    transition: all 0.3s ease;
 
     @media (min-width: 768px) {
         position: static;
         padding: 0;
         border: none;
+        backdrop-filter: none;
+        background: none;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    button {
+        flex: 1;
+        min-width: calc(50% - 4px);
+        max-width: none;
+        height: 38px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.2px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 0 12px;
+        white-space: nowrap;
+        
+        svg {
+            flex-shrink: 0;
+            width: 14px;
+            height: 14px;
+        }
+        
+        &:active {
+            transform: scale(0.98);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (min-width: 375px) {
+            font-size: 12px;
+            gap: 6px;
+            padding: 0 14px;
+        }
+
+        @media (min-width: 768px) {
+            flex: 0 1 auto;
+            min-width: auto;
+            padding: 0 16px;
+            height: 34px;
+        }
+
+        @media (min-width: 1024px) {
+            min-width: 120px;
+        }
+    }
+
+    /* Adjust button order on mobile */
+    @media (max-width: 767px) {
+        button {
+            order: 2;
+            
+            /* Make Mark Paid and Void buttons full width */
+            &[data-action="mark-paid"],
+            &[data-action="void"] {
+                flex: 1 0 100%;
+                order: 1;
+            }
+        }
     }
 `;
 
 export const StatusBadge = styled.div`
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 700;
-    background-color: ${({ theme, currStatus }) => {
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    transition: all 0.2s ease;
+    min-width: 90px;
+    text-transform: capitalize;
+    background-color: ${({ currStatus, theme }) => {
         switch (currStatus) {
             case 'paid':
-                return 'rgba(51, 214, 159, 0.06)';
+                return 'rgba(51, 214, 159, 0.1)';
+            case 'partially_paid':
+                return 'rgba(73, 97, 255, 0.1)';
             case 'pending':
-                return 'rgba(255, 143, 0, 0.06)';
+                return 'rgba(255, 143, 0, 0.1)';
+            case 'void':
+                return 'rgba(236, 87, 87, 0.1)';
             default:
-                return 'rgba(55, 59, 83, 0.06)';
+                return 'rgba(223, 227, 250, 0.1)';
         }
     }};
-    color: ${({ theme, currStatus }) => {
+    color: ${({ currStatus, theme }) => {
         switch (currStatus) {
             case 'paid':
                 return '#33D69F';
+            case 'partially_paid':
+                return '#4961FF';
             case 'pending':
                 return '#FF8F00';
+            case 'void':
+                return '#EC5757';
             default:
-                return '#373B53';
+                return theme.colors.textTertiary;
         }
     }};
-    transition: all 0.3s ease-in-out;
+    border: 1px solid ${({ currStatus, theme }) => {
+        switch (currStatus) {
+            case 'paid':
+                return 'rgba(51, 214, 159, 0.2)';
+            case 'partially_paid':
+                return 'rgba(73, 97, 255, 0.2)';
+            case 'pending':
+                return 'rgba(255, 143, 0, 0.2)';
+            case 'void':
+                return 'rgba(236, 87, 87, 0.2)';
+            default:
+                return 'rgba(223, 227, 250, 0.2)';
+        }
+    }};
 `;
 
 export const StatusDot = styled.div`
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background-color: ${({ theme, currStatus }) => {
-        switch (currStatus) {
-            case 'paid':
-                return '#33D69F';
-            case 'pending':
-                return '#FF8F00';
-            default:
-                return '#373B53';
-        }
-    }};
+    margin-right: 6px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    background-color: #DFE3FA;
+    opacity: 0.8;
+`;
+
+export const StatusContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    ${Text} {
+        font-size: 12px;
+        font-weight: 500;
+        color: ${({ theme }) => theme.colors.textTertiary};
+        margin: 0;
+        opacity: 0.8;
+    }
 `;
 
 export const TermsSection = styled.div`
@@ -412,4 +528,103 @@ export const TermsText = styled.p`
     margin: 0;
     line-height: 1.5;
     white-space: pre-wrap;
+`;
+
+export const ModalOverlay = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+`;
+
+export const ModalContent = styled.div`
+    background-color: #1E2139;
+    padding: 2rem;
+    border-radius: 16px;
+    max-width: 460px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    border: 1px solid #252945;
+    animation: ${modalSlideIn} 0.3s ease-out;
+`;
+
+export const ModalHeader = styled.div`
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 12px;
+`;
+
+export const ModalIconWrapper = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background-color: #2B2C37;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #FF4806;
+`;
+
+export const ModalTitle = styled.h2`
+    margin: 0;
+    font-size: 1.25rem;
+    color: #fff;
+    font-weight: 600;
+`;
+
+export const ModalText = styled.p`
+    margin-bottom: 1.5rem;
+    color: #DFE3FA;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    opacity: 0.9;
+`;
+
+export const FormGroup = styled.div`
+    margin-bottom: 1.5rem;
+`;
+
+export const FormLabel = styled.label`
+    display: block;
+    margin-bottom: 0.75rem;
+    color: #DFE3FA;
+    font-size: 0.9rem;
+    font-weight: 500;
+`;
+
+export const TextArea = styled.textarea`
+    width: 100%;
+    padding: 0.875rem;
+    border-radius: 8px;
+    border: 1px solid #252945;
+    background-color: #1E2139;
+    color: #fff;
+    font-size: 0.9rem;
+    min-height: 100px;
+    resize: vertical;
+    transition: all 0.2s ease;
+
+    &:focus {
+        outline: none;
+        border-color: #7C5DFA;
+        box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
+    }
+
+    &::placeholder {
+        color: #888EB0;
+    }
+`;
+
+export const ModalActions = styled.div`
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
 `;

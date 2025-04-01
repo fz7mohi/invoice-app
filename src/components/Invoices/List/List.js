@@ -209,7 +209,8 @@ const List = ({ invoices, isLoading, variant }) => {
                             </TotalPrice>
                             <StatusBadge currStatus={invoice.status}>
                                 <StatusDot currStatus={invoice.status} />
-                                {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                {invoice.status === 'partially_paid' ? 'Partially Paid' : 
+                                 invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                             </StatusBadge>
                             {isDesktop && (
                                 <Icon

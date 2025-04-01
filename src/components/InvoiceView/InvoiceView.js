@@ -6,7 +6,7 @@ import { useGlobalContext } from '../App/context';
 import Icon from '../shared/Icon/Icon';
 import Button from '../shared/Button/Button';
 import { formatDate, formatPrice } from '../../utilities/helpers';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import {
     StyledInvoiceView,
@@ -45,7 +45,18 @@ import {
     StatusDot,
     TermsSection,
     TermsTitle,
-    TermsText
+    TermsText,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalIconWrapper,
+    ModalTitle,
+    ModalText,
+    FormGroup,
+    FormLabel,
+    TextArea,
+    ModalActions,
+    StatusContainer,
 } from './InvoiceViewStyles';
 
 // Animation variants
@@ -90,14 +101,20 @@ const InvoiceView = () => {
     const [isClientFetching, setIsClientFetching] = useState(false);
     const [clientHasVAT, setClientHasVAT] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showVoidModal, setShowVoidModal] = useState(false);
+    const [voidReason, setVoidReason] = useState('');
+    const [isVoiding, setIsVoiding] = useState(false);
     const isLoading = invoiceState?.isLoading || isDirectlyFetching || isClientFetching;
     const invoiceNotFound = !isLoading && !invoice;
     const isPending = invoice?.status === 'pending';
+    const isPartiallyPaid = invoice?.status === 'partially_paid';
     const isPaid = invoice?.status === 'paid';
-    const isDraft = invoice?.status === 'draft';
+    const isVoid = invoice?.status === 'void';
     const isDesktop = windowWidth >= 768;
     const shouldReduceMotion = useReducedMotion();
     const history = useHistory();
+    const [quotationData, setQuotationData] = useState(null);
+    const [isFetchingQuotation, setIsFetchingQuotation] = useState(false);
     
     // Function to generate custom ID if not exists
     const generateCustomId = () => {
@@ -341,7 +358,7 @@ const InvoiceView = () => {
             }
             
             if (foundInvoice) {
-                setInvoice(foundInvoice);
+            setInvoice(foundInvoice);
                 
                 // After setting invoice, fetch client data
                 fetchClientData(foundInvoice.clientId, foundInvoice.clientName);
@@ -439,6 +456,74 @@ const InvoiceView = () => {
         );
     };
 
+    // Add function to fetch quotation data
+    const fetchQuotationData = async (quotationId) => {
+        if (!quotationId) return;
+        
+        try {
+            setIsFetchingQuotation(true);
+            const quotationRef = doc(db, 'quotations', quotationId);
+            const docSnap = await getDoc(quotationRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setQuotationData({
+                    id: docSnap.id,
+                    customId: data.customId || docSnap.id
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching quotation data:', error);
+        } finally {
+            setIsFetchingQuotation(false);
+        }
+    };
+
+    // Add useEffect to fetch quotation data when invoice loads
+    useEffect(() => {
+        if (invoice?.quotationId) {
+            fetchQuotationData(invoice.quotationId);
+        }
+    }, [invoice?.quotationId]);
+
+    // Handle void invoice
+    const handleVoidClick = () => {
+        setShowVoidModal(true);
+    };
+
+    const handleVoidConfirm = async () => {
+        if (!voidReason.trim()) {
+            alert('Please provide a reason for voiding the invoice');
+            return;
+        }
+
+        setIsVoiding(true);
+        try {
+            const invoiceRef = doc(db, 'invoices', id);
+            await updateDoc(invoiceRef, {
+                status: 'void',
+                voidReason: voidReason,
+                voidDate: new Date(),
+                lastModified: new Date()
+            });
+            
+            // Update local state
+            setInvoice(prev => ({
+                ...prev,
+                status: 'void',
+                voidReason: voidReason,
+                voidDate: new Date()
+            }));
+            
+            setShowVoidModal(false);
+        } catch (error) {
+            console.error('Error voiding invoice:', error);
+            alert('There was an error voiding the invoice. Please try again.');
+        } finally {
+            setIsVoiding(false);
+        }
+    };
+
     // Show loading state
     if (isLoading || !invoice) {
         return (
@@ -465,7 +550,7 @@ const InvoiceView = () => {
                         className="Controller"
                     >
                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <Text>Loading invoice...</Text>
+                        <Text>Loading invoice...</Text>
                             <div style={{ marginLeft: 16, width: 16, height: 16 }} className="loading-spinner"></div>
                         </div>
                     </Controller>
@@ -496,38 +581,95 @@ const InvoiceView = () => {
                     animate="visible"
                     exit="exit"
                 >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <StatusContainer>
                         <Text>Status</Text>
                         <StatusBadge currStatus={invoice.status}>
                             <StatusDot currStatus={invoice.status} />
-                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                            {invoice.status === 'partially_paid' ? 'Partially Paid' : 
+                             invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                         </StatusBadge>
-                    </div>
+                    </StatusContainer>
 
                     {isDesktop && (
                         <ButtonWrapper>
-                            <Button
-                                $secondary
-                                onClick={() => handleStatusChange('edit')}
-                                disabled={isLoading || isPaid}
-                            >
-                                Edit
-                            </Button>
-                            <Button
-                                $delete
-                                onClick={handleDeleteClick}
-                                disabled={isLoading}
-                            >
-                                Delete
-                            </Button>
-                            {!isPaid && (
-                                <Button
-                                    $primary
-                                    onClick={() => handleStatusChange('paid')}
-                                    disabled={isLoading}
-                                >
-                                    Mark as Paid
-                                </Button>
+                            {!isVoid && !isPaid && (
+                                <>
+                                    {isPending && (
+                                        <>
+                                            <Button
+                                                $primary
+                                                onClick={() => handleStatusChange('partially_paid')}
+                                                disabled={isLoading}
+                                                data-action="partially-paid"
+                                                style={{
+                                                    backgroundColor: colors.orange,
+                                                    border: 'none'
+                                                }}
+                                            >
+                                                <Icon 
+                                                    name="clock" 
+                                                    size={14} 
+                                                    color="white"
+                                                />
+                                                <span>Partially Paid</span>
+                                            </Button>
+                                            <Button
+                                                $primary
+                                                onClick={() => {/* TODO: Implement DO generation */}}
+                                                disabled={isLoading}
+                                                data-action="generate-do"
+                                                style={{
+                                                    backgroundColor: colors.purple,
+                                                    border: 'none'
+                                                }}
+                                            >
+                                                <Icon 
+                                                    name="file-text" 
+                                                    size={14} 
+                                                    color="white"
+                                                />
+                                                <span>Generate DO</span>
+                                            </Button>
+                                        </>
+                                    )}
+                                    {(isPending || isPartiallyPaid) && (
+                                        <Button
+                                            $primary
+                                            onClick={() => handleStatusChange('paid')}
+                                            disabled={isLoading}
+                                            data-action="mark-paid"
+                                            style={{
+                                                backgroundColor: colors.green,
+                                                border: 'none'
+                                            }}
+                                        >
+                                            <Icon 
+                                                name="check" 
+                                                size={14} 
+                                                color="white"
+                                            />
+                                            <span>Mark Paid</span>
+                                        </Button>
+                                    )}
+                                    <Button
+                                        $delete
+                                        onClick={handleVoidClick}
+                                        disabled={isLoading}
+                                        data-action="void"
+                                        style={{
+                                            backgroundColor: 'transparent',
+                                            border: `1px solid ${colors.red}`,
+                                            color: colors.red
+                                        }}
+                                    >
+                                        <Icon 
+                                            name="x" 
+                                            size={14} 
+                                            color={colors.red}
+                                        />
+                                        <span>Void</span>
+                                    </Button>
+                                </>
                             )}
                         </ButtonWrapper>
                     )}
@@ -547,7 +689,35 @@ const InvoiceView = () => {
                                 <span>#</span>{invoice.customId}
                             </InfoID>
                             <InfoDesc>{invoice.description || 'No description'}</InfoDesc>
-                            
+                            {invoice.quotationId && (
+                                <span style={{ 
+                                    color: colors.textTertiary,
+                                    fontSize: '13px',
+                                    display: 'block',
+                                    marginTop: '4px'
+                                }}>
+                                    <Icon 
+                                        name="arrow-right" 
+                                        size={12} 
+                                        color={colors.textTertiary}
+                                        style={{ marginRight: '8px', verticalAlign: 'middle' }}
+                                    />
+                                    Converted from Quotation: 
+                                    <MotionLink
+                                        to={`/quotation/${invoice.quotationId}`}
+                                        style={{ 
+                                            color: 'white',
+                                            textDecoration: 'none',
+                                            cursor: 'pointer',
+                                            fontWeight: '500',
+                                            marginLeft: '4px',
+                                            verticalAlign: 'middle'
+                                        }}
+                                    >
+                                        #{isFetchingQuotation ? 'Loading...' : (quotationData?.customId || invoice.quotationId)}
+                                    </MotionLink>
+                                </span>
+                            )}
                             <MetaInfo>
                                 <MetaItem>
                                     <Icon name="calendar" size={13} />
@@ -664,114 +834,146 @@ const InvoiceView = () => {
             {/* Mobile action buttons */}
             {!isDesktop && (
                 <ButtonWrapper>
-                    <Button
-                        $secondary
-                        onClick={() => handleStatusChange('edit')}
-                        disabled={isLoading || isPaid}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        $delete
-                        onClick={handleDeleteClick}
-                        disabled={isLoading}
-                    >
-                        Delete
-                    </Button>
-                    {!isPaid && (
-                        <Button
-                            $primary
-                            onClick={() => handleStatusChange('paid')}
-                            disabled={isLoading}
-                        >
-                            Mark as Paid
-                        </Button>
+                    {!isVoid && !isPaid && (
+                        <>
+                            {isPending && (
+                                <>
+                                    <Button
+                                        $primary
+                                        onClick={() => handleStatusChange('partially_paid')}
+                                        disabled={isLoading}
+                                        data-action="partially-paid"
+                                        style={{
+                                            backgroundColor: colors.orange,
+                                            border: 'none'
+                                        }}
+                                    >
+                                        <Icon 
+                                            name="clock" 
+                                            size={14} 
+                                            color="white"
+                                        />
+                                        <span>Partially Paid</span>
+                                    </Button>
+                                    <Button
+                                        $primary
+                                        onClick={() => {/* TODO: Implement DO generation */}}
+                                        disabled={isLoading}
+                                        data-action="generate-do"
+                                        style={{
+                                            backgroundColor: colors.purple,
+                                            border: 'none'
+                                        }}
+                                    >
+                                        <Icon 
+                                            name="file-text" 
+                                            size={14} 
+                                            color="white"
+                                        />
+                                        <span>Generate DO</span>
+                                    </Button>
+                                </>
+                            )}
+                            {(isPending || isPartiallyPaid) && (
+                                <Button
+                                    $primary
+                                    onClick={() => handleStatusChange('paid')}
+                                    disabled={isLoading}
+                                    data-action="mark-paid"
+                                    style={{
+                                        backgroundColor: colors.green,
+                                        border: 'none'
+                                    }}
+                                >
+                                    <Icon 
+                                        name="check" 
+                                        size={14} 
+                                        color="white"
+                                    />
+                                    <span>Mark Paid</span>
+                                </Button>
+                            )}
+                            <Button
+                                $delete
+                                onClick={handleVoidClick}
+                                disabled={isLoading}
+                                data-action="void"
+                                style={{
+                                    backgroundColor: 'transparent',
+                                    border: `1px solid ${colors.red}`,
+                                    color: colors.red
+                                }}
+                            >
+                                <Icon 
+                                    name="x" 
+                                    size={14} 
+                                    color={colors.red}
+                                />
+                                <span>Void</span>
+                            </Button>
+                        </>
                     )}
                 </ButtonWrapper>
             )}
 
-            {/* Delete Confirmation Modal */}
-            {showDeleteModal && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    backdropFilter: 'blur(4px)'
-                }}>
-                    <div style={{
-                        backgroundColor: colors.background,
-                        padding: '2rem',
-                        borderRadius: '16px',
-                        maxWidth: '360px',
-                        width: '90%',
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-                        border: `1px solid ${colors.border}`,
-                        animation: 'modalSlideIn 0.3s ease-out'
-                    }}>
-                        <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            marginBottom: '1.5rem',
-                            gap: '12px'
-                        }}>
-                            <div style={{
-                                width: '36px',
-                                height: '36px',
-                                borderRadius: '10px',
-                                backgroundColor: '#FFE5E5',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
-                                <Icon name="trash" size={18} color="#FF4806" />
-                            </div>
-                            <h2 style={{ 
-                                margin: 0,
-                                fontSize: '1.25rem',
-                                color: colors.text,
-                                fontWeight: '600'
-                            }}>Delete Invoice</h2>
-                        </div>
-                        <p style={{ 
-                            marginBottom: '2rem',
-                            color: colors.text,
-                            fontSize: '0.95rem',
-                            lineHeight: '1.5',
-                            opacity: 0.8
-                        }}>
-                            Are you sure you want to delete invoice #{invoice?.customId || id}?
-                            This action cannot be undone.
-                        </p>
-                        <div style={{
-                            display: 'flex',
-                            gap: '1rem',
-                            justifyContent: 'flex-end'
-                        }}>
+            {/* Void Confirmation Modal */}
+            {showVoidModal && (
+                <ModalOverlay>
+                    <ModalContent>
+                        <ModalHeader>
+                            <ModalIconWrapper>
+                                <Icon name="trash" size={20} color="#FF4806" />
+                            </ModalIconWrapper>
+                            <ModalTitle>Void Invoice</ModalTitle>
+                        </ModalHeader>
+                        
+                        <ModalText>
+                            Are you sure you want to void invoice #{invoice?.customId || id}?
+                            This action cannot be undone and the invoice will be marked as void.
+                        </ModalText>
+
+                        <FormGroup>
+                            <FormLabel htmlFor="voidReason">
+                                Reason for voiding (required)
+                            </FormLabel>
+                            <TextArea
+                                id="voidReason"
+                                value={voidReason}
+                                onChange={(e) => setVoidReason(e.target.value)}
+                                placeholder="Please provide a reason for voiding this invoice..."
+                                autoFocus
+                            />
+                        </FormGroup>
+
+                        <ModalActions>
                             <Button
-                                onClick={() => setShowDeleteModal(false)}
+                                onClick={() => {
+                                    setShowVoidModal(false);
+                                    setVoidReason('');
+                                }}
                                 $secondary
-                                style={{ minWidth: '80px' }}
+                                style={{ minWidth: '100px' }}
                             >
                                 Cancel
                             </Button>
                             <Button
-                                onClick={handleDeleteConfirm}
+                                onClick={handleVoidConfirm}
                                 $delete
-                                style={{ minWidth: '80px' }}
-                                disabled={isDeleting}
+                                style={{ minWidth: '100px' }}
+                                disabled={isVoiding || !voidReason.trim()}
                             >
-                                {isDeleting ? 'Deleting...' : 'Delete'}
+                                {isVoiding ? (
+                                    <>
+                                        <Icon name="loading" size={16} color="white" />
+                                        Voiding...
+                                    </>
+                                ) : (
+                                    'Void Invoice'
+                                )}
                             </Button>
-                        </div>
-                    </div>
-                </div>
+                        </ModalActions>
+                    </ModalContent>
+                </ModalOverlay>
             )}
         </StyledInvoiceView>
     );

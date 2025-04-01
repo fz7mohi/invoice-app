@@ -146,71 +146,68 @@ export const TotalPrice = styled.p`
 `;
 
 export const StatusBadge = styled.div`
-    grid-area: status;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    transition: all 0.2s ease;
     min-width: 104px;
-    height: 40px;
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 14px;
-    white-space: nowrap;
-    color: ${({ theme, currStatus }) => {
+    text-transform: capitalize;
+    background-color: ${({ currStatus, theme }) => {
         switch (currStatus) {
             case 'paid':
-                return theme.colors.green;
+                return 'rgba(51, 214, 159, 0.15)';
+            case 'partially_paid':
+                return 'rgba(73, 97, 255, 0.15)';
             case 'pending':
-                return theme.colors.orange;
-            case 'draft':
-                return theme.colors.blueGrayish;
+                return 'rgba(255, 143, 0, 0.15)';
+            case 'void':
+                return 'rgba(236, 87, 87, 0.15)';
             default:
-                return theme.colors.blueGrayish;
+                return 'rgba(223, 227, 250, 0.15)';
         }
     }};
-    background-color: ${({ theme, currStatus }) => {
+    color: ${({ currStatus, theme }) => {
         switch (currStatus) {
             case 'paid':
-                return `${theme.colors.green}15`;
+                return '#33D69F';
+            case 'partially_paid':
+                return '#4961FF';
             case 'pending':
-                return `${theme.colors.orange}15`;
-            case 'draft':
-                return `${theme.colors.blueGrayish}15`;
+                return '#FF8F00';
+            case 'void':
+                return '#EC5757';
             default:
-                return `${theme.colors.blueGrayish}15`;
+                return theme.colors.textTertiary;
         }
     }};
-    transition: all 200ms ease-in-out;
-
-    @media (max-width: 767px) {
-        font-size: 13px;
-        padding: 8px 16px;
-        height: 32px;
-        min-width: 90px;
-    }
+    border: 1px solid ${({ currStatus, theme }) => {
+        switch (currStatus) {
+            case 'paid':
+                return 'rgba(51, 214, 159, 0.3)';
+            case 'partially_paid':
+                return 'rgba(73, 97, 255, 0.3)';
+            case 'pending':
+                return 'rgba(255, 143, 0, 0.3)';
+            case 'void':
+                return 'rgba(236, 87, 87, 0.3)';
+            default:
+                return 'rgba(223, 227, 250, 0.3)';
+        }
+    }};
 `;
 
 export const StatusDot = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: ${({ theme, currStatus }) => {
-        switch (currStatus) {
-            case 'paid':
-                return theme.colors.green;
-            case 'pending':
-                return theme.colors.orange;
-            case 'draft':
-                return theme.colors.blueGrayish;
-            default:
-                return theme.colors.blueGrayish;
-        }
-    }};
-
-    @media (max-width: 767px) {
-        width: 6px;
-        height: 6px;
-    }
+    margin-right: 8px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    background-color: #DFE3FA;
+    box-shadow: 0 0 0 2px rgba(223, 227, 250, 0.2);
 `;

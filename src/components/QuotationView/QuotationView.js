@@ -735,6 +735,11 @@ const QuotationView = () => {
         try {
             setIsConverting(true);
             
+            // Calculate total amount with or without VAT
+            const subtotal = quotation.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+            const vatAmount = clientHasVAT ? subtotal * 0.05 : 0;
+            const totalAmount = clientHasVAT ? subtotal + vatAmount : subtotal;
+            
             // Create a new invoice object from quotation data
             const newInvoice = {
                 createdAt: new Date(),
@@ -749,11 +754,16 @@ const QuotationView = () => {
                     ...item,
                     total: clientHasVAT ? calculateTotalWithVAT(item.total || 0) : (item.total || 0)
                 })),
-                total: grandTotal,
+                total: totalAmount,
                 status: 'pending',
                 quotationId: quotation.id, // Reference to original quotation
                 currency: quotation.currency || 'USD'
             };
+
+            // Add clientId only if it exists in the quotation
+            if (quotation.clientId) {
+                newInvoice.clientId = quotation.clientId;
+            }
 
             // Add to Firestore
             const invoicesRef = collection(db, 'invoices');
