@@ -21,12 +21,10 @@ const InvoiceView = () => {
     const { state, windowWidth, toggleModal, editInvoice } = useGlobalContext();
     const { colors } = useTheme();
     const { id } = useParams();
-    const [invoice, setInvoice] = useState(
-        state.invoices.find((item) => item.id === id)
-    );
+    const [invoice, setInvoice] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const isLoading = state.isLoading;
-    const invoiceNotFound = !isLoading && !invoice;
+    const isLoading = state?.isLoading || false;
+    const invoiceNotFound = !isLoading && (!invoice || !state?.invoices);
     const isPaid = invoice?.status === 'paid';
     const isPaidOrDraft = isPaid || invoice?.status === 'draft';
     const isDesktop = windowWidth >= 768;
@@ -45,11 +43,11 @@ const InvoiceView = () => {
     // setInvoice only if isDeleting is false on dependency array change
     // to prevent render error where invoice doesn't exist.
     useEffect(() => {
-        if (!isDeleting && state.invoices.length > 0) {
+        if (!isDeleting && state?.invoices?.length > 0) {
             const foundInvoice = state.invoices.find((item) => item.id === id);
             setInvoice(foundInvoice);
         }
-    }, [state.invoices, id, isDeleting]);
+    }, [state?.invoices, id, isDeleting]);
 
     // Redirect to home if invoice not found and not loading
     if (invoiceNotFound) {
@@ -57,7 +55,7 @@ const InvoiceView = () => {
     }
 
     // Show loading state
-    if (isLoading) {
+    if (isLoading || !state?.invoices) {
         return (
             <StyledInvoiceView>
                 <Container>

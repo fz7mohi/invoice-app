@@ -48,7 +48,7 @@ import {
     MetaItem,
     DownloadButton
 } from './QuotationViewStyles';
-import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 
 // Use same variants as invoices for consistent animations
@@ -86,6 +86,8 @@ const QuotationView = () => {
     const [isClientFetching, setIsClientFetching] = useState(false);
     const [clientHasVAT, setClientHasVAT] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showConvertModal, setShowConvertModal] = useState(false);
+    const [isConverting, setIsConverting] = useState(false);
     const isLoading = quotationState?.isLoading || isDirectlyFetching || isClientFetching;
     const quotationNotFound = !isLoading && !quotation;
     const isPending = quotation?.status === 'pending';
@@ -751,6 +753,81 @@ const QuotationView = () => {
         setShowDeleteModal(false);
     };
 
+    // Function to convert quotation to invoice
+    const convertToInvoice = async () => {
+        try {
+            setIsConverting(true);
+            
+            // Create a new invoice object from quotation data
+            const newInvoice = {
+                createdAt: new Date(),
+                paymentDue: new Date(new Date().setDate(new Date().getDate() + 30)), // 30 days from now
+                description: quotation.description || '',
+                paymentTerms: '30',
+                clientName: quotation.clientName,
+                clientEmail: quotation.clientEmail,
+                senderAddress: quotation.senderAddress,
+                clientAddress: quotation.clientAddress,
+                items: quotation.items.map(item => ({
+                    ...item,
+                    total: clientHasVAT ? calculateTotalWithVAT(item.total || 0) : (item.total || 0)
+                })),
+                total: grandTotal,
+                status: 'pending',
+                quotationId: quotation.id, // Reference to original quotation
+                currency: quotation.currency || 'USD'
+            };
+
+            // Add to Firestore
+            const invoicesRef = collection(db, 'invoices');
+            const docRef = await addDoc(invoicesRef, {
+                ...newInvoice,
+                createdAt: Timestamp.fromDate(newInvoice.createdAt),
+                paymentDue: Timestamp.fromDate(newInvoice.paymentDue)
+            });
+
+            // Update quotation status to invoiced
+            const quotationRef = doc(db, 'quotations', id);
+            await updateDoc(quotationRef, {
+                status: 'invoiced',
+                convertedToInvoice: docRef.id // Reference to the new invoice
+            });
+
+            // Refresh quotations list
+            await refreshQuotations();
+
+            // Redirect to the new invoice
+            history.push(`/invoice/${docRef.id}`);
+        } catch (error) {
+            console.error('Error converting quotation to invoice:', error);
+            alert('There was an error converting the quotation to an invoice. Please try again.');
+        } finally {
+            setIsConverting(false);
+        }
+    };
+
+    // Update the button click handler
+    const handleConvertToInvoice = () => {
+        setShowConvertModal(true);
+    };
+
+    const handleConfirmConvert = async () => {
+        try {
+            setIsConverting(true);
+            await convertToInvoice();
+        } catch (error) {
+            console.error('Error converting quotation to invoice:', error);
+            alert('There was an error converting the quotation to an invoice. Please try again.');
+        } finally {
+            setIsConverting(false);
+            setShowConvertModal(false);
+        }
+    };
+
+    const handleCancelConvert = () => {
+        setShowConvertModal(false);
+    };
+
     // Show loading state
     if (isLoading || !quotation) {
         return (
@@ -945,10 +1022,11 @@ const QuotationView = () => {
                                 {isPending && (
                                     <Button
                                         $primary
-                                        onClick={() => toggleQuotationModal(id, 'approve')}
-                                        disabled={isLoading}
+                                        onClick={handleConvertToInvoice}
+                                        disabled={isLoading || isConverting}
                                     >
-                                        Approve
+                                        <Icon name="arrow-right" size={13} style={{ marginRight: '6px' }} />
+                                        {isConverting ? 'Converting...' : 'Invoice'}
                                     </Button>
                                 )}
                             </ButtonWrapper>
@@ -1103,37 +1181,40 @@ const QuotationView = () => {
                     {isPending && (
                         <Button
                             $primary
-                            onClick={() => toggleQuotationModal(id, 'approve')}
-                            disabled={isLoading}
+                            onClick={handleConvertToInvoice}
+                            disabled={isLoading || isConverting}
                         >
-                            Approve
+                            <Icon name="arrow-right" size={13} style={{ marginRight: '6px' }} />
+                            {isConverting ? 'Converting...' : 'Invoice'}
                         </Button>
                     )}
                 </ButtonWrapper>
             )}
 
-            {/* Simple Delete Confirmation Modal */}
-            {showDeleteModal && (
+            {/* Convert Confirmation Modal */}
+            {showConvertModal && (
                 <div style={{
                     position: 'fixed',
                     top: 0,
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    zIndex: 1000
+                    zIndex: 1000,
+                    backdropFilter: 'blur(4px)'
                 }}>
                     <div style={{
                         backgroundColor: colors.background,
                         padding: '2rem',
-                        borderRadius: '12px',
-                        maxWidth: '400px',
+                        borderRadius: '16px',
+                        maxWidth: '360px',
                         width: '90%',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                        border: `1px solid ${colors.border}`
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                        border: `1px solid ${colors.border}`,
+                        animation: 'modalSlideIn 0.3s ease-out'
                     }}>
                         <div style={{ 
                             display: 'flex', 
@@ -1142,19 +1223,121 @@ const QuotationView = () => {
                             gap: '12px'
                         }}>
                             <div style={{
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '50%',
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '10px',
+                                backgroundColor: '#E5F6FF',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <Icon name="arrow-right" size={18} color="#004359" />
+                            </div>
+                            <h2 style={{ 
+                                margin: 0,
+                                fontSize: '1.25rem',
+                                color: colors.text,
+                                fontWeight: '600'
+                            }}>Convert to Invoice</h2>
+                        </div>
+                        <p style={{ 
+                            marginBottom: '2rem',
+                            color: colors.text,
+                            fontSize: '0.95rem',
+                            lineHeight: '1.5',
+                            opacity: 0.8
+                        }}>
+                            Are you sure you want to convert quotation #{quotation?.customId || id} to an invoice?
+                        </p>
+                        <div style={{ 
+                            display: 'flex', 
+                            gap: '12px', 
+                            justifyContent: 'flex-end'
+                        }}>
+                            <Button 
+                                $secondary 
+                                onClick={handleCancelConvert}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    border: `1px solid ${colors.border}`,
+                                    backgroundColor: 'transparent',
+                                    color: colors.text,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button 
+                                $primary 
+                                onClick={handleConfirmConvert} 
+                                disabled={isConverting}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#004359',
+                                    color: 'white',
+                                    border: 'none',
+                                    cursor: isConverting ? 'not-allowed' : 'pointer',
+                                    opacity: isConverting ? 0.7 : 1,
+                                    transition: 'all 0.2s ease',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                {isConverting ? 'Converting...' : 'Convert'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div style={{
+                        backgroundColor: colors.background,
+                        padding: '2rem',
+                        borderRadius: '16px',
+                        maxWidth: '360px',
+                        width: '90%',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                        border: `1px solid ${colors.border}`,
+                        animation: 'modalSlideIn 0.3s ease-out'
+                    }}>
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            marginBottom: '1.5rem',
+                            gap: '12px'
+                        }}>
+                            <div style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '10px',
                                 backgroundColor: '#FFE5E5',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center'
                             }}>
-                                <Icon name="trash" size={20} color="#FF4806" />
+                                <Icon name="trash" size={18} color="#FF4806" />
                             </div>
                             <h2 style={{ 
                                 margin: 0,
-                                fontSize: '1.5rem',
+                                fontSize: '1.25rem',
                                 color: colors.text,
                                 fontWeight: '600'
                             }}>Delete Quotation</h2>
@@ -1163,9 +1346,10 @@ const QuotationView = () => {
                             marginBottom: '2rem',
                             color: colors.text,
                             fontSize: '0.95rem',
-                            lineHeight: '1.5'
+                            lineHeight: '1.5',
+                            opacity: 0.8
                         }}>
-                            Are you sure you want to delete quotation #{quotation?.customId || id}? This action cannot be undone.
+                            Are you sure you want to delete quotation #{quotation?.customId || id}?
                         </p>
                         <div style={{ 
                             display: 'flex', 
@@ -1176,13 +1360,14 @@ const QuotationView = () => {
                                 $secondary 
                                 onClick={handleCancelDelete}
                                 style={{
-                                    padding: '10px 20px',
+                                    padding: '8px 16px',
                                     borderRadius: '8px',
                                     border: `1px solid ${colors.border}`,
                                     backgroundColor: 'transparent',
                                     color: colors.text,
                                     cursor: 'pointer',
-                                    transition: 'all 0.2s ease'
+                                    transition: 'all 0.2s ease',
+                                    fontSize: '0.9rem'
                                 }}
                             >
                                 Cancel
@@ -1192,14 +1377,15 @@ const QuotationView = () => {
                                 onClick={handleConfirmDelete} 
                                 disabled={isDeleting}
                                 style={{
-                                    padding: '10px 20px',
+                                    padding: '8px 16px',
                                     borderRadius: '8px',
                                     backgroundColor: '#FF4806',
                                     color: 'white',
                                     border: 'none',
                                     cursor: isDeleting ? 'not-allowed' : 'pointer',
                                     opacity: isDeleting ? 0.7 : 1,
-                                    transition: 'all 0.2s ease'
+                                    transition: 'all 0.2s ease',
+                                    fontSize: '0.9rem'
                                 }}
                             >
                                 {isDeleting ? 'Deleting...' : 'Delete'}
