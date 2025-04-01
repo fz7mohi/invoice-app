@@ -7,6 +7,8 @@ import { receiptsViewVariants } from '../../utilities/framerVariants';
 import Header from './Header/Header';
 import List from './List/List';
 import styled from 'styled-components';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../../firebase/firebase';
 
 const StyledReceipts = styled(motion.div)`
     width: 100%;
@@ -30,6 +32,44 @@ const Receipts = () => {
     const [filterType, setFilterType] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [rawReceipts, setRawReceipts] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch receipts from Firebase
+    useEffect(() => {
+        const fetchReceipts = async () => {
+            try {
+                setIsLoading(true);
+                const receiptsCollection = collection(db, 'receipts');
+                const receiptsQuery = query(
+                    receiptsCollection,
+                    orderBy('createdAt', 'desc') // Sort by creation date in descending order
+                );
+                const querySnapshot = await getDocs(receiptsQuery);
+                
+                const receiptsList = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    // Convert Firestore Timestamp back to Date object
+                    const createdAt = data.createdAt?.toDate() || new Date();
+                    const paymentDate = data.paymentDate?.toDate() || new Date();
+                    
+                    return {
+                        id: doc.id,
+                        ...data,
+                        createdAt,
+                        paymentDate
+                    };
+                });
+                
+                setRawReceipts(receiptsList);
+            } catch (error) {
+                console.error('Error fetching receipts:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchReceipts();
+    }, []);
 
     // Filter receipts based on status and search query
     const filteredReceipts = useMemo(() => {
@@ -87,8 +127,7 @@ const Receipts = () => {
             />
             <List
                 receipts={filteredReceipts}
-                isLoading={false}
-                variant={receiptsViewVariants}
+                isLoading={isLoading}
             />
         </StyledReceipts>
     );

@@ -37,16 +37,11 @@ const Description = styled.p`
     }
 `;
 
-const ErrorMessage = ({ variant }) => {
+const ErrorMessage = () => {
     const { windowWidth } = useGlobalContext();
 
     return (
-        <StyledErrorMessage
-            variants={variant.error(0)}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-        >
+        <StyledErrorMessage>
             <Title>There are no receipts</Title>
             <Description>
                 Create a new receipt by clicking the

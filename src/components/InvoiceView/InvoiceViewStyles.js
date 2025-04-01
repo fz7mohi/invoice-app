@@ -3,6 +3,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { buttonDefault } from '../shared/Button/ButtonStyles';
 import { primaryFontStyles } from '../../utilities/typographyStyles';
+import Button from '../shared/Button/Button';
 
 const pulseAnimation = keyframes`
     0% {
@@ -791,59 +792,357 @@ export const InfoSectionsGrid = styled.div`
 `;
 
 export const PaymentDetailsSection = styled.div`
-    margin-top: 32px;
-    margin-bottom: 32px;
-    padding: 24px;
     background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
     border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
     border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 100%;
+    overflow: hidden;
+
+    @media (max-width: 767px) {
+        padding: 16px;
+        margin-bottom: 20px;
+    }
 `;
 
 export const PaymentDetailsHeader = styled.div`
     display: flex;
+    justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
-    margin-bottom: 24px;
+
+    @media (max-width: 767px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
 `;
 
-export const PaymentDetailsTitle = styled.h3`
-    ${primaryFontStyles}
-    font-size: 1.25rem;
-    color: ${({ theme }) => theme?.colors?.text || '#DFE3FA'};
+export const PaymentDetailsTitle = styled.h2`
+    font-size: 16px;
+    font-weight: 600;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
     margin: 0;
+
+    @media (max-width: 767px) {
+        font-size: 14px;
+    }
 `;
 
 export const PaymentDetailsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+
+    @media (max-width: 1024px) {
+        gap: 12px;
+    }
+
+    @media (max-width: 767px) {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
 `;
 
 export const PaymentDetailItem = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    padding: 12px;
+    background-color: ${({ theme }) => theme?.backgrounds?.input || '#1E2139'};
+    border-radius: 6px;
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    transition: all 0.2s ease;
+    min-width: 0;
+
+    &:hover {
+        background-color: ${({ theme }) => theme?.backgrounds?.hover || '#252945'};
+    }
+
+    @media (max-width: 767px) {
+        padding: 10px;
+    }
 `;
 
-export const PaymentDetailLabel = styled.span`
-    font-size: 0.875rem;
-    color: ${({ theme }) => theme?.colors?.textSecondary || '#888EB0'};
+export const PaymentDetailLabel = styled.label`
+    font-size: 12px;
+    font-weight: 500;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    @media (max-width: 767px) {
+        font-size: 11px;
+    }
 `;
 
 export const PaymentDetailValue = styled.span`
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: ${({ theme }) => theme?.colors?.text || '#DFE3FA'};
+    font-size: 20px;
+    font-weight: 600;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    @media (max-width: 1024px) {
+        font-size: 18px;
+    }
+
+    @media (max-width: 767px) {
+        font-size: 16px;
+    }
 `;
 
-export const PaymentDetailDueDate = styled.div`
+export const CreateReceiptButton = styled(Button)`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: fit-content;
+    min-width: 120px;
+    justify-content: center;
+
+    &:hover {
+        background-color: ${({ theme }) => theme?.colors?.purpleLight || '#9277FF'};
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    @media (max-width: 767px) {
+        width: 100%;
+        padding: 8px 12px;
+        font-size: 12px;
+        min-width: unset;
+    }
+`;
+
+export const PlusIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 1V15M1 8H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+export const ReceiptTimeline = styled.div`
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+`;
+
+export const ReceiptTimelineTitle = styled.h3`
+    font-size: 15px;
+    font-weight: 600;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 8px;
-    color: ${({ theme, isOverdue }) => 
-        isOverdue 
-            ? theme?.colors?.error || '#EC5757'
-            : theme?.colors?.text || '#DFE3FA'};
-    font-size: 1.25rem;
-    font-weight: 700;
+
+    &::before {
+        content: '';
+        display: block;
+        width: 4px;
+        height: 16px;
+        background-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+        border-radius: 2px;
+    }
+`;
+
+export const ReceiptItem = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    border-radius: 8px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+    }
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        border-top: 2px solid ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+        border-right: 2px solid ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+        transform: translateY(-50%) rotate(45deg);
+        opacity: 0;
+        transition: all 0.2s ease;
+    }
+
+    &:hover::after {
+        opacity: 1;
+        right: 12px;
+    }
+`;
+
+export const ReceiptInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+`;
+
+export const ReceiptNumber = styled.span`
+    font-size: 15px;
+    font-weight: 600;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+        content: '';
+        display: block;
+        width: 8px;
+        height: 8px;
+        background-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+        border-radius: 50%;
+    }
+`;
+
+export const ReceiptDetails = styled.span`
+    font-size: 13px;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+        content: '';
+        display: block;
+        width: 4px;
+        height: 4px;
+        background-color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+        border-radius: 50%;
+    }
+`;
+
+export const ReceiptAmount = styled.span`
+    font-size: 15px;
+    font-weight: 600;
+    color: ${({ theme }) => theme?.colors?.green || '#33D69F'};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+        content: '';
+        display: block;
+        width: 8px;
+        height: 8px;
+        background-color: ${({ theme }) => theme?.colors?.green || '#33D69F'};
+        border-radius: 50%;
+    }
+`;
+
+export const PaymentModalContent = styled(ModalContent)`
+    max-width: 480px;
+`;
+
+export const PaymentForm = styled.form`
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+`;
+
+export const FormRow = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+export const PaymentFormLabel = styled.label`
+    font-size: 13px;
+    font-weight: 500;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+`;
+
+export const FormInput = styled.input`
+    width: 100%;
+    padding: 12px;
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    border-radius: 4px;
+    background-color: ${({ theme }) => theme?.backgrounds?.input || '#1E2139'};
+    color: ${({ theme }) => theme?.colors?.text || '#DFE3FA'};
+    font-size: 14px;
+
+    &:focus {
+        outline: none;
+        border-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+    }
+`;
+
+export const FormSelect = styled.select`
+    width: 100%;
+    padding: 12px;
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    border-radius: 4px;
+    background-color: ${({ theme }) => theme?.backgrounds?.input || '#1E2139'};
+    color: ${({ theme }) => theme?.colors?.text || '#DFE3FA'};
+    font-size: 14px;
+    cursor: pointer;
+
+    &:focus {
+        outline: none;
+        border-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+    }
+`;
+
+export const FormTextArea = styled.textarea`
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    border-radius: 4px;
+    background-color: ${({ theme }) => theme?.backgrounds?.input || '#1E2139'};
+    color: ${({ theme }) => theme?.colors?.text || '#DFE3FA'};
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+
+    &:focus {
+        outline: none;
+        border-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+    }
 `;

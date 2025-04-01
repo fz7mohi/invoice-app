@@ -1,0 +1,123 @@
+/* Loading spinner */
+.loading-spinner {
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top: 2px solid #7c5dfa;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Modal animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Print styles */
+@media print {
+    .StyledReceiptView {
+        padding: 0;
+        margin: 0;
+        background: white;
+    }
+
+    .Container {
+        max-width: none;
+        margin: 0;
+    }
+
+    .MotionLink,
+    .Controller,
+    .ButtonWrapper,
+    .DownloadButton,
+    .ActionButtons {
+        display: none;
+    }
+
+    .InfoCard {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .Item {
+        break-inside: avoid;
+    }
+}
+
+/* Mobile styles */
+@media (max-width: 767px) {
+    .InfoAddresses {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .AddressGroup[align="right"] {
+        text-align: left;
+    }
+
+    .MetaInfo {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .Total {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .TotalAmount {
+        font-size: 24px;
+    }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    .InfoCard {
+        background: #1e2139;
+    }
+
+    .Item {
+        background: #252945;
+    }
+
+    .Total {
+        background: #0c0e16;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .MotionLink,
+    .Controller,
+    .InfoCard,
+    .Item,
+    .Total,
+    .ModalOverlay,
+    .ModalContent {
+        animation: none;
+        transition: none;
+    }
+} 

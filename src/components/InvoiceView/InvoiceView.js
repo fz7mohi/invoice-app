@@ -6,7 +6,7 @@ import { useGlobalContext } from '../App/context';
 import Icon from '../shared/Icon/Icon';
 import Button from '../shared/Button/Button';
 import { formatDate, formatPrice } from '../../utilities/helpers';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -70,7 +70,23 @@ import {
     PaymentDetailItem,
     PaymentDetailLabel,
     PaymentDetailValue,
-    PaymentDetailDueDate
+    PaymentDetailDueDate,
+    ReceiptTimeline,
+    ReceiptTimelineTitle,
+    ReceiptItem,
+    ReceiptInfo,
+    ReceiptNumber,
+    ReceiptDetails,
+    ReceiptAmount,
+    CreateReceiptButton,
+    PaymentModalContent,
+    PaymentForm,
+    FormRow,
+    PaymentFormLabel,
+    FormInput,
+    FormSelect,
+    FormTextArea,
+    PlusIcon
 } from './InvoiceViewStyles';
 
 // Add ModalOverlay styled component
@@ -208,6 +224,7 @@ const InvoiceView = () => {
     } = useGlobalContext();
     const { colors } = useTheme();
     const { id } = useParams();
+    const history = useHistory();
     const [invoice, setInvoice] = useState(null);
     const [clientData, setClientData] = useState(null);
     const [companyProfile, setCompanyProfile] = useState(null);
@@ -227,7 +244,6 @@ const InvoiceView = () => {
     const isVoid = invoice?.status === 'void';
     const isDesktop = windowWidth >= 768;
     const shouldReduceMotion = useReducedMotion();
-    const history = useHistory();
     const [quotationData, setQuotationData] = useState(null);
     const [isFetchingQuotation, setIsFetchingQuotation] = useState(false);
     const [isEditingTerms, setIsEditingTerms] = useState(false);
@@ -236,6 +252,16 @@ const InvoiceView = () => {
     const [editedLPO, setEditedLPO] = useState('');
     const [isEditingDueDate, setIsEditingDueDate] = useState(false);
     const [editedDueDate, setEditedDueDate] = useState('');
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentDetails, setPaymentDetails] = useState({
+        amount: '',
+        mode: 'cash',
+        date: formatDate(new Date(), 'YYYY-MM-DD'),
+        chequeNumber: '',
+        notes: ''
+    });
+    const [receipts, setReceipts] = useState([]);
+    const [isCreatingReceipt, setIsCreatingReceipt] = useState(false);
     
     // Add default terms and conditions
     const defaultTermsAndConditions = `50% advance payment along with the issuance of the LPO (Local Purchase Order), and the remaining 50% to be settled before the delivery of the order.
@@ -280,7 +306,6 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    console.log('Fetched client data:', data); // Debug log
                     setClientData(data);
                     setClientHasVAT(data.hasVAT || false);
                     return;
@@ -399,7 +424,6 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
             
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                console.log('Fetched invoice data:', data); // Debug log
                 
                 // Convert Firestore Timestamp back to Date object safely
                 let createdAt = new Date();
@@ -427,22 +451,18 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 
                 // Fetch client data from the clients collection
                 if (data.clientId) {
-                    console.log('Fetching client data for ID:', data.clientId); // Debug log
                     const clientRef = doc(db, 'clients', data.clientId);
                     const clientSnap = await getDoc(clientRef);
                     
                     if (clientSnap.exists()) {
                         const clientData = clientSnap.data();
-                        console.log('Fetched client data:', clientData); // Debug log
                         setClientData(clientData);
                         setClientHasVAT(clientData.hasVAT || false);
                     } else {
-                        console.log('No client found with ID:', data.clientId); // Debug log
                         // If no client found, try to find by name
                         await fetchClientData(null, data.clientName);
                     }
                 } else {
-                    console.log('No client ID found in invoice data'); // Debug log
                     // If no client ID, try to find by name
                     await fetchClientData(null, data.clientName);
                 }
@@ -605,8 +625,6 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
 
     // Render client section
     const renderClientSection = () => {
-        console.log('Current client data:', clientData); // Debug log
-        
         // Check for TRN in various possible field names
         const clientTRN = 
             clientData?.trn || 
@@ -1218,6 +1236,140 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         }
     };
 
+    // Add function to handle receipt creation
+    const handleCreateReceipt = async (e) => {
+        e.preventDefault();
+        setIsCreatingReceipt(true);
+
+        try {
+            // Validate payment amount
+            const paymentAmount = parseFloat(paymentDetails.amount);
+            if (isNaN(paymentAmount) || paymentAmount <= 0) {
+                throw new Error('Please enter a valid payment amount');
+            }
+
+            // Check if payment amount exceeds remaining balance
+            const remainingBalance = invoice.total - (invoice.paidAmount || 0);
+            if (paymentAmount > remainingBalance) {
+                throw new Error('Payment amount cannot exceed the remaining balance');
+            }
+
+            // Generate a custom ID for the receipt
+            const customId = `FTRC${Math.floor(1000 + Math.random() * 9000)}`;
+
+            // Create receipt in Firestore with all necessary invoice information
+            const receiptData = {
+                invoiceId: id,
+                customId,
+                clientName: invoice.clientName || '',
+                clientAddress: invoice.clientAddress || clientData?.address || '',
+                items: invoice.items || [],
+                total: invoice.total || 0,
+                currency: invoice.currency || 'USD',
+                amount: paymentAmount,
+                mode: paymentDetails.mode,
+                paymentDate: new Date(paymentDetails.date),
+                chequeNumber: paymentDetails.mode === 'cheque' ? paymentDetails.chequeNumber : null,
+                notes: paymentDetails.notes || '',
+                termsAndConditions: invoice.termsAndConditions || defaultTermsAndConditions,
+                createdAt: new Date(),
+                lastModified: new Date(),
+                status: 'paid'
+            };
+
+            // Add client data if available and valid
+            if (clientData && clientData.id) {
+                receiptData.clientId = clientData.id;
+            }
+            if (clientData && clientData.email) {
+                receiptData.clientEmail = clientData.email;
+            }
+
+            // Create receipt document
+            const receiptRef = await addDoc(collection(db, 'receipts'), receiptData);
+
+            // Update invoice payment details
+            const invoiceRef = doc(db, 'invoices', id);
+            const currentPaidAmount = invoice.paidAmount || 0;
+            const newPaidAmount = currentPaidAmount + paymentAmount;
+            const newStatus = newPaidAmount >= invoice.total ? 'paid' : 'partially_paid';
+
+            await updateDoc(invoiceRef, {
+                paidAmount: newPaidAmount,
+                status: newStatus,
+                paymentDate: newStatus === 'paid' ? new Date() : null,
+                lastModified: new Date()
+            });
+
+            // Update local state
+            setInvoice(prev => ({
+                ...prev,
+                paidAmount: newPaidAmount,
+                status: newStatus,
+                paymentDate: newStatus === 'paid' ? new Date() : null
+            }));
+
+            // Add new receipt to receipts list with proper date handling
+            setReceipts(prev => [{
+                id: receiptRef.id,
+                customId,
+                ...paymentDetails,
+                amount: paymentAmount,
+                date: new Date(paymentDetails.date),
+                createdAt: new Date(), // Add createdAt field
+                paymentDate: new Date(paymentDetails.date) // Add paymentDate field
+            }, ...prev]);
+
+            // Reset form and close modal
+            setPaymentDetails({
+                amount: '',
+                mode: 'cash',
+                date: formatDate(new Date(), 'YYYY-MM-DD'),
+                chequeNumber: '',
+                notes: ''
+            });
+            setShowPaymentModal(false);
+        } catch (error) {
+            console.error('Error creating receipt:', error);
+            alert(error.message || 'There was an error creating the receipt. Please try again.');
+        } finally {
+            setIsCreatingReceipt(false);
+        }
+    };
+
+    // Add function to fetch receipts
+    const fetchReceipts = async () => {
+        try {
+            const receiptsRef = collection(db, 'receipts');
+            const q = query(receiptsRef, where('invoiceId', '==', id));
+            const querySnapshot = await getDocs(q);
+            
+            const receiptsList = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    date: data.date?.toDate?.() || new Date(),
+                    createdAt: data.createdAt?.toDate?.() || new Date(),
+                    paymentDate: data.paymentDate?.toDate?.() || new Date(),
+                    lastModified: data.lastModified?.toDate?.() || new Date()
+                };
+            });
+            
+            setReceipts(receiptsList);
+        } catch (error) {
+            console.error('Error fetching receipts:', error);
+        }
+    };
+
+    // Add useEffect to fetch receipts when component mounts
+    useEffect(() => {
+        if (id) {
+            fetchReceipts();
+        }
+    }, [id]);
+
+    // Update renderPaymentDetails to include Create Receipt button and receipts timeline
     const renderPaymentDetails = () => {
         const { total, paidAmount, dueDate, currency } = invoice;
         const balanceDue = total - (paidAmount || 0);
@@ -1227,54 +1379,231 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
             <PaymentDetailsSection>
                 <PaymentDetailsHeader>
                     <PaymentDetailsTitle>Payment Details</PaymentDetailsTitle>
+                    <CreateReceiptButton
+                        onClick={() => setShowPaymentModal(true)}
+                        disabled={invoice.status === 'void' || invoice.status === 'paid'}
+                    >
+                        <PlusIcon /> Create Receipt
+                    </CreateReceiptButton>
                 </PaymentDetailsHeader>
                 <PaymentDetailsGrid>
                     <PaymentDetailItem>
-                        <PaymentDetailLabel>Total Amount Due</PaymentDetailLabel>
-                        <PaymentDetailValue>{formatPrice(total, currency)}</PaymentDetailValue>
+                        <PaymentDetailLabel>Total Payment Due</PaymentDetailLabel>
+                        <PaymentDetailValue>
+                            {formatPrice(invoice.total, invoice.currency)}
+                        </PaymentDetailValue>
                     </PaymentDetailItem>
                     <PaymentDetailItem>
                         <PaymentDetailLabel>Amount Paid</PaymentDetailLabel>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <PaymentDetailValue>{formatPrice(paidAmount || 0, currency)}</PaymentDetailValue>
-                            {!isPaid && !isVoid && (
-                                <Button
-                                    onClick={() => {
-                                        const amount = prompt('Enter payment amount:', paidAmount || 0);
-                                        if (amount !== null) {
-                                            const numAmount = parseFloat(amount);
-                                            if (!isNaN(numAmount) && numAmount >= 0) {
-                                                handlePaymentAmountUpdate(numAmount);
-                                            }
-                                        }
-                                    }}
-                                    $secondary
-                                    style={{ 
-                                        padding: '4px 8px',
-                                        fontSize: '12px',
-                                        backgroundColor: 'transparent',
-                                        border: '1px solid #e0e0e0'
-                                    }}
-                                >
-                                    <Icon name="edit" size={12} />
-                                    Update
-                                </Button>
-                            )}
-                        </div>
+                        <PaymentDetailValue>
+                            {formatPrice(invoice.paidAmount || 0, invoice.currency)}
+                        </PaymentDetailValue>
                     </PaymentDetailItem>
                     <PaymentDetailItem>
                         <PaymentDetailLabel>Balance Due</PaymentDetailLabel>
-                        <PaymentDetailValue>{formatPrice(balanceDue, currency)}</PaymentDetailValue>
-                    </PaymentDetailItem>
-                    <PaymentDetailItem>
-                        <PaymentDetailLabel>Due Date</PaymentDetailLabel>
-                        <PaymentDetailDueDate isOverdue={isOverdue}>
-                            {dueDate ? formatDate(dueDate) : 'Not set'}
-                            {isOverdue && <Icon name="warning" size={20} />}
-                        </PaymentDetailDueDate>
+                        <PaymentDetailValue>
+                            {formatPrice(invoice.total - (invoice.paidAmount || 0), invoice.currency)}
+                        </PaymentDetailValue>
                     </PaymentDetailItem>
                 </PaymentDetailsGrid>
+                {receipts.length > 0 && (
+                    <ReceiptTimeline>
+                        <ReceiptTimelineTitle>Created Receipts</ReceiptTimelineTitle>
+                        {receipts.map((receipt) => (
+                            <ReceiptItem
+                                key={receipt.id}
+                                onClick={() => history.push(`/receipt/${receipt.id}`)}
+                            >
+                                <ReceiptInfo>
+                                    <ReceiptNumber>{receipt.customId}</ReceiptNumber>
+                                    <ReceiptDetails>
+                                        {formatDate(receipt.date, 'MMM DD, YYYY h:mm A')}
+                                    </ReceiptDetails>
+                                </ReceiptInfo>
+                                <ReceiptAmount>
+                                    {formatPrice(receipt.amount, invoice.currency)}
+                                </ReceiptAmount>
+                            </ReceiptItem>
+                        ))}
+                    </ReceiptTimeline>
+                )}
             </PaymentDetailsSection>
+        );
+    };
+
+    // Add payment modal render function
+    const renderPaymentModal = () => {
+        if (!showPaymentModal) return null;
+
+        const balanceDue = invoice.total - (invoice.paidAmount || 0);
+
+        return (
+            <ModalOverlay>
+                <PaymentModalContent>
+                    <ModalHeader>
+                        <ModalIconWrapper>
+                            <Icon name="receipt" size={20} color="#7C5DFA" />
+                        </ModalIconWrapper>
+                        <ModalTitle>Create Receipt</ModalTitle>
+                    </ModalHeader>
+
+                    <PaymentForm onSubmit={handleCreateReceipt}>
+                        <FormRow>
+                            <PaymentFormLabel>Invoice #</PaymentFormLabel>
+                            <div style={{
+                                padding: '12px',
+                                backgroundColor: '#f5f7fa',
+                                border: '1px solid #e0e0e0',
+                                borderRadius: '4px',
+                                color: '#666',
+                                fontSize: '14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                <Icon name="file-text" size={14} color="#004359" />
+                                {invoice.customId}
+                            </div>
+                        </FormRow>
+
+                        <FormRow>
+                            <PaymentFormLabel>Amount</PaymentFormLabel>
+                            <div style={{ position: 'relative', width: '100%' }}>
+                                <div style={{
+                                    position: 'absolute',
+                                    left: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    color: '#666',
+                                    fontSize: '14px'
+                                }}>
+                                    {invoice.currency}
+                                </div>
+                                <FormInput
+                                    type="text"
+                                    value={paymentDetails.amount}
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(/[^0-9.]/g, '');
+                                        const numericValue = parseFloat(value);
+                                        if (value === '' || (numericValue <= balanceDue && numericValue > 0)) {
+                                            setPaymentDetails(prev => ({
+                                                ...prev,
+                                                amount: value
+                                            }));
+                                        }
+                                    }}
+                                    onBlur={(e) => {
+                                        const value = e.target.value;
+                                        if (value) {
+                                            const numericValue = parseFloat(value);
+                                            setPaymentDetails(prev => ({
+                                                ...prev,
+                                                amount: numericValue.toFixed(2)
+                                            }));
+                                        }
+                                    }}
+                                    required
+                                    min="0"
+                                    max={balanceDue}
+                                    step="0.01"
+                                    style={{ paddingLeft: '60px' }}
+                                />
+                                <div style={{
+                                    position: 'absolute',
+                                    right: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    color: '#666',
+                                    fontSize: '12px'
+                                }}>
+                                    Balance Due: {formatPrice(balanceDue, invoice.currency)}
+                                </div>
+                            </div>
+                        </FormRow>
+
+                        <FormRow>
+                            <PaymentFormLabel>Mode of Payment</PaymentFormLabel>
+                            <FormSelect
+                                value={paymentDetails.mode}
+                                onChange={(e) => setPaymentDetails(prev => ({
+                                    ...prev,
+                                    mode: e.target.value,
+                                    chequeNumber: e.target.value === 'cheque' ? prev.chequeNumber : ''
+                                }))}
+                                required
+                            >
+                                <option value="cash">Cash</option>
+                                <option value="cheque">Cheque</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            </FormSelect>
+                        </FormRow>
+
+                        {paymentDetails.mode === 'cheque' && (
+                            <FormRow>
+                                <PaymentFormLabel>Cheque Number</PaymentFormLabel>
+                                <FormInput
+                                    type="text"
+                                    value={paymentDetails.chequeNumber}
+                                    onChange={(e) => setPaymentDetails(prev => ({
+                                        ...prev,
+                                        chequeNumber: e.target.value
+                                    }))}
+                                    required
+                                />
+                            </FormRow>
+                        )}
+
+                        <FormRow>
+                            <PaymentFormLabel>Date of Payment</PaymentFormLabel>
+                            <FormInput
+                                type="date"
+                                value={formatDate(new Date(), 'YYYY-MM-DD')}
+                                onChange={(e) => setPaymentDetails(prev => ({
+                                    ...prev,
+                                    date: e.target.value
+                                }))}
+                                required
+                                max={formatDate(new Date(), 'YYYY-MM-DD')}
+                            />
+                        </FormRow>
+
+                        <FormRow>
+                            <PaymentFormLabel>Notes (Optional)</PaymentFormLabel>
+                            <FormTextArea
+                                value={paymentDetails.notes}
+                                onChange={(e) => setPaymentDetails(prev => ({
+                                    ...prev,
+                                    notes: e.target.value
+                                }))}
+                            />
+                        </FormRow>
+
+                        <ModalActions>
+                            <Button
+                                type="button"
+                                onClick={() => setShowPaymentModal(false)}
+                                $secondary
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                $primary
+                                disabled={isCreatingReceipt || !paymentDetails.amount || parseFloat(paymentDetails.amount) <= 0}
+                            >
+                                {isCreatingReceipt ? (
+                                    <>
+                                        <Icon name="loading" size={16} color="white" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    'Create Receipt'
+                                )}
+                            </Button>
+                        </ModalActions>
+                    </PaymentForm>
+                </PaymentModalContent>
+            </ModalOverlay>
         );
     };
 
@@ -2035,6 +2364,8 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                     </ModalContent>
                 </ModalOverlay>
             )}
+
+            {renderPaymentModal()}
         </StyledInvoiceView>
     );
 };
