@@ -1,183 +1,238 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'styled-components';
 import { useGlobalContext } from '../../App/context';
 import { receiptsLengthMessage } from '../../../utilities/helpers';
 import Button from '../../shared/Button/Button';
 import Icon from '../../shared/Icon/Icon';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
+import { headingTitle } from '../../../utilities/typographyStyles';
+import checkIcon from '../../../assets/images/icon-check.svg';
 
-const StyledHeader = styled(motion.div)`
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+const StyledHeader = styled(motion.header)`
     margin-bottom: 32px;
-
-    @media (min-width: 768px) {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        gap: 32px;
-    }
 `;
 
-const Info = styled.div`
+const HeaderTop = styled.div`
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
 
-    h1 {
-        color: ${({ theme }) => theme.colors.textPrimary};
-        font-size: 24px;
-        line-height: 1.25;
-        letter-spacing: -0.75px;
-
-        @media (min-width: 768px) {
-            font-size: 32px;
-            letter-spacing: -1px;
-        }
-    }
-
-    p {
-        color: ${({ theme }) => theme.colors.textSecondary};
-        font-size: 13px;
-        line-height: 1.5;
+    @media (min-width: 768px) {
+        margin-bottom: 32px;
     }
 `;
 
-const Controls = styled.div`
+const Info = styled.div``;
+
+const Title = styled.h1`
+    ${headingTitle}
+    margin-bottom: 4px;
+`;
+
+const Text = styled.p`
+    color: ${({ theme }) => theme.colors.textTertiary};
+    font-size: 12px;
+    line-height: 15px;
+    letter-spacing: -0.25px;
+
+    @media (min-width: 768px) {
+        font-size: 14px;
+        line-height: 18px;
+    }
+`;
+
+const SearchBar = styled.div`
     display: flex;
-    flex-direction: column;
-    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background-color: #252945;
+    border-radius: 8px;
+    border: 1px solid #252945;
+    transition: all 0.2s ease;
 
     @media (min-width: 768px) {
-        flex-direction: row;
-        align-items: center;
-        gap: 24px;
+        padding: 16px 32px;
     }
 `;
 
-const SearchWrapper = styled.div`
-    position: relative;
-    width: 100%;
-
-    @media (min-width: 768px) {
-        width: 240px;
-    }
+const SearchContainer = styled.div`
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 400px;
 `;
 
 const SearchInput = styled.input`
+    background: none;
+    border: none;
+    color: #FFFFFF;
+    font-size: 14px;
     width: 100%;
-    padding: 12px 16px 12px 40px;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
-    border: 1px solid ${({ theme }) => theme.colors.border};
-    border-radius: 8px;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 13px;
-    line-height: 1.5;
-    transition: all 0.2s ease;
-
-    &:focus {
-        outline: none;
-        border-color: ${({ theme }) => theme.colors.purple};
-        box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.purple}20;
-    }
+    padding: 0;
+    margin: 0;
+    outline: none;
 
     &::placeholder {
-        color: ${({ theme }) => theme.colors.textSecondary};
+        color: #888EB0;
+    }
+
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus {
+        -webkit-text-fill-color: #FFFFFF;
+        -webkit-box-shadow: 0 0 0px 1000px #252945 inset;
+        transition: background-color 5000s ease-in-out 0s;
     }
 `;
 
-const SearchIcon = styled(Icon)`
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${({ theme }) => theme.colors.textSecondary};
+const SearchIcon = styled.span`
+    color: #888EB0;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+
+    ${SearchContainer}:focus-within & {
+        color: #7C5DFA;
+    }
 `;
 
-const FilterWrapper = styled.div`
+const StyledFilter = styled.div`
     position: relative;
+    margin-right: 16px;
+
+    @media (min-width: 768px) {
+        margin-right: 24px;
+    }
 `;
 
 const FilterButton = styled.button`
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 16px;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
-    border: 1px solid ${({ theme }) => theme.colors.border};
-    border-radius: 8px;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 13px;
+    padding: 8px 16px;
+    background: ${({ theme }) => theme.colors.backgroundItem};
+    border: 1px solid ${({ theme }) => theme.colors.purple};
+    border-radius: 24px;
+    color: ${({ theme }) => theme.colors.white};
+    font-size: 15px;
     font-weight: 700;
-    line-height: 1.5;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 
     &:hover {
-        border-color: ${({ theme }) => theme.colors.purple};
+        background: ${({ theme }) => theme.colors.purple};
     }
 
-    &:focus {
-        outline: none;
-        border-color: ${({ theme }) => theme.colors.purple};
-        box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.purple}20;
+    @media (min-width: 768px) {
+        padding: 8px 24px;
     }
 `;
 
-const FilterList = styled(motion.div)`
+const FilterList = styled(motion.ul)`
+    display: flex;
     position: absolute;
+    flex-flow: column;
+    gap: 16px;
     top: calc(100% + 8px);
-    right: 0;
-    width: 200px;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
-    border: 1px solid ${({ theme }) => theme.colors.border};
+    left: 50%;
+    width: clamp(134px, 19vw, 192px);
+    padding: 24px;
+    background-color: #1E2139;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateX(-50%);
+    transition: all 0.3s ease;
     z-index: 10;
-    overflow: hidden;
+    border: 1px solid ${({ theme }) => theme.colors.purple};
 `;
 
-const FilterItem = styled.button`
+const FilterItem = styled.li``;
+
+const StatusFilter = styled.button`
+    position: relative;
+    padding: 0 0 0 29px;
     width: 100%;
-    padding: 12px 16px;
-    background: none;
-    border: none;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.5;
     text-align: left;
+    color: #FFFFFF !important;
+    transition: all 0.3s ease;
+    background-color: #1E2139;
+    border: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 15px;
+    letter-spacing: -0.25px;
+
+    &::before {
+        position: absolute;
+        content: '';
+        top: -2px;
+        left: 0;
+        width: 16px;
+        height: 16px;
+        background-color: #1E2139;
+        border: 1px solid ${({ theme }) => theme.colors.purple};
+        border-radius: 2px;
+        transition: all 0.3s ease;
+
+        ${({ $isActive }) =>
+            $isActive &&
+            css`
+                background-color: ${({ theme }) => theme.colors.purple};
+                background-image: url('${checkIcon}');
+                background-repeat: no-repeat;
+                background-size: 10px;
+                background-position: center;
+                border-color: ${({ theme }) => theme.colors.purple};
+            `}
+    }
 
     &:hover {
-        background-color: ${({ theme }) => theme.colors.backgroundItemHover};
+        color: ${({ theme }) => theme.colors.purple} !important;
+        background-color: #252945;
+        
+        &::before {
+            border-color: ${({ theme }) => theme.colors.purple};
+        }
     }
 
-    &:focus {
-        outline: none;
-        background-color: ${({ theme }) => theme.colors.backgroundItemHover};
+    @media (min-width: 768px) {
+        font-size: 14px;
+        line-height: 18px;
     }
-
-    ${({ $active }) =>
-        $active &&
-        `
-        color: ${({ theme }) => theme.colors.purple};
-    `}
 `;
 
 const Header = ({ receiptsLength, filterType, setFilterType, searchQuery, setSearchQuery }) => {
     const theme = useTheme();
     const { windowWidth } = useGlobalContext();
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const ref = useRef();
 
     const filterOptions = [
         { value: 'all', label: 'All Receipts' },
         { value: 'paid', label: 'Paid' },
         { value: 'pending', label: 'Pending' },
     ];
+
+    useEffect(() => {
+        const checkIfClickedOutside = (event) => {
+            const target = event.target.nodeName;
+            if (target !== 'BUTTON' && target !== 'UL') {
+                setIsFilterOpen(false);
+            }
+        };
+
+        isFilterOpen && document.addEventListener('click', checkIfClickedOutside);
+
+        return () => {
+            document.removeEventListener('click', checkIfClickedOutside);
+        };
+    }, [isFilterOpen]);
 
     const handleFilterClick = () => {
         setIsFilterOpen(!isFilterOpen);
@@ -199,57 +254,75 @@ const Header = ({ receiptsLength, filterType, setFilterType, searchQuery, setSea
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
         >
-            <Info>
-                <h1>Receipts</h1>
-                <p>{receiptsLengthMessage(receiptsLength, filterType, windowWidth)}</p>
-            </Info>
+            <HeaderTop>
+                <Info>
+                    <Title>Receipts</Title>
+                    <Text>{receiptsLengthMessage(receiptsLength, filterType, windowWidth)}</Text>
+                </Info>
 
-            <Controls>
-                <SearchWrapper>
-                    <SearchIcon name="search" size={16} />
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <StyledFilter>
+                        <FilterButton onClick={handleFilterClick}>
+                            Filter {windowWidth >= 768 && 'by status'}
+                            <Icon
+                                name="arrow-down"
+                                size={11}
+                                color={theme.colors.purple}
+                                customStyle={{
+                                    transition: 'transform 350ms ease-in-out',
+                                    transform: isFilterOpen ? 'rotate(180deg)' : 'none',
+                                }}
+                            />
+                        </FilterButton>
+
+                        <AnimatePresence>
+                            {isFilterOpen && (
+                                <FilterList
+                                    ref={ref}
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    {filterOptions.map((option) => (
+                                        <FilterItem key={option.value}>
+                                            <StatusFilter
+                                                onClick={() => handleFilterSelect(option.value)}
+                                                $isActive={filterType === option.value}
+                                            >
+                                                {option.label}
+                                            </StatusFilter>
+                                        </FilterItem>
+                                    ))}
+                                </FilterList>
+                            )}
+                        </AnimatePresence>
+                    </StyledFilter>
+
+                    <Button
+                        type="button"
+                        $newInvoice
+                        onClick={() => {/* TODO: Implement new receipt creation */}}
+                    >
+                        New {windowWidth >= 768 && 'Receipt'}
+                    </Button>
+                </div>
+            </HeaderTop>
+
+            <SearchBar>
+                <SearchContainer>
+                    <SearchIcon>
+                        <Icon name="search" size={16} />
+                    </SearchIcon>
                     <SearchInput
                         type="text"
-                        placeholder="Search receipts..."
+                        placeholder="Search by Receipt ID, Client Name, or Description"
                         value={searchQuery}
                         onChange={handleSearchChange}
+                        aria-label="Search receipts by ID, client name, or description"
                     />
-                </SearchWrapper>
-
-                <FilterWrapper>
-                    <FilterButton onClick={handleFilterClick}>
-                        <Icon name="filter" size={16} />
-                        {filterOptions.find((option) => option.value === filterType)?.label}
-                    </FilterButton>
-
-                    <AnimatePresence>
-                        {isFilterOpen && (
-                            <FilterList
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                {filterOptions.map((option) => (
-                                    <FilterItem
-                                        key={option.value}
-                                        $active={filterType === option.value}
-                                        onClick={() => handleFilterSelect(option.value)}
-                                    >
-                                        {option.label}
-                                    </FilterItem>
-                                ))}
-                            </FilterList>
-                        )}
-                    </AnimatePresence>
-                </FilterWrapper>
-
-                <Button
-                    type="primary"
-                    icon="plus"
-                    text={windowWidth >= 768 ? 'New Receipt' : 'New'}
-                    onClick={() => {/* TODO: Implement new receipt creation */}}
-                />
-            </Controls>
+                </SearchContainer>
+            </SearchBar>
         </StyledHeader>
     );
 };
