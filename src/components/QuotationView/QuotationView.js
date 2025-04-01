@@ -633,6 +633,15 @@ const QuotationView = () => {
                         element.style.fontSize = '16px';
                     }
                 });
+
+                // Set Total section text to white
+                const totalSection = itemsSection.querySelector('.Total');
+                if (totalSection) {
+                    const totalTexts = totalSection.querySelectorAll('*');
+                    totalTexts.forEach(element => {
+                        element.style.color = 'white';
+                    });
+                }
                 
                 pdfContainer.appendChild(itemsSection);
             }
@@ -1223,7 +1232,7 @@ const QuotationView = () => {
                             <div>
                                 <TotalText>Grand Total</TotalText>
                                 {clientHasVAT && (
-                                    <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.8 }}>
+                                    <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.8, color: 'white' }}>
                                         Includes VAT: {formatPrice(vatAmount, quotation.currency)}
                                     </div>
                                 )}
