@@ -703,6 +703,17 @@ const QuotationFormContent = ({ isEdited }) => {
         setIsDropdownExpanded(false);
     };
     
+    // Add state to track if client is from UAE
+    const [isUAEClient, setIsUAEClient] = useState(false);
+
+    // Add useEffect to check client country
+    useEffect(() => {
+        const isUAE = quotation?.clientAddress?.country?.toLowerCase().includes('emirates') || 
+                     quotation?.clientAddress?.country?.toLowerCase().includes('uae');
+        setIsUAEClient(isUAE);
+    }, [quotation?.clientAddress?.country]);
+
+    // Update the handleSelectClient function
     const handleSelectClient = (client) => {
         // Reset dropdowns
         setIsClientDropdownExpanded(false);
@@ -757,6 +768,11 @@ const QuotationFormContent = ({ isEdited }) => {
                 target: { name: 'country', value: client.country }
             }, 'clientAddress');
             
+            // Check if client is from UAE
+            const isUAE = client.country.toLowerCase().includes('emirates') || 
+                         client.country.toLowerCase().includes('uae');
+            setIsUAEClient(isUAE);
+            
             // Set currency based on country
             const currency = getCurrencySymbol(client.country);
             if (currency) {
@@ -772,7 +788,7 @@ const QuotationFormContent = ({ isEdited }) => {
         return Boolean(quotation?.clientName);
     };
 
-    // Update the handleItemChange function to handle description and calculate VAT
+    // Update the handleItemChange function
     const handleItemChange = (event, type, date, index) => {
         if (type === 'items') {
             const name = event.target.name;
@@ -797,8 +813,9 @@ const QuotationFormContent = ({ isEdited }) => {
                     const quantity = parseFloat(updatedItems[index].quantity) || 0;
                     const price = parseFloat(updatedItems[index].price) || 0;
                     const subtotal = quantity * price;
-                    const vat = subtotal * 0.05; // 5% VAT
                     
+                    // Calculate VAT for UAE clients
+                    const vat = isUAEClient ? subtotal * 0.05 : 0;
                     updatedItems[index].vat = vat;
                     updatedItems[index].total = subtotal + vat;
                 }
@@ -1222,7 +1239,9 @@ const QuotationFormContent = ({ isEdited }) => {
                                         </MinimalLabel>
                                         <MinimalInput
                                             id={`item-price-${index}`}
-                                            type="text"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
                                             name="price"
                                             value={item.price || ''}
                                             $error={errors.items && errors.items[index]?.price}
@@ -1239,13 +1258,15 @@ const QuotationFormContent = ({ isEdited }) => {
                                 </div>
                                 
                                 <div className="vat-total-row">
-                                    <ItemVat>
-                                        <MinimalLabel htmlFor={`item-vat-${index}`}>VAT (5%)</MinimalLabel>
-                                        <VatValue>
-                                            <span className="currency">{quotation.currency || 'USD'}</span>
-                                            {formatNumber(item.vat)}
-                                        </VatValue>
-                                    </ItemVat>
+                                    {isUAEClient && (
+                                        <ItemVat>
+                                            <MinimalLabel htmlFor={`item-vat-${index}`}>VAT (5%)</MinimalLabel>
+                                            <VatValue>
+                                                <span className="currency">{quotation.currency || 'USD'}</span>
+                                                {formatNumber(item.vat)}
+                                            </VatValue>
+                                        </ItemVat>
+                                    )}
                                     
                                     <ItemTotal>
                                         <MinimalLabel htmlFor={`item-total-${index}`}>Total</MinimalLabel>
@@ -1284,7 +1305,7 @@ const QuotationFormContent = ({ isEdited }) => {
                                         description: '',
                                         quantity: 0, 
                                         price: 0, 
-                                        vat: 0,
+                                        vat: isUAEClient ? 0 : undefined,
                                         total: 0 
                                     }
                                 ]);

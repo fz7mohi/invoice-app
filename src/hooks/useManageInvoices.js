@@ -120,7 +120,10 @@ const useManageInvoices = () => {
                 // First try to get data from Firestore
                 try {
                     const invoicesCollection = collection(db, 'invoices');
-                    const invoicesQuery = query(invoicesCollection);
+                    const invoicesQuery = query(
+                        invoicesCollection,
+                        orderBy('createdAt', 'desc') // Sort by creation date in descending order
+                    );
                     const querySnapshot = await getDocs(invoicesQuery);
                     
                     if (!isMounted) return;

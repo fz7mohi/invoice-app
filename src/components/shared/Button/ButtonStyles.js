@@ -120,6 +120,10 @@ const buttonNewInvoice = css`
 `;
 
 export const StyledButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
     ${({ $newInvoice }) =>
         $newInvoice &&
         css`

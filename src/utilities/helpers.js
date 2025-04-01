@@ -72,3 +72,17 @@ export const formatPhoneNumber = (phoneNumber) => {
     // Return as is if it doesn't match expected formats
     return phoneNumber;
 };
+
+/**
+ * Function to format receipt count message based on filter type and window width.
+ * @param    {number} length    Number of receipts
+ * @param    {string} type    String with filter type
+ * @param    {number} windowWidth    Number with window width
+ * @return   {string}    String with formatted message
+ */
+export const receiptsLengthMessage = (length, type, windowWidth) => {
+    const receiptsText = windowWidth >= 768 ? 'receipts' : '';
+    const filterText = type === 'all' ? 'total' : type;
+
+    return `${length} ${receiptsText} ${filterText}`;
+};

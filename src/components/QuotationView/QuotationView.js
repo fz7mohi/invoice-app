@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Redirect, useHistory } from 'react-router-dom';
+import { useParams, Redirect, useHistory, Link } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import { useReducedMotion } from 'framer-motion';
 import Icon from '../shared/Icon/Icon';
@@ -103,6 +103,8 @@ const QuotationView = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showConvertModal, setShowConvertModal] = useState(false);
     const [isConverting, setIsConverting] = useState(false);
+    const [invoiceData, setInvoiceData] = useState(null);
+    const [isFetchingInvoice, setIsFetchingInvoice] = useState(false);
     const isLoading = quotationState?.isLoading || isDirectlyFetching || isClientFetching;
     const quotationNotFound = !isLoading && !quotation;
     const isPending = quotation?.status === 'pending';
@@ -648,36 +650,45 @@ const QuotationView = () => {
         }
     };
 
-    // Calculate VAT amount (5%)
-    const calculateVAT = (amount) => {
-        return parseFloat(amount) * 0.05;
-    };
-    
-    // Calculate total with VAT
-    const calculateTotalWithVAT = (amount) => {
-        return parseFloat(amount) + calculateVAT(amount);
-    };
-
     // Check if client has VAT when client data changes
     useEffect(() => {
         if (clientData) {
-            const hasTRN = !!(
-                clientData.trn || 
-                clientData.TRN || 
-                clientData.trnNumber ||
-                clientData.taxRegistrationNumber || 
-                clientData.tax_registration_number ||
-                clientData.taxNumber
-            );
+            // Check if client is from UAE
+            const isUAE = clientData.country?.toLowerCase().includes('emirates') || 
+                         clientData.country?.toLowerCase().includes('uae') ||
+                         quotation?.clientAddress?.country?.toLowerCase().includes('emirates') ||
+                         quotation?.clientAddress?.country?.toLowerCase().includes('uae');
             
-            setClientHasVAT(hasTRN);
-        } else if (quotation?.clientTRN) {
+            // Only set VAT for UAE clients
+            setClientHasVAT(isUAE);
+        } else if (quotation?.clientAddress?.country?.toLowerCase().includes('emirates') || 
+                  quotation?.clientAddress?.country?.toLowerCase().includes('uae')) {
             setClientHasVAT(true);
+        } else {
+            setClientHasVAT(false);
         }
     }, [clientData, quotation]);
 
+    // Calculate VAT amount (5%) only for UAE clients
+    const calculateVAT = (amount) => {
+        if (!clientHasVAT) return 0;
+        return parseFloat(amount) * 0.05;
+    };
+    
+    // Calculate total with VAT only for UAE clients
+    const calculateTotalWithVAT = (amount) => {
+        if (!clientHasVAT) return parseFloat(amount);
+        return parseFloat(amount) + calculateVAT(amount);
+    };
+
     // Render client section with TRN from client data if available
     const renderClientSection = () => {
+        // Check if client is from UAE
+        const isUAE = quotation?.clientAddress?.country?.toLowerCase().includes('emirates') || 
+                      quotation?.clientAddress?.country?.toLowerCase().includes('uae') ||
+                      clientData?.country?.toLowerCase().includes('emirates') ||
+                      clientData?.country?.toLowerCase().includes('uae');
+
         // Check for TRN in various possible field names
         const clientTRN = 
             clientData?.trn || 
@@ -687,22 +698,21 @@ const QuotationView = () => {
             clientData?.tax_registration_number ||
             clientData?.taxNumber ||
             quotation?.clientTRN;
-            
-        // Check if client is from UAE
-        const isUAE = quotation?.clientAddress?.country?.toLowerCase().includes('emirates') || 
-                      quotation?.clientAddress?.country?.toLowerCase().includes('uae') ||
-                      clientData?.country?.toLowerCase().includes('emirates') ||
-                      clientData?.country?.toLowerCase().includes('uae');
 
         return (
             <AddressGroup>
                 <AddressTitle>Bill To</AddressTitle>
                 <AddressText>
-                    <strong>{quotation.clientName}</strong><br />
-                    {clientData?.address || quotation.clientAddress?.street || ''}
+                    <strong>{quotation.clientName}</strong>
+                    {(clientData?.address || quotation.clientAddress?.street) && (
+                        <>
+                            <br />
+                            {clientData?.address || quotation.clientAddress?.street}
+                        </>
+                    )}
                     {quotation.clientAddress?.city && `, ${quotation.clientAddress.city}`}
                     {quotation.clientAddress?.postCode && `, ${quotation.clientAddress.postCode}`}
-                    {clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
+                    {(clientData?.country || quotation.clientAddress?.country) && `, ${clientData?.country || quotation.clientAddress?.country}`}
                     {clientData?.phone && (
                         <>
                             <br />
@@ -755,6 +765,30 @@ const QuotationView = () => {
             const vatAmount = clientHasVAT ? subtotal * 0.05 : 0;
             const totalAmount = clientHasVAT ? subtotal + vatAmount : subtotal;
             
+            // Get all invoices to find the next available number
+            const invoicesRef = collection(db, 'invoices');
+            const q = query(
+                invoicesRef,
+                where('customId', '>=', 'FTIN'),
+                where('customId', '<=', 'FTIN\uf8ff')
+            );
+            const querySnapshot = await getDocs(q);
+            
+            // Find the next available number
+            const existingNumbers = querySnapshot.docs
+                .map(doc => {
+                    const match = doc.data().customId.match(/FTIN(\d+)/);
+                    return match ? parseInt(match[1]) : 0;
+                })
+                .filter(num => !isNaN(num));
+            
+            const nextNumber = existingNumbers.length > 0 
+                ? Math.max(...existingNumbers) + 1 
+                : 1;
+            
+            // Generate the custom ID in the format FTINXXXX
+            const customId = `FTIN${String(nextNumber).padStart(4, '0')}`;
+            
             // Create a new invoice object from quotation data
             const newInvoice = {
                 createdAt: new Date(),
@@ -772,7 +806,8 @@ const QuotationView = () => {
                 total: totalAmount,
                 status: 'pending',
                 quotationId: quotation.id, // Reference to original quotation
-                currency: quotation.currency || 'USD'
+                currency: quotation.currency || 'USD',
+                customId: customId // Add the custom ID in FTINXXXX format
             };
 
             // Add clientId only if it exists in the quotation
@@ -781,7 +816,6 @@ const QuotationView = () => {
             }
 
             // Add to Firestore
-            const invoicesRef = collection(db, 'invoices');
             const docRef = await addDoc(invoicesRef, {
                 ...newInvoice,
                 createdAt: Timestamp.fromDate(newInvoice.createdAt),
@@ -792,7 +826,7 @@ const QuotationView = () => {
             const quotationRef = doc(db, 'quotations', id);
             await updateDoc(quotationRef, {
                 status: 'invoiced',
-                convertedToInvoice: docRef.id // Reference to the new invoice
+                convertedToInvoice: customId // Store the custom ID in FTINXXXX format
             });
 
             // Refresh quotations list
@@ -828,6 +862,157 @@ const QuotationView = () => {
 
     const handleCancelConvert = () => {
         setShowConvertModal(false);
+    };
+
+    // Add function to fetch invoice data
+    const fetchInvoiceData = async (invoiceId) => {
+        if (!invoiceId) return;
+        
+        try {
+            setIsFetchingInvoice(true);
+            const invoiceRef = doc(db, 'invoices', invoiceId);
+            const docSnap = await getDoc(invoiceRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setInvoiceData({
+                    id: docSnap.id,
+                    customId: data.customId || docSnap.id
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching invoice data:', error);
+        } finally {
+            setIsFetchingInvoice(false);
+        }
+    };
+
+    // Add useEffect to fetch invoice data when quotation loads
+    useEffect(() => {
+        if (quotation?.invoiceId) {
+            fetchInvoiceData(quotation.invoiceId);
+        }
+    }, [quotation?.invoiceId]);
+
+    // Add function to handle quotation duplication
+    const handleDuplicateQuotation = async () => {
+        try {
+            // Get all quotations with the same base ID
+            const baseId = quotation.customId.split('-')[0];
+            const quotationsRef = collection(db, 'quotations');
+            const q = query(quotationsRef, where('customId', '>=', baseId), where('customId', '<=', baseId + '\uf8ff'));
+            const querySnapshot = await getDocs(q);
+            
+            // Find the next available suffix
+            const existingSuffixes = querySnapshot.docs
+                .map(doc => doc.data().customId.split('-')[1])
+                .filter(suffix => suffix && suffix.length === 1 && /^[a-z]$/i.test(suffix))
+                .map(suffix => suffix.toLowerCase());
+            
+            let nextSuffix = 'a';
+            if (existingSuffixes.length > 0) {
+                const lastSuffix = existingSuffixes.sort().pop();
+                const nextCharCode = lastSuffix.charCodeAt(0) + 1;
+                if (nextCharCode <= 'z'.charCodeAt(0)) {
+                    nextSuffix = String.fromCharCode(nextCharCode);
+                } else {
+                    alert('Maximum number of duplicates reached (a-z)');
+                    return;
+                }
+            }
+            
+            // Create new quotation with incremented suffix
+            const newCustomId = `${baseId}-${nextSuffix}`;
+            
+            // Create a new quotation object with all details from the original
+            const newQuotation = {
+                ...quotation,
+                id: undefined, // Remove the original ID
+                customId: newCustomId,
+                createdAt: Timestamp.now(),
+                status: 'pending', // Set status to pending to allow invoice conversion
+                convertedToInvoice: null, // Reset the converted invoice reference
+                quotationId: null, // Reset any quotation reference
+                items: quotation.items.map(item => ({ ...item })), // Deep copy items
+                clientAddress: quotation.clientAddress ? { ...quotation.clientAddress } : null, // Deep copy client address
+                senderAddress: quotation.senderAddress ? { ...quotation.senderAddress } : null, // Deep copy sender address
+                termsAndConditions: quotation.termsAndConditions || '', // Copy terms if they exist
+                description: quotation.description || '', // Copy description if it exists
+                paymentDue: Timestamp.fromDate(new Date(new Date().setDate(new Date().getDate() + 30))), // Set new due date
+                currency: quotation.currency || 'USD',
+                clientName: quotation.clientName,
+                clientEmail: quotation.clientEmail,
+                clientId: quotation.clientId,
+                clientPhone: quotation.clientPhone,
+                clientTRN: quotation.clientTRN,
+                clientCountry: quotation.clientCountry,
+                clientCity: quotation.clientCity,
+                clientPostCode: quotation.clientPostCode,
+                clientStreet: quotation.clientStreet,
+                senderName: quotation.senderName,
+                senderEmail: quotation.senderEmail,
+                senderPhone: quotation.senderPhone,
+                senderCountry: quotation.senderCountry,
+                senderCity: quotation.senderCity,
+                senderPostCode: quotation.senderPostCode,
+                senderStreet: quotation.senderStreet,
+                paymentTerms: quotation.paymentTerms || '30',
+                notes: quotation.notes || '',
+                discount: quotation.discount || 0,
+                discountType: quotation.discountType || 'percentage',
+                discountAmount: quotation.discountAmount || 0,
+                subtotal: quotation.subtotal || 0,
+                total: quotation.total || 0,
+                vat: quotation.vat || 0,
+                vatAmount: quotation.vatAmount || 0,
+                grandTotal: quotation.grandTotal || 0
+            };
+            
+            // Remove any undefined or null values
+            Object.keys(newQuotation).forEach(key => 
+                newQuotation[key] === undefined && delete newQuotation[key]
+            );
+            
+            // Add to Firestore
+            const docRef = await addDoc(collection(db, 'quotations'), newQuotation);
+            
+            // Redirect to the new quotation
+            history.push(`/quotation/${docRef.id}`);
+            
+        } catch (error) {
+            console.error('Error duplicating quotation:', error);
+            alert('There was an error duplicating the quotation. Please try again.');
+        }
+    };
+
+    // Add function to handle edit click with check
+    const handleEditClick = () => {
+        if (quotation.convertedToInvoice) {
+            // Show modal asking user to duplicate instead
+            toggleQuotationModal({
+                type: 'status',
+                title: 'Cannot Edit Converted Quotation',
+                message: 'This quotation has been converted to an invoice. Please create a duplicate if you need to make changes.',
+                buttons: [
+                    {
+                        text: 'Cancel',
+                        type: 'secondary',
+                        onClick: () => toggleQuotationModal()
+                    },
+                    {
+                        text: 'Create Duplicate',
+                        type: 'primary',
+                        onClick: () => {
+                            toggleQuotationModal();
+                            handleDuplicateQuotation();
+                        }
+                    }
+                ]
+            });
+        } else {
+            // Normal edit flow
+            editQuotation(id);
+        }
     };
 
     // Show loading state
@@ -1014,9 +1199,29 @@ const QuotationView = () => {
                     {isDesktop && (
                         <ButtonWrapper className="ButtonWrapper">
                             <Button
+                                $primary
+                                onClick={handleDuplicateQuotation}
+                                disabled={isLoading}
+                                style={{
+                                    backgroundColor: colors.purple,
+                                    border: 'none'
+                                }}
+                            >
+                                <Icon 
+                                    name="copy" 
+                                    size={14} 
+                                    color="white"
+                                />
+                                <span>Duplicate</span>
+                            </Button>
+                            <Button
                                 $secondary
-                                onClick={() => editQuotation(id)}
-                                disabled={isLoading || isApproved}
+                                onClick={handleEditClick}
+                                disabled={isLoading || quotation.convertedToInvoice}
+                                style={{
+                                    opacity: quotation.convertedToInvoice ? 0.6 : 1,
+                                    cursor: quotation.convertedToInvoice ? 'not-allowed' : 'pointer'
+                                }}
                             >
                                 Edit
                             </Button>
@@ -1027,7 +1232,7 @@ const QuotationView = () => {
                             >
                                 Delete
                             </Button>
-                            {isPending && (
+                            {isPending && !quotation.convertedToInvoice && (
                                 <Button
                                     $primary
                                     onClick={handleConvertToInvoice}
@@ -1053,14 +1258,47 @@ const QuotationView = () => {
                     <InfoHeader>
                         <InfoGroup>
                             <InfoID>
-                                <span>#</span>{quotation.customId || id}
+                                <span>#</span>{quotation.customId}
                             </InfoID>
                             <InfoDesc>{quotation.description || 'No description'}</InfoDesc>
-                            
+                            {quotation.convertedToInvoice && (
+                                <span style={{ 
+                                    color: colors.textTertiary,
+                                    fontSize: '13px',
+                                    display: 'block',
+                                    marginTop: '4px'
+                                }}>
+                                    <Icon 
+                                        name="arrow-right" 
+                                        size={12} 
+                                        color={colors.textTertiary}
+                                        style={{ marginRight: '8px', verticalAlign: 'middle' }}
+                                    />
+                                    Converted to Invoice: 
+                                    <Link
+                                        to={`/invoice/${quotation.convertedToInvoice}`}
+                                        style={{ 
+                                            color: 'white',
+                                            textDecoration: 'none',
+                                            cursor: 'pointer',
+                                            fontWeight: '500',
+                                            marginLeft: '4px',
+                                            marginTop: '10px',
+                                            verticalAlign: 'middle'
+                                        }}
+                                    >
+                                        #{isFetchingInvoice ? 'Loading...' : (invoiceData?.customId || quotation.convertedToInvoice)}
+                                    </Link>
+                                </span>
+                            )}
                             <MetaInfo>
                                 <MetaItem>
                                     <Icon name="calendar" size={13} />
                                     Created: {formatDate(quotation.createdAt)}
+                                </MetaItem>
+                                <MetaItem>
+                                    <Icon name="calendar" size={13} />
+                                    Due: {formatDate(quotation.paymentDue)}
                                 </MetaItem>
                             </MetaInfo>
                         </InfoGroup>
@@ -1171,29 +1409,53 @@ const QuotationView = () => {
             {/* Mobile action buttons */}
             {!isDesktop && (
                 <ButtonWrapper className="ButtonWrapper">
-                    <Button
-                        $secondary
-                        onClick={() => editQuotation(id)}
-                        disabled={isLoading || isApproved}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        $delete
-                        onClick={handleDeleteClick}
-                        disabled={isLoading}
-                    >
-                        Delete
-                    </Button>
-                    {isPending && (
-                        <Button
-                            $primary
-                            onClick={handleConvertToInvoice}
-                            disabled={isLoading || isConverting}
-                        >
-                            <Icon name="arrow-right" size={13} style={{ marginRight: '6px' }} />
-                            {isConverting ? 'Converting...' : 'Invoice'}
-                        </Button>
+                    {!isConverting && (
+                        <>
+                            <Button
+                                $secondary
+                                onClick={handleEditClick}
+                                disabled={isLoading || quotation.convertedToInvoice}
+                                style={{
+                                    opacity: quotation.convertedToInvoice ? 0.6 : 1,
+                                    cursor: quotation.convertedToInvoice ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                Edit
+                            </Button>
+                            <Button
+                                $primary
+                                onClick={handleDuplicateQuotation}
+                                disabled={isLoading}
+                                style={{
+                                    backgroundColor: colors.purple,
+                                    border: 'none'
+                                }}
+                            >
+                                <Icon 
+                                    name="copy" 
+                                    size={14} 
+                                    color="white"
+                                />
+                                <span>Duplicate</span>
+                            </Button>
+                            <Button
+                                $delete
+                                onClick={handleDeleteClick}
+                                disabled={isLoading}
+                            >
+                                Delete
+                            </Button>
+                            {isPending && !quotation.convertedToInvoice && (
+                                <Button
+                                    $primary
+                                    onClick={handleConvertToInvoice}
+                                    disabled={isLoading || isConverting}
+                                >
+                                    <Icon name="arrow-right" size={13} style={{ marginRight: '6px' }} />
+                                    {isConverting ? 'Converting...' : 'Invoice'}
+                                </Button>
+                            )}
+                        </>
                     )}
                 </ButtonWrapper>
             )}

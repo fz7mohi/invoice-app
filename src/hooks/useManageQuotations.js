@@ -130,10 +130,12 @@ const useManageQuotations = () => {
             try {
                 dispatch({ type: 'SET_LOADING', payload: true });
                 
-                // First try to get data from Firestore
-                try {
+                if (isMounted) {
                     const quotationsCollection = collection(db, 'quotations');
-                    const quotationsQuery = query(quotationsCollection);
+                    const quotationsQuery = query(
+                        quotationsCollection,
+                        orderBy('createdAt', 'desc') // Sort by creation date in descending order
+                    );
                     const querySnapshot = await getDocs(quotationsQuery);
                     
                     if (!isMounted) return;
@@ -200,14 +202,6 @@ const useManageQuotations = () => {
                     
                     dispatch({ type: 'SET_QUOTATIONS', payload: quotationsList });
                     dispatch({ type: 'SET_FIREBASE_ERROR', payload: false });
-                } catch (firebaseError) {
-                    if (!isMounted) return;
-                    
-                    dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
-                    
-                    // Fallback to localStorage if Firebase fails
-                    const localQuotations = getQuotationsFromLocalStorage();
-                    dispatch({ type: 'SET_QUOTATIONS', payload: localQuotations });
                 }
             } catch (error) {
                 // Silent error handling

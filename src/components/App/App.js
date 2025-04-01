@@ -5,10 +5,12 @@ import Header from '../Header/Header';
 import Invoices from '../Invoices/Invoices';
 import Clients from '../Clients/Clients';
 import Quotations from '../Quotations/Quotations';
+import Receipts from '../Receipts/Receipts';
 import FormController from '../FormController/FormController';
 import ClientFormController from '../ClientFormController/ClientFormController';
 import QuotationFormController from '../QuotationFormController/QuotationFormController';
 import InvoiceView from '../InvoiceView/InvoiceView';
+import ReceiptView from '../ReceiptView/ReceiptView';
 import Modal from '../Modal/Modal';
 import RouteError from '../RouteError/RouteError';
 import { useGlobalContext } from './context';
@@ -89,6 +91,12 @@ const App = () => {
                         </Route>
                         <Route path="/quotation/:id">
                             <QuotationView />
+                        </Route>
+                        <Route path="/receipts">
+                            <Receipts />
+                        </Route>
+                        <Route path="/receipt/:id">
+                            <ReceiptView />
                         </Route>
                         <Route path="/settings">
                             <Settings />

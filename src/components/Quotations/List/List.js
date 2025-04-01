@@ -6,7 +6,7 @@ import Status from '../../shared/Status/Status';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import { formatDate, formatPrice } from '../../../utilities/helpers';
 import { useGlobalContext } from '../../App/context';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../firebase/firebase';
 import {
     StyledList,
@@ -92,7 +92,11 @@ const List = ({ quotations, isLoading, variant }) => {
         setLoading(true);
         try {
             const quotationsCollection = collection(db, 'quotations');
-            const querySnapshot = await getDocs(quotationsCollection);
+            const quotationsQuery = query(
+                quotationsCollection,
+                orderBy('createdAt', 'desc') // Sort by creation date in descending order
+            );
+            const querySnapshot = await getDocs(quotationsQuery);
             
             // Generate ID function for missing IDs
             const generateCustomId = () => {
