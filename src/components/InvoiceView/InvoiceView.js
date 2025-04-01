@@ -124,6 +124,10 @@ const InvoiceView = () => {
     const [isFetchingQuotation, setIsFetchingQuotation] = useState(false);
     const [isEditingTerms, setIsEditingTerms] = useState(false);
     const [editedTerms, setEditedTerms] = useState('');
+    const [isEditingLPO, setIsEditingLPO] = useState(false);
+    const [editedLPO, setEditedLPO] = useState('');
+    const [isEditingDueDate, setIsEditingDueDate] = useState(false);
+    const [editedDueDate, setEditedDueDate] = useState('');
     
     // Add default terms and conditions
     const defaultTermsAndConditions = `50% advance payment along with the issuance of the LPO (Local Purchase Order), and the remaining 50% to be settled before the delivery of the order.
@@ -776,11 +780,21 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                             `<br /><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
                     </div>
                 </div>
-                <div style="text-align: right;">
-                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Invoice #</div>
-                    <div style="color: black; font-size: 16px; margin-bottom: 15px;">${invoice.customId || id}</div>
-                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
-                    <div style="color: black; font-size: 16px;">${formatDate(invoice.paymentDue)}</div>
+                <div style="display: flex; gap: 40px;">
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Invoice #</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${invoice.customId || id}</div>
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
+                        <div style="color: black; font-size: 16px;">${formatDate(invoice.paymentDue)}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Created Date</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${formatDate(invoice.createdAt)}</div>
+                        ${invoice.lpoNumber ? `
+                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">LPO Number</div>
+                            <div style="color: black; font-size: 16px;">${invoice.lpoNumber}</div>
+                        ` : ''}
+                    </div>
                 </div>
             `;
             pdfContainer.appendChild(clientSection);
@@ -994,6 +1008,50 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         } catch (error) {
             console.error('Error updating terms:', error);
             alert('There was an error updating the notes. Please try again.');
+        }
+    };
+
+    // Add this function to handle LPO update
+    const handleLPOUpdate = async () => {
+        try {
+            const invoiceRef = doc(db, 'invoices', id);
+            await updateDoc(invoiceRef, {
+                lpoNumber: editedLPO,
+                lastModified: new Date()
+            });
+            
+            // Update local state
+            setInvoice(prev => ({
+                ...prev,
+                lpoNumber: editedLPO
+            }));
+            
+            setIsEditingLPO(false);
+        } catch (error) {
+            console.error('Error updating LPO number:', error);
+            alert('There was an error updating the LPO number. Please try again.');
+        }
+    };
+
+    // Add this function to handle due date update
+    const handleDueDateUpdate = async () => {
+        try {
+            const invoiceRef = doc(db, 'invoices', id);
+            await updateDoc(invoiceRef, {
+                paymentDue: new Date(editedDueDate),
+                lastModified: new Date()
+            });
+            
+            // Update local state
+            setInvoice(prev => ({
+                ...prev,
+                paymentDue: new Date(editedDueDate)
+            }));
+            
+            setIsEditingDueDate(false);
+        } catch (error) {
+            console.error('Error updating due date:', error);
+            alert('There was an error updating the due date. Please try again.');
         }
     };
 
@@ -1224,9 +1282,259 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                             </AddressText>
                             <br />
                             <AddressTitle>Payment Due</AddressTitle>
-                            <AddressText>
-                                {formatDate(invoice.paymentDue)}
-                            </AddressText>
+                            {!isEditingDueDate ? (
+                                <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px',
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    backgroundColor: '#f5f7fa',
+                                    border: '1px solid #e0e0e0',
+                                    transition: 'all 0.2s ease',
+                                    marginTop: '4px'
+                                }}>
+                                    <Icon 
+                                        name="calendar" 
+                                        size={14} 
+                                        color="#004359"
+                                    />
+                                    <span style={{ 
+                                        color: '#004359',
+                                        fontWeight: '500'
+                                    }}>
+                                        {formatDate(invoice.paymentDue)}
+                                    </span>
+                                    <Button
+                                        onClick={() => {
+                                            setEditedDueDate(formatDate(invoice.paymentDue, 'YYYY-MM-DD'));
+                                            setIsEditingDueDate(true);
+                                        }}
+                                        $secondary
+                                        style={{ 
+                                            padding: '4px 8px', 
+                                            fontSize: '12px',
+                                            backgroundColor: 'transparent',
+                                            border: 'none',
+                                            color: '#004359',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'rgba(0, 67, 89, 0.05)';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                        }}
+                                    >
+                                        <Icon name="edit" size={12} />
+                                        Edit
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div style={{ 
+                                    display: 'flex', 
+                                    flexDirection: 'column',
+                                    gap: '8px',
+                                    padding: '8px',
+                                    backgroundColor: '#f5f7fa',
+                                    borderRadius: '4px',
+                                    border: '1px solid #e0e0e0',
+                                    marginTop: '4px'
+                                }}>
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '8px'
+                                    }}>
+                                        <Icon name="calendar" size={14} color="#004359" />
+                                        <input
+                                            type="date"
+                                            value={editedDueDate}
+                                            onChange={(e) => setEditedDueDate(e.target.value)}
+                                            style={{
+                                                padding: '6px 12px',
+                                                border: '1px solid #e0e0e0',
+                                                borderRadius: '4px',
+                                                fontSize: '14px',
+                                                width: '200px',
+                                                backgroundColor: 'white',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            autoFocus
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleDueDateUpdate();
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        gap: '8px',
+                                        justifyContent: 'flex-end'
+                                    }}>
+                                        <Button
+                                            onClick={() => setIsEditingDueDate(false)}
+                                            $secondary
+                                            style={{ 
+                                                padding: '6px 12px', 
+                                                fontSize: '12px',
+                                                backgroundColor: 'transparent',
+                                                border: '1px solid #e0e0e0',
+                                                color: '#666'
+                                            }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleDueDateUpdate}
+                                            $primary
+                                            style={{ 
+                                                padding: '6px 12px', 
+                                                fontSize: '12px',
+                                                backgroundColor: '#004359',
+                                                border: 'none',
+                                                color: 'white'
+                                            }}
+                                            disabled={!editedDueDate}
+                                        >
+                                            Save Due Date
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                            <br />
+                            <AddressTitle>LPO Number</AddressTitle>
+                            {!isEditingLPO ? (
+                                <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px',
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    backgroundColor: invoice.lpoNumber ? '#f5f7fa' : '#fff3e0',
+                                    border: `1px solid ${invoice.lpoNumber ? '#e0e0e0' : '#ffb74d'}`,
+                                    transition: 'all 0.2s ease',
+                                    marginTop: '4px'
+                                }}>
+                                    <Icon 
+                                        name={invoice.lpoNumber ? "file-text" : "alert-circle"} 
+                                        size={14} 
+                                        color={invoice.lpoNumber ? "#004359" : "#ff9800"}
+                                    />
+                                    <span style={{ 
+                                        color: invoice.lpoNumber ? '#004359' : '#ff9800',
+                                        fontWeight: invoice.lpoNumber ? 'normal' : '500'
+                                    }}>
+                                        {invoice.lpoNumber || 'LPO Number Required'}
+                                    </span>
+                                    <Button
+                                        onClick={() => {
+                                            setEditedLPO(invoice.lpoNumber || '');
+                                            setIsEditingLPO(true);
+                                        }}
+                                        $secondary
+                                        style={{ 
+                                            padding: '4px 8px', 
+                                            fontSize: '12px',
+                                            backgroundColor: 'transparent',
+                                            border: 'none',
+                                            color: invoice.lpoNumber ? '#004359' : '#ff9800',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'rgba(0, 67, 89, 0.05)';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                        }}
+                                    >
+                                        <Icon name="edit" size={12} />
+                                        {invoice.lpoNumber ? 'Edit' : 'Add'}
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div style={{ 
+                                    display: 'flex', 
+                                    flexDirection: 'column',
+                                    gap: '8px',
+                                    padding: '8px',
+                                    backgroundColor: '#f5f7fa',
+                                    borderRadius: '4px',
+                                    border: '1px solid #e0e0e0',
+                                    marginTop: '4px'
+                                }}>
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '8px'
+                                    }}>
+                                        <Icon name="file-text" size={14} color="#004359" />
+                                        <input
+                                            type="text"
+                                            value={editedLPO}
+                                            onChange={(e) => setEditedLPO(e.target.value)}
+                                            style={{
+                                                padding: '6px 12px',
+                                                border: '1px solid #e0e0e0',
+                                                borderRadius: '4px',
+                                                fontSize: '14px',
+                                                width: '200px',
+                                                backgroundColor: 'white',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            placeholder="Enter LPO number"
+                                            autoFocus
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleLPOUpdate();
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        gap: '8px',
+                                        justifyContent: 'flex-end'
+                                    }}>
+                                        <Button
+                                            onClick={() => setIsEditingLPO(false)}
+                                            $secondary
+                                            style={{ 
+                                                padding: '6px 12px', 
+                                                fontSize: '12px',
+                                                backgroundColor: 'transparent',
+                                                border: '1px solid #e0e0e0',
+                                                color: '#666'
+                                            }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleLPOUpdate}
+                                            $primary
+                                            style={{ 
+                                                padding: '6px 12px', 
+                                                fontSize: '12px',
+                                                backgroundColor: '#004359',
+                                                border: 'none',
+                                                color: 'white'
+                                            }}
+                                            disabled={!editedLPO.trim()}
+                                        >
+                                            Save LPO Number
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </AddressGroup>
                     </InfoAddresses>
                     
@@ -1397,12 +1705,12 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                             color="white"
                                         />
                                         <span>Generate DO</span>
-                        </Button>
+                                    </Button>
                                 </>
-                    )}
+                            )}
                             {(isPending || isPartiallyPaid) && (
-                        <Button
-                            $primary
+                                <Button
+                                    $primary
                                     onClick={() => handleStatusChange('paid')}
                                     disabled={isLoading}
                                     data-action="mark-paid"
@@ -1422,7 +1730,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                             <Button
                                 $delete
                                 onClick={handleVoidClick}
-                            disabled={isLoading}
+                                disabled={isLoading}
                                 data-action="void"
                                 style={{
                                     backgroundColor: 'transparent',
@@ -1436,7 +1744,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                     color={colors.red}
                                 />
                                 <span>Void</span>
-                        </Button>
+                            </Button>
                         </>
                     )}
                 </ButtonWrapper>
