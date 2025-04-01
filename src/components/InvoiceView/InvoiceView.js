@@ -13,7 +13,7 @@ import html2canvas from 'html2canvas';
 import {
     StyledInvoiceView,
     Container,
-    MotionLink,
+    Link,
     Controller,
     Text,
     InfoCard,
@@ -45,24 +45,25 @@ import {
     ButtonWrapper,
     StatusBadge,
     StatusDot,
+    StatusContainer,
     TermsSection,
+    TermsHeader,
     TermsTitle,
     TermsText,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalIconWrapper,
-    ModalTitle,
-    ModalText,
-    FormGroup,
-    FormLabel,
-    TextArea,
-    ModalActions,
-    StatusContainer,
+    TermsTextArea,
+    TermsActions,
+    BankDetailsSection,
+    BankDetailsTitle,
+    BankDetailsGrid,
+    BankDetailItem,
+    BankDetailLabel,
+    BankDetailValue,
+    InfoSectionsGrid,
     HeaderSection,
     HeaderTitle,
-    DownloadButton,
+    DownloadButton
 } from './InvoiceViewStyles';
+import styled from 'styled-components';
 
 // Animation variants
 const invoiceViewVariants = {
@@ -101,6 +102,7 @@ const InvoiceView = () => {
     const { id } = useParams();
     const [invoice, setInvoice] = useState(null);
     const [clientData, setClientData] = useState(null);
+    const [companyProfile, setCompanyProfile] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDirectlyFetching, setIsDirectlyFetching] = useState(false);
     const [isClientFetching, setIsClientFetching] = useState(false);
@@ -120,7 +122,16 @@ const InvoiceView = () => {
     const history = useHistory();
     const [quotationData, setQuotationData] = useState(null);
     const [isFetchingQuotation, setIsFetchingQuotation] = useState(false);
+    const [isEditingTerms, setIsEditingTerms] = useState(false);
+    const [editedTerms, setEditedTerms] = useState('');
     
+    // Add default terms and conditions
+    const defaultTermsAndConditions = `50% advance payment along with the issuance of the LPO (Local Purchase Order), and the remaining 50% to be settled before the delivery of the order.
+
+All prices are in local currency and include VAT where applicable.
+
+Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until paid in full.`;
+
     // Function to generate custom ID if not exists
     const generateCustomId = () => {
         const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -529,53 +540,157 @@ const InvoiceView = () => {
         }
     };
 
-    // Add getCompanyProfile function
+    // Update getCompanyProfile function
     const getCompanyProfile = async (country) => {
         try {
-            // Convert country to lowercase for database query
+            // Convert country to lowercase and handle variations
             const countryLower = country.toLowerCase();
+            let searchCountry = countryLower;
             
-            const companyProfilesRef = collection(db, 'companyProfiles');
+            // Handle UAE variations
+            if (countryLower.includes('emirates') || countryLower.includes('uae')) {
+                searchCountry = 'uae';
+            }
+            
+            // Query the companies collection instead of companyProfiles
+            const companiesRef = collection(db, 'companies');
             
             // Query for the specific country
-            const q = query(companyProfilesRef, where('country', '==', countryLower));
+            const q = query(companiesRef, where('country', '==', searchCountry));
             const querySnapshot = await getDocs(q);
             
             if (!querySnapshot.empty) {
                 const profile = querySnapshot.docs[0].data();
-                return {
-                    name: profile.name || 'Fortune Gifts',
+                
+                const result = {
+                    name: profile.name || '',
                     address: profile.address || '',
                     phone: profile.phone || '',
                     vatNumber: profile.vatNumber || '',
-                    crNumber: profile.crNumber || ''
+                    crNumber: profile.crNumber || '',
+                    bankDetails: {
+                        bankName: profile.bankName || '',
+                        accountName: profile.accountName || '',
+                        accountNumber: profile.accountNumber || '',
+                        iban: profile.iban || '',
+                        swift: profile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+                    }
                 };
+                
+                return result;
             }
             
             // If no profile found for UAE, return Qatar profile as default
-            if (countryLower === 'uae') {
-                return getCompanyProfile('qatar');
+            if (searchCountry === 'uae') {
+                const qatarQuery = query(companiesRef, where('country', '==', 'qatar'));
+                const qatarSnapshot = await getDocs(qatarQuery);
+                
+                if (!qatarSnapshot.empty) {
+                    const qatarProfile = qatarSnapshot.docs[0].data();
+                    
+                    const result = {
+                        name: qatarProfile.name || '',
+                        address: qatarProfile.address || '',
+                        phone: qatarProfile.phone || '',
+                        vatNumber: qatarProfile.vatNumber || '',
+                        crNumber: qatarProfile.crNumber || '',
+                        bankDetails: {
+                            bankName: qatarProfile.bankName || '',
+                            accountName: qatarProfile.accountName || '',
+                            accountNumber: qatarProfile.accountNumber || '',
+                            iban: qatarProfile.iban || '',
+                            swift: qatarProfile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+                        }
+                    };
+                    
+                    return result;
+                }
             }
             
-            // Default Qatar profile
-            return {
-                name: 'Fortune Gifts',
-                address: 'P.O Box 123456, Doha, Qatar',
-                phone: '+974 1234 5678',
-                vatNumber: '',
-                crNumber: 'CR123456789'
-            };
+            throw new Error('No company profile found');
         } catch (error) {
-            // Return default Qatar profile in case of error
-            return {
-                name: 'Fortune Gifts',
-                address: 'P.O Box 123456, Doha, Qatar',
-                phone: '+974 1234 5678',
-                vatNumber: '',
-                crNumber: 'CR123456789'
-            };
+            return null;
         }
     };
+
+    // Update useEffect for fetching company profile
+    useEffect(() => {
+        const fetchCompanyProfile = async () => {
+            if (clientData?.country) {
+                const profile = await getCompanyProfile(clientData.country);
+                setCompanyProfile(profile);
+                // Update invoice with default terms if not set
+                if (invoice && !invoice.termsAndConditions) {
+                    const updatedInvoice = {
+                        ...invoice,
+                        termsAndConditions: defaultTermsAndConditions
+                    };
+                    setInvoice(updatedInvoice);
+                }
+            }
+        };
+
+        fetchCompanyProfile();
+    }, [clientData?.country, invoice]);
+
+    // Update renderBankDetails
+    const renderBankDetails = () => {
+        if (!companyProfile) {
+            return (
+                <BankDetailsSection>
+                    <BankDetailsTitle>Bank Transfer Details</BankDetailsTitle>
+                    <div style={{ 
+                        color: colors.textTertiary, 
+                        fontSize: '14px',
+                        textAlign: 'center',
+                        padding: '20px'
+                    }}>
+                        No bank details available. Please configure company profile in Settings.
+                    </div>
+                </BankDetailsSection>
+            );
+        }
+
+        return (
+            <BankDetailsSection>
+                <BankDetailsTitle>Bank Transfer Details</BankDetailsTitle>
+                <BankDetailsGrid>
+                    <BankDetailItem>
+                        <BankDetailLabel>Bank Name</BankDetailLabel>
+                        <BankDetailValue>{companyProfile.bankDetails.bankName}</BankDetailValue>
+                    </BankDetailItem>
+                    <BankDetailItem>
+                        <BankDetailLabel>Account Name</BankDetailLabel>
+                        <BankDetailValue>{companyProfile.bankDetails.accountName}</BankDetailValue>
+                    </BankDetailItem>
+                    <BankDetailItem>
+                        <BankDetailLabel>Account Number</BankDetailLabel>
+                        <BankDetailValue>{companyProfile.bankDetails.accountNumber}</BankDetailValue>
+                    </BankDetailItem>
+                    <BankDetailItem>
+                        <BankDetailLabel>IBAN</BankDetailLabel>
+                        <BankDetailValue>{companyProfile.bankDetails.iban}</BankDetailValue>
+                    </BankDetailItem>
+                    <BankDetailItem>
+                        <BankDetailLabel>SWIFT Code</BankDetailLabel>
+                        <BankDetailValue>{companyProfile.bankDetails.swift}</BankDetailValue>
+                    </BankDetailItem>
+                </BankDetailsGrid>
+            </BankDetailsSection>
+        );
+    };
+
+    // Add useEffect to fetch company profile when client data changes
+    useEffect(() => {
+        const fetchCompanyProfile = async () => {
+            if (clientData?.country) {
+                const profile = await getCompanyProfile(clientData.country);
+                setCompanyProfile(profile);
+            }
+        };
+
+        fetchCompanyProfile();
+    }, [clientData?.country]);
 
     // Add handleDownloadPDF function
     const handleDownloadPDF = async () => {
@@ -584,7 +699,7 @@ const InvoiceView = () => {
             const clientCountry = invoice?.clientAddress?.country || 
                                 clientData?.country || 
                                 'qatar';
-            
+
             // Determine which company profile to use
             let companyProfile;
             try {
@@ -614,6 +729,7 @@ const InvoiceView = () => {
                 box-sizing: border-box;
                 position: relative;
                 font-family: Arial, sans-serif;
+                overflow: visible;
             `;
 
             // Add header
@@ -678,6 +794,7 @@ const InvoiceView = () => {
                 background-color: white;
                 border: 1px solid #e0e0e0;
                 border-radius: 10px;
+                page-break-inside: auto;
             `;
             itemsTable.innerHTML = `
                 <thead style="background-color: #004359; color: white;">
@@ -717,6 +834,8 @@ const InvoiceView = () => {
                 padding: 15px;
                 text-align: right;
                 border-radius: 0 0 4px 4px;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
             `;
             totalSection.innerHTML = `
                 <div style="font-size: 18px; margin-bottom: 4px;">Grand Total</div>
@@ -725,52 +844,66 @@ const InvoiceView = () => {
             `;
             pdfContainer.appendChild(totalSection);
 
-            // Add terms section if exists
-            if (invoice.termsAndConditions) {
-                const termsSection = document.createElement('div');
-                termsSection.style.cssText = `
-                    padding: 20px;
-                    background-color: white;
-                    border: 1px solid #e0e0e0;
-                    border-radius: 4px;
-                    margin-bottom: 20px;
-                `;
-                
-                // Format the terms and conditions text
-                const formattedTerms = invoice.termsAndConditions
-                    .split('\n') // Split by newlines
-                    .map(line => line.trim()) // Trim whitespace
-                    .filter(line => line.length > 0) // Remove empty lines
-                    .map(line => {
-                        // Check if line starts with a number (for numbered lists)
-                        if (/^\d+\./.test(line)) {
-                            return `<div style="margin-bottom: 8px; color: black; font-size: 16px;">${line}</div>`;
-                        }
-                        // Check if line is a heading (all caps or starts with common heading words)
-                        else if (line.toUpperCase() === line || 
-                                /^(Terms|Conditions|Payment|Delivery|Warranty|Cancellation|Force Majeure|Governing Law)/i.test(line)) {
-                            return `<div style="margin-top: 16px; margin-bottom: 8px; color: #004359; font-weight: bold; font-size: 18px;">${line}</div>`;
-                        }
-                        // Regular paragraph
-                        else {
-                            return `<div style="margin-bottom: 8px; color: black; font-size: 16px;">${line}</div>`;
-                        }
-                    })
-                    .join('');
-
-                termsSection.innerHTML = `
-                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 16px;">Terms and Conditions</div>
-                    <div style="color: black; font-size: 16px; line-height: 1.5;">
-                        ${formattedTerms}
-                    </div>
-                `;
-                pdfContainer.appendChild(termsSection);
-            }
-
             // Add spacer for signature section
             const spacer = document.createElement('div');
-            spacer.style.height = '150px';
+            spacer.style.height = '50px';
             pdfContainer.appendChild(spacer);
+
+            // Add Terms and Conditions and Bank Details in a two-column layout
+            const infoSectionsGrid = document.createElement('div');
+            infoSectionsGrid.style.cssText = `
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+                margin-bottom: 100px;
+                page-break-inside: avoid;
+            `;
+
+            // Terms and Conditions section
+            const termsSection = document.createElement('div');
+            termsSection.style.cssText = `
+                padding: 24px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            termsSection.innerHTML = `
+                <h3 style="font-size: 16px; font-weight: 600; color: #004359; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 4px; height: 16px; background-color: #004359; border-radius: 2px;"></span>
+                    Terms and Conditions
+                </h3>
+                <div style="font-size: 14px; line-height: 1.6; color: #666;">
+                    ${invoice.termsAndConditions || defaultTermsAndConditions}
+                </div>
+            `;
+            infoSectionsGrid.appendChild(termsSection);
+
+            // Bank Details section
+            const bankSection = document.createElement('div');
+            bankSection.style.cssText = `
+                padding: 24px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            bankSection.innerHTML = `
+                <h3 style="font-size: 16px; font-weight: 600; color: #004359; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 4px; height: 16px; background-color: #004359; border-radius: 2px;"></span>
+                    Bank Transfer Details
+                </h3>
+                <div style="font-size: 14px; line-height: 1.6; color: #666;">
+                    ${companyProfile?.bankDetails ? `
+                        <div style="margin-bottom: 8px;"><strong>Bank Name:</strong> ${companyProfile.bankDetails.bankName}</div>
+                        <div style="margin-bottom: 8px;"><strong>Account Name:</strong> ${companyProfile.bankDetails.accountName}</div>
+                        <div style="margin-bottom: 8px;"><strong>Account Number:</strong> ${companyProfile.bankDetails.accountNumber}</div>
+                        <div style="margin-bottom: 8px;"><strong>IBAN:</strong> ${companyProfile.bankDetails.iban}</div>
+                        <div style="margin-bottom: 8px;"><strong>SWIFT Code:</strong> ${companyProfile.bankDetails.swift}</div>
+                    ` : 'No bank details available'}
+                </div>
+            `;
+            infoSectionsGrid.appendChild(bankSection);
+
+            pdfContainer.appendChild(infoSectionsGrid);
 
             // Add signature section
             const signatureSection = document.createElement('div');
@@ -780,16 +913,26 @@ const InvoiceView = () => {
                 left: 20mm;
                 right: 20mm;
                 display: flex;
-                justify-content: space-between;
+                flex-direction: column;
+                background-color: white;
+                padding: 20px;
+                border-top: 1px solid #e0e0e0;
+                z-index: 1000;
+                page-break-inside: avoid;
             `;
             signatureSection.innerHTML = `
-                <div style="width: 45%;">
-                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                        <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
+                    </div>
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                        <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
+                    </div>
                 </div>
-                <div style="width: 45%;">
-                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
+                <div style="text-align: center; color: #666; font-size: 12px; font-style: italic; margin-top: 10px;">
+                    This is a computer-generated document and does not require a physical signature.
                 </div>
             `;
             pdfContainer.appendChild(signatureSection);
@@ -798,6 +941,14 @@ const InvoiceView = () => {
             pdfContainer.style.position = 'absolute';
             pdfContainer.style.left = '-9999px';
             document.body.appendChild(pdfContainer);
+
+            // Create PDF with A3 size
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a3',
+                compress: true
+            });
 
             // Convert to canvas with A3 dimensions
             const canvas = await html2canvas(pdfContainer, {
@@ -812,14 +963,6 @@ const InvoiceView = () => {
             // Remove temporary elements
             document.body.removeChild(pdfContainer);
 
-            // Create PDF with A3 size
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a3',
-                compress: true
-            });
-
             // Add the image to fit A3 page
             const imgData = canvas.toDataURL('image/png');
             pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
@@ -827,7 +970,30 @@ const InvoiceView = () => {
             // Save the PDF
             pdf.save(`Invoice_${invoice.customId || id}.pdf`);
         } catch (error) {
+            console.error('Error generating PDF:', error);
             alert('There was an error generating the PDF. Please try again.');
+        }
+    };
+
+    // Add this function to handle terms update
+    const handleTermsUpdate = async () => {
+        try {
+            const invoiceRef = doc(db, 'invoices', id);
+            await updateDoc(invoiceRef, {
+                termsAndConditions: editedTerms,
+                lastModified: new Date()
+            });
+            
+            // Update local state
+            setInvoice(prev => ({
+                ...prev,
+                termsAndConditions: editedTerms
+            }));
+            
+            setIsEditingTerms(false);
+        } catch (error) {
+            console.error('Error updating terms:', error);
+            alert('There was an error updating the notes. Please try again.');
         }
     };
 
@@ -836,18 +1002,18 @@ const InvoiceView = () => {
         return (
             <StyledInvoiceView className="StyledInvoiceView">
                 <Container>
-                    <MotionLink
+                    <Link
                         to="/invoices"
                         variants={variant('link')}
                         initial="hidden"
                         animate="visible"
                         exit="exit"
-                        className="MotionLink"
+                        className="Link"
                         style={{ marginBottom: '28px' }}
                     >
                         <Icon name={'arrow-left'} size={10} color={colors.purple} />
                         Go back
-                    </MotionLink>
+                    </Link>
                     
                     <Controller
                         variants={variant('controller')}
@@ -871,7 +1037,7 @@ const InvoiceView = () => {
     return (
         <StyledInvoiceView>
             <Container>
-                <MotionLink
+                <Link
                     to="/invoices"
                     variants={variant('link')}
                     initial="hidden"
@@ -880,7 +1046,7 @@ const InvoiceView = () => {
                 >
                     <Icon name="arrow-left" size={16} color="inherit" />
                     Go back
-                </MotionLink>
+                </Link>
 
                 <HeaderSection>
                     <HeaderTitle>Invoice</HeaderTitle>
@@ -950,10 +1116,10 @@ const InvoiceView = () => {
                                         </>
                                     )}
                                     {(isPending || isPartiallyPaid) && (
-                                        <Button
+                                <Button
                                             $primary
                                             onClick={() => handleStatusChange('paid')}
-                                            disabled={isLoading}
+                                    disabled={isLoading}
                                             data-action="mark-paid"
                                             style={{
                                                 backgroundColor: colors.green,
@@ -966,10 +1132,10 @@ const InvoiceView = () => {
                                                 color="white"
                                             />
                                             <span>Mark Paid</span>
-                                        </Button>
-                                    )}
-                                    <Button
-                                        $delete
+                                </Button>
+                            )}
+                            <Button
+                                $delete
                                         onClick={handleVoidClick}
                                         disabled={isLoading}
                                         data-action="void"
@@ -985,7 +1151,7 @@ const InvoiceView = () => {
                                             color={colors.red}
                                         />
                                         <span>Void</span>
-                                    </Button>
+                            </Button>
                                 </>
                             )}
                         </ButtonWrapper>
@@ -1020,7 +1186,7 @@ const InvoiceView = () => {
                                         style={{ marginRight: '8px', verticalAlign: 'middle' }}
                                     />
                                     Converted from Quotation: 
-                                    <MotionLink
+                                    <Link
                                         to={`/quotation/${invoice.quotationId}`}
                                         style={{ 
                                             color: 'white',
@@ -1032,7 +1198,7 @@ const InvoiceView = () => {
                                         }}
                                     >
                                         #{isFetchingQuotation ? 'Loading...' : (quotationData?.customId || invoice.quotationId)}
-                                    </MotionLink>
+                                    </Link>
                                 </span>
                             )}
                             <MetaInfo>
@@ -1138,13 +1304,56 @@ const InvoiceView = () => {
                         </Total>
                     </Details>
                     
-                    {/* Terms and conditions section */}
-                    {invoice.termsAndConditions && (
+                    <InfoSectionsGrid>
                         <TermsSection className="TermsSection">
-                            <TermsTitle>Terms and Conditions</TermsTitle>
-                            <TermsText>{invoice.termsAndConditions}</TermsText>
+                            <TermsHeader>
+                                <TermsTitle>Notes</TermsTitle>
+                                {!isEditingTerms ? (
+                                    <Button
+                                        onClick={() => {
+                                            setEditedTerms(invoice.termsAndConditions || defaultTermsAndConditions);
+                                            setIsEditingTerms(true);
+                                        }}
+                                        $secondary
+                                        style={{ padding: '6px 12px', fontSize: '13px' }}
+                                    >
+                                        <Icon name="edit" size={13} />
+                                        Edit
+                                    </Button>
+                                ) : (
+                                    <TermsActions>
+                                        <Button
+                                            onClick={() => setIsEditingTerms(false)}
+                                            $secondary
+                                            style={{ padding: '6px 12px', fontSize: '13px' }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleTermsUpdate}
+                                            $primary
+                                            style={{ padding: '6px 12px', fontSize: '13px' }}
+                                        >
+                                            Save
+                                        </Button>
+                                    </TermsActions>
+                                )}
+                            </TermsHeader>
+                            {isEditingTerms ? (
+                                <TermsTextArea
+                                    value={editedTerms}
+                                    onChange={(e) => setEditedTerms(e.target.value)}
+                                    placeholder="Enter notes..."
+                                />
+                            ) : (
+                                <TermsText>
+                                    {invoice.termsAndConditions || defaultTermsAndConditions}
+                                </TermsText>
+                            )}
                         </TermsSection>
-                    )}
+
+                        {renderBankDetails()}
+                    </InfoSectionsGrid>
                 </InfoCard>
             </Container>
 
@@ -1188,12 +1397,12 @@ const InvoiceView = () => {
                                             color="white"
                                         />
                                         <span>Generate DO</span>
-                                    </Button>
+                        </Button>
                                 </>
-                            )}
+                    )}
                             {(isPending || isPartiallyPaid) && (
-                                <Button
-                                    $primary
+                        <Button
+                            $primary
                                     onClick={() => handleStatusChange('paid')}
                                     disabled={isLoading}
                                     data-action="mark-paid"
@@ -1213,7 +1422,7 @@ const InvoiceView = () => {
                             <Button
                                 $delete
                                 onClick={handleVoidClick}
-                                disabled={isLoading}
+                            disabled={isLoading}
                                 data-action="void"
                                 style={{
                                     backgroundColor: 'transparent',
@@ -1227,7 +1436,7 @@ const InvoiceView = () => {
                                     color={colors.red}
                                 />
                                 <span>Void</span>
-                            </Button>
+                        </Button>
                         </>
                     )}
                 </ButtonWrapper>

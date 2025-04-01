@@ -80,7 +80,7 @@ export const MotionLink = styled(motion(RouterLink))`
     text-decoration: none;
     margin-bottom: 32px;
     width: fit-content;
-    
+
     &:hover {
         color: ${({ theme }) => theme.colors.purple};
     }
@@ -515,19 +515,68 @@ export const TermsSection = styled.div`
     border-radius: 8px;
 `;
 
-export const TermsTitle = styled.h3`
-    font-size: 14px;
-    font-weight: 600;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    margin: 0 0 16px;
+export const TermsHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
 `;
 
-export const TermsText = styled.p`
-    font-size: 14px;
-    color: ${({ theme }) => theme.colors.textTertiary};
+export const TermsTitle = styled.h3`
+    font-size: 16px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textPrimary};
     margin: 0;
-    line-height: 1.5;
-    white-space: pre-wrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 16px;
+        background-color: ${({ theme }) => theme.colors.purple};
+        border-radius: 2px;
+    }
+`;
+
+export const TermsText = styled.div`
+    font-size: 14px;
+    line-height: 1.6;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    white-space: pre-line;
+    padding: 8px;
+    background-color: ${({ theme }) => theme.colors.background};
+    border-radius: 4px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+export const TermsTextArea = styled.textarea`
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background-color: ${({ theme }) => theme.colors.background};
+    resize: vertical;
+    margin-bottom: 12px;
+    font-family: inherit;
+
+    &:focus {
+        outline: none;
+        border-color: ${({ theme }) => theme.colors.purple};
+        box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.purple}20;
+    }
+`;
+
+export const TermsActions = styled.div`
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
 `;
 
 export const ModalOverlay = styled.div`
@@ -631,27 +680,16 @@ export const ModalActions = styled.div`
 
 export const HeaderSection = styled.div`
     display: flex;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-
-    @media (min-width: 768px) {
-        margin-bottom: 32px;
-        padding-bottom: 20px;
-    }
 `;
 
 export const HeaderTitle = styled.h1`
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 600;
     color: ${({ theme }) => theme.colors.textPrimary};
     margin: 0;
-    letter-spacing: -0.3px;
-
-    @media (min-width: 768px) {
-        font-size: 24px;
-    }
 `;
 
 export const DownloadButton = styled.button`
@@ -680,5 +718,74 @@ export const DownloadButton = styled.button`
     @media (min-width: 768px) {
         padding: 8px 24px;
         font-size: 15px;
+    }
+`;
+
+export const BankDetailsSection = styled.div`
+    margin-top: 32px;
+    padding: 24px;
+    background-color: ${({ theme }) => theme.colors.backgroundAlt || theme.colors.background};
+    border-radius: 8px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    height: 100%;
+`;
+
+export const BankDetailsTitle = styled.h3`
+    font-size: 16px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 16px;
+        background-color: ${({ theme }) => theme.colors.purple};
+        border-radius: 2px;
+    }
+`;
+
+export const BankDetailsGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+`;
+
+export const BankDetailItem = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    background-color: ${({ theme }) => theme.colors.background};
+    border-radius: 4px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+export const BankDetailLabel = styled.span`
+    font-size: 12px;
+    color: ${({ theme }) => theme.colors.textTertiary};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+`;
+
+export const BankDetailValue = styled.span`
+    font-size: 14px;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-weight: 500;
+`;
+
+export const InfoSectionsGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-top: 32px;
+
+    @media (min-width: 768px) {
+        grid-template-columns: 1fr 1fr;
     }
 `;
