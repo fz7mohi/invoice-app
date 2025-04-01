@@ -1557,7 +1557,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                             <PaymentFormLabel>Date of Payment</PaymentFormLabel>
                             <FormInput
                                 type="date"
-                                value={formatDate(new Date(), 'YYYY-MM-DD')}
+                                value={paymentDetails.date}
                                 onChange={(e) => setPaymentDetails(prev => ({
                                     ...prev,
                                     date: e.target.value
