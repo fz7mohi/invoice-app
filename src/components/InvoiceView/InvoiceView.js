@@ -1695,65 +1695,25 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         <ButtonWrapper className="ButtonWrapper">
                             {!isVoid && !isPaid && (
                                 <>
-                                    {isPending && (
-                                        <>
-                                            <Button
-                                                $primary
-                                                onClick={() => handleStatusChange('partially_paid')}
-                                                disabled={isLoading}
-                                                data-action="partially-paid"
-                                                style={{
-                                                    backgroundColor: colors.orange,
-                                                    border: 'none'
-                                                }}
-                                            >
-                                                <Icon 
-                                                    name="clock" 
-                                                    size={14} 
-                                                    color="white"
-                                                />
-                                                <span>Partially Paid</span>
-                                            </Button>
-                                            <Button
-                                                $primary
-                                                onClick={() => {/* TODO: Implement DO generation */}}
-                                                disabled={isLoading}
-                                                data-action="generate-do"
-                                                style={{
-                                                    backgroundColor: colors.purple,
-                                                    border: 'none'
-                                                }}
-                                            >
-                                                <Icon 
-                                                    name="file-text" 
-                                                    size={14} 
-                                                    color="white"
-                                                />
-                                                <span>Generate DO</span>
-                                            </Button>
-                                        </>
-                                    )}
-                                    {(isPending || isPartiallyPaid) && (
-                                <Button
-                                            $primary
-                                            onClick={() => handleStatusChange('paid')}
-                                    disabled={isLoading}
-                                            data-action="mark-paid"
-                                            style={{
-                                                backgroundColor: colors.green,
-                                                border: 'none'
-                                            }}
-                                        >
-                                            <Icon 
-                                                name="check" 
-                                                size={14} 
-                                                color="white"
-                                            />
-                                            <span>Mark Paid</span>
-                                </Button>
-                            )}
-                            <Button
-                                $delete
+                                    <Button
+                                        $primary
+                                        onClick={() => {/* TODO: Implement DO generation */}}
+                                        disabled={isLoading}
+                                        data-action="generate-do"
+                                        style={{
+                                            backgroundColor: colors.purple,
+                                            border: 'none'
+                                        }}
+                                    >
+                                        <Icon 
+                                            name="file-text" 
+                                            size={14} 
+                                            color="white"
+                                        />
+                                        <span>Generate DO</span>
+                                    </Button>
+                                    <Button
+                                        $delete
                                         onClick={handleVoidClick}
                                         disabled={isLoading}
                                         data-action="void"
@@ -1769,7 +1729,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                             color={colors.red}
                                         />
                                         <span>Void</span>
-                            </Button>
+                                    </Button>
                                 </>
                             )}
                         </ButtonWrapper>
@@ -2233,63 +2193,23 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 <ButtonWrapper>
                     {!isVoid && !isPaid && (
                         <>
-                            {isPending && (
-                                <>
-                                    <Button
-                                        $primary
-                                        onClick={() => handleStatusChange('partially_paid')}
-                                        disabled={isLoading}
-                                        data-action="partially-paid"
-                                        style={{
-                                            backgroundColor: colors.orange,
-                                            border: 'none'
-                                        }}
-                                    >
-                                        <Icon 
-                                            name="clock" 
-                                            size={14} 
-                                            color="white"
-                                        />
-                                        <span>Partially Paid</span>
-                                    </Button>
-                                    <Button
-                                        $primary
-                                        onClick={() => {/* TODO: Implement DO generation */}}
-                                        disabled={isLoading}
-                                        data-action="generate-do"
-                                        style={{
-                                            backgroundColor: colors.purple,
-                                            border: 'none'
-                                        }}
-                                    >
-                                        <Icon 
-                                            name="file-text" 
-                                            size={14} 
-                                            color="white"
-                                        />
-                                        <span>Generate DO</span>
-                                    </Button>
-                                </>
-                            )}
-                            {(isPending || isPartiallyPaid) && (
-                                <Button
-                                    $primary
-                                    onClick={() => handleStatusChange('paid')}
-                                    disabled={isLoading}
-                                    data-action="mark-paid"
-                                    style={{
-                                        backgroundColor: colors.green,
-                                        border: 'none'
-                                    }}
-                                >
-                                    <Icon 
-                                        name="check" 
-                                        size={14} 
-                                        color="white"
-                                    />
-                                    <span>Mark Paid</span>
-                                </Button>
-                            )}
+                            <Button
+                                $primary
+                                onClick={() => {/* TODO: Implement DO generation */}}
+                                disabled={isLoading}
+                                data-action="generate-do"
+                                style={{
+                                    backgroundColor: colors.purple,
+                                    border: 'none'
+                                }}
+                            >
+                                <Icon 
+                                    name="file-text" 
+                                    size={14} 
+                                    color="white"
+                                />
+                                <span>Generate DO</span>
+                            </Button>
                             <Button
                                 $delete
                                 onClick={handleVoidClick}

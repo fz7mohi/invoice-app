@@ -13,7 +13,7 @@ import html2canvas from 'html2canvas';
 import {
     StyledReceiptView,
     Container,
-    MotionLink,
+    StyledLink,
     Controller,
     Text,
     ButtonWrapper,
@@ -62,6 +62,20 @@ import {
     StatusContainer,
     HeaderSection,
     HeaderTitle,
+    InfoSectionsGrid,
+    PaymentDetailsSection,
+    PaymentDetailsHeader,
+    PaymentDetailsTitle,
+    PaymentDetailsGrid,
+    PaymentDetailItem,
+    PaymentDetailLabel,
+    PaymentDetailValue,
+    BankDetailsSection,
+    BankDetailsTitle,
+    BankDetailsGrid,
+    BankDetailItem,
+    BankDetailLabel,
+    BankDetailValue,
 } from './ReceiptViewStyles';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
@@ -452,7 +466,7 @@ const ReceiptView = () => {
             `;
             paymentSection.innerHTML = `
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Payment Details</div>
-                <div style="font-size: 16px; margin-bottom: 10px;">Amount Paid: ${formatPrice(receipt.amount, receipt.currency)}</div>
+                <div style="font-size: 22px; margin-bottom: 10px; font-weight: bold;">Amount Received: ${formatPrice(receipt.amount, receipt.currency)}</div>
                 ${clientHasVAT ? `<div style="font-size: 16px; margin-bottom: 10px;">VAT (5%): ${formatPrice(calculateVAT(receipt.amount), receipt.currency)}</div>` : ''}
                 <div style="font-size: 16px; margin-bottom: 10px;">Payment Mode: ${receipt.mode || 'Not specified'}</div>
                 ${receipt.mode === 'cheque' && receipt.chequeNumber ? `<div style="font-size: 16px; margin-bottom: 10px;">Cheque Number: ${receipt.chequeNumber}</div>` : ''}
@@ -619,23 +633,51 @@ const ReceiptView = () => {
         );
     };
 
+    const renderBankDetails = () => {
+        if (!receipt?.bankDetails) return null;
+
+        return (
+            <BankDetailsSection>
+                <BankDetailsTitle>Bank Details</BankDetailsTitle>
+                <BankDetailsGrid>
+                    <BankDetailItem>
+                        <BankDetailLabel>Bank Name</BankDetailLabel>
+                        <BankDetailValue>{receipt.bankDetails.bankName}</BankDetailValue>
+                    </BankDetailItem>
+                    <BankDetailItem>
+                        <BankDetailLabel>Account Number</BankDetailLabel>
+                        <BankDetailValue>{receipt.bankDetails.accountNumber}</BankDetailValue>
+                    </BankDetailItem>
+                    <BankDetailItem>
+                        <BankDetailLabel>IBAN</BankDetailLabel>
+                        <BankDetailValue>{receipt.bankDetails.iban}</BankDetailValue>
+                    </BankDetailItem>
+                    <BankDetailItem>
+                        <BankDetailLabel>Swift Code</BankDetailLabel>
+                        <BankDetailValue>{receipt.bankDetails.swiftCode}</BankDetailValue>
+                    </BankDetailItem>
+                </BankDetailsGrid>
+            </BankDetailsSection>
+        );
+    };
+
     // Show loading state
     if (isLoading || !receipt) {
         return (
             <StyledReceiptView className="StyledReceiptView">
                 <Container>
-                    <MotionLink
+                    <StyledLink
                         to="/receipts"
                         variants={variant('link')}
                         initial="hidden"
                         animate="visible"
                         exit="exit"
-                        className="MotionLink"
+                        className="StyledLink"
                         style={{ marginBottom: '28px' }}
                     >
                         <Icon name={'arrow-left'} size={10} color={colors.purple} />
                         Go back
-                    </MotionLink>
+                    </StyledLink>
                     
                     <HeaderSection>
                         <HeaderTitle>Receipt</HeaderTitle>
@@ -679,37 +721,37 @@ const ReceiptView = () => {
     };
 
     return (
-        <StyledReceiptView className="StyledReceiptView">
+        <StyledReceiptView>
             <Container>
-                <MotionLink
-                    to="/receipts"
+                <StyledLink
+                    to="/invoices"
                     variants={variant('link')}
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    className="MotionLink"
-                    style={{ marginBottom: '28px' }}
+                    className="StyledLink"
                 >
-                    <Icon name={'arrow-left'} size={10} color={colors.purple} />
+                    <Icon name="arrow-left" size={16} color="inherit" />
                     Go back
-                </MotionLink>
-                
+                </StyledLink>
+
                 <HeaderSection>
                     <HeaderTitle>Receipt</HeaderTitle>
                 </HeaderSection>
-                
-                {/* Status bar with action buttons */}
+
                 <Controller
                     variants={variant('controller')}
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    className="Controller"
                 >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <StatusBadge status={receipt.status}>
                             <span>
-                                {receipt.status === 'paid' ? 'Paid' : 'Pending'}
+                                {receipt.status === 'paid' ? 'Paid' : 
+                                 receipt.status === 'pending' ? 'Pending' : 
+                                 receipt.status === 'partially_paid' ? 'Partially Paid' : 
+                                 receipt.status === 'void' ? 'Void' : 'Draft'}
                             </span>
                         </StatusBadge>
                         <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
@@ -717,28 +759,8 @@ const ReceiptView = () => {
                             Share
                         </DownloadButton>
                     </div>
-                    
-                    {isDesktop && (
-                        <ButtonWrapper className="ButtonWrapper">
-                            <Button
-                                $secondary
-                                onClick={handleEditClick}
-                                disabled={isLoading}
-                            >
-                                Edit
-                            </Button>
-                            <Button
-                                $delete
-                                onClick={handleDeleteClick}
-                                disabled={isLoading}
-                            >
-                                Delete
-                            </Button>
-                        </ButtonWrapper>
-                    )}
                 </Controller>
 
-                {/* Receipt content */}
                 <InfoCard
                     id="receipt-content"
                     variants={variant('info')}
@@ -752,7 +774,7 @@ const ReceiptView = () => {
                             <InfoID>
                                 <span>#</span>{receipt.customId}
                             </InfoID>
-                            <InfoDesc>{receipt.description || 'No description'}</InfoDesc>
+                            <InfoDesc>Payment Receipt</InfoDesc>
                             <MetaInfo>
                                 <MetaItem>
                                     <Icon name="calendar" size={13} />
@@ -772,49 +794,69 @@ const ReceiptView = () => {
                         <AddressGroup align="right">
                             <AddressTitle>Receipt #</AddressTitle>
                             <AddressText>
-                                {receipt.customId || receipt.id}
+                                {receipt.customId}
                             </AddressText>
                             <br />
                             <AddressTitle>Invoice #</AddressTitle>
                             <AddressText>
-                                {invoiceCustomId || receipt.invoiceId || 'N/A'}
-                            </AddressText>
-                            <br />
-                            <AddressTitle>Payment Date</AddressTitle>
-                            <AddressText>
-                                {formatDate(receipt.paymentDate)}
+                                {receipt.invoiceId}
                             </AddressText>
                         </AddressGroup>
                     </InfoAddresses>
                     
-                    {receipt.clientEmail && (
-                        <AddressGroup>
-                            <AddressTitle>Sent to</AddressTitle>
-                            <AddressText>
-                                <span style={{ display: 'flex', alignItems: 'center' }}>
-                                    <Icon name="mail" size={13} style={{ marginRight: '6px', color: colors.purple }} />
-                                    {receipt.clientEmail}
-                                </span>
-                            </AddressText>
-                        </AddressGroup>
-                    )}
-                    
-                    {/* Payment Details Section */}
                     <Details className="Details">
+                        <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
+                            <HeaderCell>Item Name</HeaderCell>
+                            <HeaderCell>QTY.</HeaderCell>
+                            <HeaderCell>Price</HeaderCell>
+                            {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
+                            <HeaderCell>Total</HeaderCell>
+                        </ItemsHeader>
+                        
+                        <Items>
+                            {receipt.items && receipt.items.map((item, index) => {
+                                const itemVAT = clientHasVAT ? calculateVAT(item.total || 0) : 0;
+                                
+                                return (
+                                    <Item key={index} showVat={clientHasVAT}>
+                                        <div className="item-details">
+                                            <ItemName>{item.name}</ItemName>
+                                            {item.description && (
+                                                <ItemDescription>{item.description}</ItemDescription>
+                                            )}
+                                            <div className="item-mobile-details">
+                                                <span>
+                                                    {item.quantity || 0} × {formatPrice(item.price || 0, receipt.currency)}
+                                                    {clientHasVAT && ` (+${formatPrice(itemVAT, receipt.currency)} VAT)`}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <ItemQty>{item.quantity || 0}</ItemQty>
+                                        <ItemPrice>
+                                            {formatPrice(item.price || 0, receipt.currency)}
+                                        </ItemPrice>
+                                        {clientHasVAT && (
+                                            <ItemVat>
+                                                {formatPrice(itemVAT, receipt.currency)}
+                                            </ItemVat>
+                                        )}
+                                        <ItemTotal>
+                                            {formatPrice(clientHasVAT ? 
+                                                calculateTotalWithVAT(item.total || 0) : 
+                                                (item.total || 0), 
+                                            receipt.currency)}
+                                        </ItemTotal>
+                                    </Item>
+                                );
+                            })}
+                        </Items>
+                        
                         <Total className="Total">
                             <div>
-                                <TotalText>Amount Paid</TotalText>
+                                <TotalText>Amount Received</TotalText>
                                 {clientHasVAT && (
                                     <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.8, color: 'white' }}>
-                                        Includes VAT: {formatPrice(calculateVAT(receipt.amount), receipt.currency)}
-                                    </div>
-                                )}
-                                <div style={{ marginTop: '8px', fontSize: '13px', opacity: 0.9, color: 'white' }}>
-                                    Payment Mode: {receipt.mode || 'Not specified'}
-                                </div>
-                                {receipt.mode === 'cheque' && receipt.chequeNumber && (
-                                    <div style={{ marginTop: '4px', fontSize: '13px', opacity: 0.9, color: 'white' }}>
-                                        Cheque Number: {receipt.chequeNumber}
+                                        Includes VAT: {formatPrice(vatAmount, receipt.currency)}
                                     </div>
                                 )}
                             </div>
@@ -823,85 +865,48 @@ const ReceiptView = () => {
                             </TotalAmount>
                         </Total>
                     </Details>
+                    
+                    <InfoSectionsGrid>
+                        <PaymentDetailsSection>
+                            <PaymentDetailsHeader>
+                                <PaymentDetailsTitle>Payment Details</PaymentDetailsTitle>
+                            </PaymentDetailsHeader>
+                            <PaymentDetailsGrid>
+                                <PaymentDetailItem>
+                                    <PaymentDetailLabel>Payment Mode</PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {receipt.mode.charAt(0).toUpperCase() + receipt.mode.slice(1)}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                {receipt.mode === 'cheque' && receipt.chequeNumber && (
+                                    <PaymentDetailItem>
+                                        <PaymentDetailLabel>Cheque Number</PaymentDetailLabel>
+                                        <PaymentDetailValue>
+                                            {receipt.chequeNumber}
+                                        </PaymentDetailValue>
+                                    </PaymentDetailItem>
+                                )}
+                                <PaymentDetailItem>
+                                    <PaymentDetailLabel>Payment Date</PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {formatDate(receipt.paymentDate)}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                {receipt.notes && (
+                                    <PaymentDetailItem>
+                                        <PaymentDetailLabel>Notes</PaymentDetailLabel>
+                                        <PaymentDetailValue>
+                                            {receipt.notes}
+                                        </PaymentDetailValue>
+                                    </PaymentDetailItem>
+                                )}
+                            </PaymentDetailsGrid>
+                        </PaymentDetailsSection>
+
+                        {renderBankDetails()}
+                    </InfoSectionsGrid>
                 </InfoCard>
             </Container>
-            
-            {/* Mobile action buttons */}
-            {!isDesktop && (
-                <ButtonWrapper className="ButtonWrapper">
-                    <Button
-                        $secondary
-                        onClick={handleEditClick}
-                        disabled={isLoading}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        $delete
-                        onClick={handleDeleteClick}
-                        disabled={isLoading}
-                    >
-                        Delete
-                    </Button>
-                </ButtonWrapper>
-            )}
-            
-            {/* Delete confirmation modal */}
-            {showDeleteModal && (
-                <ModalOverlay>
-                    <ModalContent>
-                        <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            marginBottom: '1.5rem',
-                            gap: '12px'
-                        }}>
-                            <div style={{
-                                width: '36px',
-                                height: '36px',
-                                borderRadius: '10px',
-                                backgroundColor: '#FFE5E5',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
-                                <Icon name="trash" size={18} color="#FF4806" />
-                            </div>
-                            <h2 style={{ 
-                                margin: 0,
-                                fontSize: '1.25rem',
-                                color: colors.text,
-                                fontWeight: '600'
-                            }}>Delete Receipt</h2>
-                        </div>
-                        <p style={{ 
-                            marginBottom: '2rem',
-                            color: colors.text,
-                            fontSize: '0.95rem',
-                            lineHeight: '1.5',
-                            opacity: 0.8
-                        }}>
-                            Are you sure you want to delete receipt #{receipt?.customId || id}?
-                        </p>
-                        <ModalActions>
-                            <Button
-                                $secondary
-                                onClick={() => setShowDeleteModal(false)}
-                                style={{ marginRight: '8px' }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                $delete
-                                onClick={handleConfirmDelete}
-                                disabled={isDeleting}
-                            >
-                                Delete
-                            </Button>
-                        </ModalActions>
-                    </ModalContent>
-                </ModalOverlay>
-            )}
         </StyledReceiptView>
     );
 };

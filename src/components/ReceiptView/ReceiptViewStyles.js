@@ -2,160 +2,170 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
-export const StyledReceiptView = styled.main`
-    padding: 28px 24px 0;
-    width: 100%;
-    min-height: 100%;
-    margin-bottom: 120px;
-    background-color: ${({ theme }) => theme.colors.background};
-    transition: background-color 0.3s ease;
+export const StyledReceiptView = styled(motion.div)`
+    min-height: 100vh;
+    background-color: ${({ theme }) => theme?.backgrounds?.main || '#141625'};
+    padding: 32px 24px;
+    transition: all 0.3s ease;
 
     @media (min-width: 768px) {
-        padding: 40px 0 0;
-        margin-bottom: 0;
+        padding: 48px 32px;
     }
 `;
 
 export const Container = styled.div`
-    width: 100%;
-    max-width: 780px;
+    max-width: 1000px;
     margin: 0 auto;
 `;
 
-export const MotionLink = styled(motion(Link))`
+export const Text = styled.span`
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+    font-size: 13px;
+    font-weight: 500;
+`;
+
+export const StyledLink = styled(motion.div)`
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    color: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
     text-decoration: none;
-    font-weight: 700;
-    font-size: 12px;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
-    margin-bottom: 28px;
+    font-weight: 500;
+    font-size: 15px;
+    margin-bottom: 32px;
     cursor: pointer;
-    transition: color 0.3s ease;
+    transition: all 0.2s ease;
 
     &:hover {
-        color: ${({ theme }) => theme.colors.purple};
+        color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
     }
 `;
 
-export const Controller = styled(motion.div)`
+export const HeaderSection = styled.div`
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    justify-content: space-between;
+    margin-bottom: 32px;
+`;
+
+export const HeaderTitle = styled.h1`
+    font-size: 32px;
+    font-weight: 700;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    margin: 0;
+`;
+
+export const Controller = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    gap: 16px;
+    flex-wrap: wrap;
 
     @media (min-width: 768px) {
-        margin-bottom: 32px;
+        flex-wrap: nowrap;
     }
-`;
-
-export const Text = styled.span`
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 12px;
-    line-height: 1.25;
-`;
-
-export const ButtonWrapper = styled.div`
-    display: flex;
-    gap: 8px;
 `;
 
 export const InfoCard = styled(motion.div)`
-    background: ${({ theme }) => theme.colors.cardBg};
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 24px;
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    transition: all 0.3s ease;
 
     @media (min-width: 768px) {
-        padding: 32px;
-        margin-bottom: 32px;
+        padding: 48px;
     }
 `;
 
 export const InfoHeader = styled.div`
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     margin-bottom: 32px;
-`;
-
-export const InfoID = styled.h2`
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.5px;
-    margin: 0 0 8px;
-
-    span {
-        color: ${({ theme }) => theme.colors.textTertiary};
-    }
-`;
-
-export const InfoDesc = styled.p`
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 12px;
-    line-height: 1.25;
-    margin: 0 0 24px;
 `;
 
 export const InfoGroup = styled.div`
     display: flex;
     flex-direction: column;
+    gap: 8px;
+`;
+
+export const InfoID = styled.div`
+    font-size: 24px;
+    font-weight: 700;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    span {
+        color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+    }
+`;
+
+export const InfoDesc = styled.div`
+    font-size: 15px;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
 `;
 
 export const InfoAddresses = styled.div`
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 32px;
     margin-bottom: 32px;
 
     @media (min-width: 768px) {
-        gap: 48px;
+        grid-template-columns: 1fr 1fr;
     }
 `;
 
 export const AddressGroup = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     text-align: ${({ align }) => align || 'left'};
 `;
 
-export const AddressTitle = styled.h3`
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
-    margin: 0 0 8px;
+export const AddressTitle = styled.div`
+    font-size: 13px;
+    font-weight: 500;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+    text-transform: uppercase;
+    letter-spacing: 1px;
 `;
 
-export const AddressText = styled.p`
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 12px;
-    line-height: 1.25;
-    margin: 0;
+export const AddressText = styled.div`
+    font-size: 15px;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    line-height: 1.5;
 `;
 
 export const Details = styled.div`
-    margin-top: 32px;
-    padding: 24px;
-    background: ${({ theme }) => theme.colors.itemBg};
-    border-radius: 8px;
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 32px;
 `;
 
 export const ItemsHeader = styled.div`
     display: grid;
-    grid-template-columns: ${({ showVat }) => showVat ? '2fr 1fr 1fr 1fr 1fr' : '2fr 1fr 1fr 1fr'};
+    grid-template-columns: 2fr 1fr 1fr ${({ showVat }) => showVat ? '1fr' : ''} 1fr;
     gap: 16px;
-    margin-bottom: 24px;
-    padding: 0 16px;
+    padding: 24px;
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
+    border-bottom: 1px solid ${({ theme }) => theme?.borders || '#252945'};
 `;
 
 export const HeaderCell = styled.div`
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
+    font-size: 13px;
+    font-weight: 500;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+    text-transform: uppercase;
+    letter-spacing: 1px;
     text-align: ${({ align }) => align || 'left'};
 `;
 
@@ -163,15 +173,22 @@ export const Items = styled.div`
     display: flex;
     flex-direction: column;
     gap: 24px;
+    padding: 24px;
 `;
 
 export const Item = styled.div`
     display: grid;
-    grid-template-columns: ${({ showVat }) => showVat ? '2fr 1fr 1fr 1fr 1fr' : '2fr 1fr 1fr 1fr'};
+    grid-template-columns: 2fr 1fr 1fr ${({ showVat }) => showVat ? '1fr' : ''} 1fr;
     gap: 16px;
+    align-items: center;
     padding: 16px;
-    background: ${({ theme }) => theme.colors.itemBg};
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
     border-radius: 8px;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background-color: ${({ theme }) => theme?.backgrounds?.hover || '#252945'};
+    }
 
     .item-details {
         display: flex;
@@ -181,12 +198,11 @@ export const Item = styled.div`
 
     .item-mobile-details {
         display: none;
-        color: ${({ theme }) => theme.colors.textSecondary};
-        font-size: 11px;
-        line-height: 1.25;
+        font-size: 13px;
+        color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
     }
 
-    @media (max-width: 767px) {
+    @media (max-width: 768px) {
         grid-template-columns: 1fr;
         gap: 8px;
 
@@ -200,79 +216,246 @@ export const Item = styled.div`
     }
 `;
 
-export const ItemName = styled.span`
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
+export const ItemName = styled.div`
+    font-size: 15px;
+    font-weight: 500;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
 `;
 
-export const ItemDescription = styled.span`
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 11px;
-    line-height: 1.25;
+export const ItemDescription = styled.div`
+    font-size: 13px;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
 `;
 
-export const ItemQty = styled.span`
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
+export const ItemQty = styled.div`
+    font-size: 15px;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
     text-align: center;
 `;
 
-export const ItemPrice = styled.span`
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
+export const ItemPrice = styled.div`
+    font-size: 15px;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
     text-align: right;
 `;
 
-export const ItemVat = styled.span`
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
+export const ItemVat = styled.div`
+    font-size: 15px;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
     text-align: right;
 `;
 
-export const ItemTotal = styled.span`
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
+export const ItemTotal = styled.div`
+    font-size: 15px;
+    font-weight: 500;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
     text-align: right;
 `;
 
 export const Total = styled.div`
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     padding: 24px;
-    background: ${({ theme }) => theme.colors.totalBg};
-    border-radius: 8px;
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
+    border-top: 1px solid ${({ theme }) => theme?.borders || '#252945'};
 `;
 
-export const TotalText = styled.span`
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
+export const TotalText = styled.div`
+    font-size: 15px;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
 `;
 
-export const TotalAmount = styled.span`
-    color: ${({ theme }) => theme.colors.textPrimary};
+export const TotalAmount = styled.div`
     font-size: 24px;
     font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.5px;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+`;
+
+export const MetaInfo = styled.div`
+    display: flex;
+    gap: 24px;
+    margin-top: 8px;
+`;
+
+export const MetaItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+`;
+
+export const StatusBadge = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    background-color: ${({ status, theme }) => {
+        switch (status) {
+            case 'paid':
+                return 'rgba(51, 214, 159, 0.1)';
+            case 'pending':
+                return 'rgba(255, 143, 0, 0.1)';
+            case 'partially_paid':
+                return 'rgba(255, 143, 0, 0.1)';
+            case 'void':
+                return 'rgba(255, 72, 6, 0.1)';
+            default:
+                return 'rgba(223, 227, 250, 0.1)';
+        }
+    }};
+    color: ${({ status, theme }) => {
+        switch (status) {
+            case 'paid':
+                return '#33D69F';
+            case 'pending':
+                return '#FF8F00';
+            case 'partially_paid':
+                return '#FF8F00';
+            case 'void':
+                return '#FF4806';
+            default:
+                return '#DFE3FA';
+        }
+    }};
+`;
+
+export const DownloadButton = styled.button`
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    background-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background-color: ${({ theme }) => theme?.colors?.purpleHover || '#9277FF'};
+    }
+`;
+
+export const InfoSectionsGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+
+    @media (min-width: 768px) {
+        grid-template-columns: 1fr 1fr;
+    }
+`;
+
+export const PaymentDetailsSection = styled.div`
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+`;
+
+export const PaymentDetailsHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+`;
+
+export const PaymentDetailsTitle = styled.h3`
+    font-size: 16px;
+    font-weight: 600;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 16px;
+        background-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+        border-radius: 2px;
+    }
+`;
+
+export const PaymentDetailsGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+`;
+
+export const PaymentDetailItem = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+`;
+
+export const PaymentDetailLabel = styled.div`
+    font-size: 13px;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+`;
+
+export const PaymentDetailValue = styled.div`
+    font-size: 15px;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    font-weight: 500;
+`;
+
+export const BankDetailsSection = styled.div`
+    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+`;
+
+export const BankDetailsTitle = styled.h3`
+    font-size: 16px;
+    font-weight: 600;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    margin: 0 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 16px;
+        background-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+        border-radius: 2px;
+    }
+`;
+
+export const BankDetailsGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+`;
+
+export const BankDetailItem = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+`;
+
+export const BankDetailLabel = styled.div`
+    font-size: 13px;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+`;
+
+export const BankDetailValue = styled.div`
+    font-size: 15px;
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
+    font-weight: 500;
 `;
 
 export const TermsSection = styled.div`
@@ -296,72 +479,6 @@ export const TermsText = styled.p`
     line-height: 1.25;
     margin: 0;
     white-space: pre-wrap;
-`;
-
-export const StatusBadge = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px;
-    border-radius: 6px;
-    background: ${({ status, theme }) => {
-        switch (status) {
-            case 'paid':
-                return theme.colors.statusPaidBg;
-            case 'pending':
-                return theme.colors.statusPendingBg;
-            default:
-                return theme.colors.statusDraftBg;
-        }
-    }};
-    color: ${({ status, theme }) => {
-        switch (status) {
-            case 'paid':
-                return theme.colors.statusPaidText;
-            case 'pending':
-                return theme.colors.statusPendingText;
-            default:
-                return theme.colors.statusDraftText;
-        }
-    }};
-    font-weight: 700;
-    font-size: 12px;
-    line-height: 1.25;
-    text-transform: capitalize;
-`;
-
-export const MetaInfo = styled.div`
-    display: flex;
-    gap: 16px;
-`;
-
-export const MetaItem = styled.span`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 12px;
-    line-height: 1.25;
-`;
-
-export const DownloadButton = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: ${({ theme }) => theme.colors.purple};
-    border: none;
-    border-radius: 6px;
-    color: white;
-    font-weight: 700;
-    font-size: 12px;
-    line-height: 1.25;
-    cursor: pointer;
-    transition: opacity 0.3s ease;
-
-    &:hover {
-        opacity: 0.8;
-    }
 `;
 
 export const ActionButtons = styled.div`
@@ -474,17 +591,4 @@ export const StatusContainer = styled.div`
     display: flex;
     align-items: center;
     gap: 16px;
-`;
-
-export const HeaderSection = styled.div`
-    margin-bottom: 24px;
-`;
-
-export const HeaderTitle = styled.h1`
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 32px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.8px;
-    margin: 0;
 `; 
