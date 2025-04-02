@@ -6,6 +6,7 @@ import Invoices from '../Invoices/Invoices';
 import Clients from '../Clients/Clients';
 import Quotations from '../Quotations/Quotations';
 import Receipts from '../Receipts/Receipts';
+import DeliveryOrders from '../DeliveryOrders/DeliveryOrders';
 import FormController from '../FormController/FormController';
 import ClientFormController from '../ClientFormController/ClientFormController';
 import QuotationFormController from '../QuotationFormController/QuotationFormController';
@@ -97,6 +98,12 @@ const App = () => {
                         </Route>
                         <Route path="/receipt/:id">
                             <ReceiptView />
+                        </Route>
+                        <Route exact path="/delivery-orders">
+                            <DeliveryOrders />
+                        </Route>
+                        <Route path="/delivery-orders/:id">
+                            <div>Delivery Order View</div>
                         </Route>
                         <Route path="/settings">
                             <Settings />

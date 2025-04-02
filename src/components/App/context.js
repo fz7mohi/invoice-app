@@ -4,6 +4,7 @@ import useThemeToggle from '../../hooks/useThemeToggle';
 import useManageInvoices from '../../hooks/useManageInvoices';
 import useManageClients from '../../hooks/useManageClients';
 import useManageQuotations from '../../hooks/useManageQuotations';
+import useManageDeliveryOrders from '../../hooks/useManageDeliveryOrders';
 import useFilter from '../../hooks/useFilter';
 
 // Fortune Gifts brand colors
@@ -55,6 +56,12 @@ const AppProvider = ({ children }) => {
         removeItemAtIndex,
         refreshQuotations
     } = useManageQuotations();
+
+    const {
+        state: deliveryOrderState,
+        refreshDeliveryOrders,
+        createDeliveryOrder
+    } = useManageDeliveryOrders();
 
     const {
         state: clientState,
@@ -146,6 +153,9 @@ const AppProvider = ({ children }) => {
                 filterType,
                 changeFilterType,
                 refreshQuotations,
+                deliveryOrderState,
+                refreshDeliveryOrders,
+                createDeliveryOrder,
                 fortuneGiftsTheme
             }}
         >
