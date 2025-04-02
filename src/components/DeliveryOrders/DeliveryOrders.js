@@ -2,12 +2,14 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTheme } from 'styled-components';
 import { useGlobalContext } from '../App/context';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useHistory } from 'react-router-dom';
 import Button from '../shared/Button/Button';
 import Icon from '../shared/Icon/Icon';
 import { receiptsViewVariants } from '../../utilities/framerVariants';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import List from './List/List';
+import NewDeliveryOrder from './NewDeliveryOrder/NewDeliveryOrder';
 import { 
     Container,
     Header,
@@ -23,17 +25,20 @@ import {
     FilterButton,
     FilterList,
     FilterItem,
-    StatusFilter
+    StatusFilter,
+    ModalOverlay
 } from './DeliveryOrdersStyles';
 
 const DeliveryOrders = () => {
     const { colors } = useTheme();
     const { windowWidth } = useGlobalContext();
+    const history = useHistory();
     const [filterType, setFilterType] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [rawDeliveryOrders, setRawDeliveryOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const filterRef = useRef(null);
 
     // Fetch delivery orders from Firebase
@@ -113,6 +118,14 @@ const DeliveryOrders = () => {
         setSearchQuery(e.target.value);
     };
 
+    const handleNewDeliveryOrder = () => {
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+    };
+
     return (
         <Container
             variants={receiptsViewVariants.container}
@@ -179,7 +192,7 @@ const DeliveryOrders = () => {
                     <Button
                         type="button"
                         $primary
-                        onClick={() => {/* TODO: Implement create delivery order */}}
+                        onClick={handleNewDeliveryOrder}
                     >
                         New {windowWidth >= 768 && 'Delivery Order'}
                     </Button>
@@ -205,6 +218,19 @@ const DeliveryOrders = () => {
                 deliveryOrders={filteredDeliveryOrders}
                 isLoading={isLoading}
             />
+
+            <AnimatePresence>
+                {isModalOpen && (
+                    <ModalOverlay
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={handleCloseModal}
+                    >
+                        <NewDeliveryOrder onClose={handleCloseModal} />
+                    </ModalOverlay>
+                )}
+            </AnimatePresence>
         </Container>
     );
 };
