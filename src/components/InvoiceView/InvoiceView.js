@@ -1262,7 +1262,16 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 invoiceId: id,
                 customId,
                 clientName: invoice.clientName || '',
-                clientAddress: invoice.clientAddress || clientData?.address || '',
+                clientId: clientData?.id || null,
+                // Store complete client information
+                clientAddress: {
+                    street: clientData?.address || invoice.clientAddress?.street || '',
+                    city: invoice.clientAddress?.city || '',
+                    postCode: invoice.clientAddress?.postCode || '',
+                    country: clientData?.country || invoice.clientAddress?.country || ''
+                },
+                clientPhone: clientData?.phone || '',
+                clientEmail: invoice.clientEmail || '',
                 items: invoice.items || [],
                 total: invoice.total || 0,
                 currency: invoice.currency || 'USD',
@@ -1280,9 +1289,8 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
             // Add client data if available and valid
             if (clientData && clientData.id) {
                 receiptData.clientId = clientData.id;
-            }
-            if (clientData && clientData.email) {
-                receiptData.clientEmail = clientData.email;
+                receiptData.clientHasVAT = clientData.hasVAT || false;
+                receiptData.clientTRN = clientData.trn || clientData.TRN || clientData.trnNumber || null;
             }
 
             // Create receipt document

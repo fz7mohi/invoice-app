@@ -101,6 +101,7 @@ const ReceiptView = () => {
     const [isClientFetching, setIsClientFetching] = useState(false);
     const [clientHasVAT, setClientHasVAT] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [invoiceCustomId, setInvoiceCustomId] = useState(null);
     const isLoading = receiptState?.isLoading || isDirectlyFetching || isClientFetching;
     const receiptNotFound = !isLoading && !receipt;
     const isDesktop = windowWidth >= 768;
@@ -121,7 +122,9 @@ const ReceiptView = () => {
 
     // Fetch client data
     const fetchClientData = async (clientId, clientName) => {
-        if (!clientId && !clientName) return;
+        if (!clientId && !clientName) {
+            return;
+        }
         
         try {
             setIsClientFetching(true);
@@ -168,6 +171,7 @@ const ReceiptView = () => {
             
             if (docSnap.exists()) {
                 const data = docSnap.data();
+                console.log('Raw receipt data from Firebase:', data);
                 
                 // Convert Firestore Timestamp back to Date object safely
                 let createdAt = new Date();
@@ -191,6 +195,13 @@ const ReceiptView = () => {
                     currency: data.currency || 'USD'
                 };
                 
+                console.log('Processed receipt data:', fetchedReceipt);
+                console.log('Invoice ID fields:', {
+                    invoiceCustomId: fetchedReceipt.invoiceCustomId,
+                    invoiceId: fetchedReceipt.invoiceId,
+                    invoice: fetchedReceipt.invoice
+                });
+                
                 setReceipt(fetchedReceipt);
                 
                 // After fetching receipt, fetch client data
@@ -201,6 +212,7 @@ const ReceiptView = () => {
                 return false;
             }
         } catch (error) {
+            console.error('Error fetching receipt:', error);
             return false;
         } finally {
             setIsDirectlyFetching(false);
@@ -242,30 +254,284 @@ const ReceiptView = () => {
         }
     }, [receiptState?.receipts, id, isDeleting]);
 
+    // Add useEffect to fetch invoice custom ID
+    useEffect(() => {
+        const fetchInvoiceCustomId = async () => {
+            if (receipt?.invoiceId) {
+                try {
+                    const invoiceRef = doc(db, 'invoices', receipt.invoiceId);
+                    const invoiceSnap = await getDoc(invoiceRef);
+                    if (invoiceSnap.exists()) {
+                        const invoiceData = invoiceSnap.data();
+                        setInvoiceCustomId(invoiceData.customId);
+                    }
+                } catch (error) {
+                    console.error('Error fetching invoice:', error);
+                }
+            }
+        };
+
+        fetchInvoiceCustomId();
+    }, [receipt?.invoiceId]);
+
+    // Calculate VAT for a single amount
+    const calculateVAT = (amount) => {
+        return clientHasVAT ? amount * 0.05 : 0;
+    };
+
+    // Add getCompanyProfile function
+    const getCompanyProfile = async (country) => {
+        try {
+            // Convert country to lowercase and handle variations
+            const countryLower = country.toLowerCase();
+            let searchCountry = countryLower;
+            
+            // Handle UAE variations
+            if (countryLower.includes('emirates') || countryLower.includes('uae')) {
+                searchCountry = 'uae';
+            }
+            
+            // Query the companies collection
+            const companiesRef = collection(db, 'companies');
+            
+            // Query for the specific country
+            const q = query(companiesRef, where('country', '==', searchCountry));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                const profile = querySnapshot.docs[0].data();
+                
+                const result = {
+                    name: profile.name || '',
+                    address: profile.address || '',
+                    phone: profile.phone || '',
+                    vatNumber: profile.vatNumber || '',
+                    crNumber: profile.crNumber || '',
+                    bankDetails: {
+                        bankName: profile.bankName || '',
+                        accountName: profile.accountName || '',
+                        accountNumber: profile.accountNumber || '',
+                        iban: profile.iban || '',
+                        swift: profile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+                    }
+                };
+                
+                return result;
+            }
+            
+            // If no profile found for UAE, return Qatar profile as default
+            if (searchCountry === 'uae') {
+                const qatarQuery = query(companiesRef, where('country', '==', 'qatar'));
+                const qatarSnapshot = await getDocs(qatarQuery);
+                
+                if (!qatarSnapshot.empty) {
+                    const qatarProfile = qatarSnapshot.docs[0].data();
+                    
+                    const result = {
+                        name: qatarProfile.name || '',
+                        address: qatarProfile.address || '',
+                        phone: qatarProfile.phone || '',
+                        vatNumber: qatarProfile.vatNumber || '',
+                        crNumber: qatarProfile.crNumber || '',
+                        bankDetails: {
+                            bankName: qatarProfile.bankName || '',
+                            accountName: qatarProfile.accountName || '',
+                            accountNumber: qatarProfile.accountNumber || '',
+                            iban: qatarProfile.iban || '',
+                            swift: qatarProfile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+                        }
+                    };
+                    
+                    return result;
+                }
+            }
+            
+            throw new Error('No company profile found');
+        } catch (error) {
+            return null;
+        }
+    };
+
     // Handle download PDF
     const handleDownloadPDF = async () => {
-        const element = document.getElementById('receipt-content');
-        if (!element) return;
-
         try {
-            const canvas = await html2canvas(element, {
+            // Get the client's country from the receipt or client data
+            const clientCountry = receipt?.clientAddress?.country || 
+                                clientData?.country || 
+                                'qatar';
+
+            // Determine which company profile to use
+            let companyProfile;
+            try {
+                if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
+                    companyProfile = await getCompanyProfile('uae');
+                } else {
+                    companyProfile = await getCompanyProfile('qatar');
+                }
+            } catch (profileError) {
+                companyProfile = {
+                    name: 'Fortune Gifts',
+                    address: 'Doha, Qatar',
+                    phone: '+974 1234 5678',
+                    vatNumber: 'VAT123456789',
+                    crNumber: 'CR123456789'
+                };
+            }
+
+            // Create a new container for PDF content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                width: 297mm;
+                min-height: 420mm;
+                padding: 5mm 20mm 20mm 20mm;
+                margin: 0;
+                background-color: white;
+                box-sizing: border-box;
+                position: relative;
+                font-family: Arial, sans-serif;
+            `;
+
+            // Add header
+            pdfContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                    </div>
+                    <div style="text-align: right; font-size: 19px; color: #000000;">
+                        <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
+                        <div>${companyProfile.address}</div>
+                        <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
+                    </div>
+                </div>
+                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
+                <div style="text-align: center; margin-top: 25px;">
+                    <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">RECEIPT</h1>
+                </div>
+            `;
+
+            // Add client section
+            const clientSection = document.createElement('div');
+            clientSection.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 30px;
+                margin-top: 30px;
+                background-color: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            clientSection.innerHTML = `
+                <div>
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
+                    <div style="color: black; font-size: 16px; margin-bottom: 5px;">${receipt.clientName}</div>
+                    ${receipt.clientAddress?.street ? `<div style="color: black; font-size: 16px;">${receipt.clientAddress.street}</div>` : ''}
+                    ${receipt.clientAddress?.city ? `<div style="color: black; font-size: 16px;">${receipt.clientAddress.city}${receipt.clientAddress?.postCode ? `, ${receipt.clientAddress.postCode}` : ''}</div>` : ''}
+                    ${receipt.clientAddress?.country ? `<div style="color: black; font-size: 16px;">${receipt.clientAddress.country}</div>` : ''}
+                    ${receipt.clientPhone ? `<div style="color: black; font-size: 16px;">${receipt.clientPhone}</div>` : ''}
+                    ${receipt.clientTRN ? `<div style="color: black; font-size: 16px;">TRN: ${receipt.clientTRN}</div>` : ''}
+                </div>
+                <div style="text-align: right;">
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Receipt Details</div>
+                    <div style="color: black; font-size: 16px; margin-bottom: 5px;">Receipt #: ${receipt.customId}</div>
+                    <div style="color: black; font-size: 16px; margin-bottom: 5px;">Date: ${formatDate(receipt.paymentDate)}</div>
+                    <div style="color: black; font-size: 16px;">Invoice #: ${invoiceCustomId || receipt.invoiceId}</div>
+                </div>
+            `;
+            pdfContainer.appendChild(clientSection);
+
+            // Add payment details section
+            const paymentSection = document.createElement('div');
+            paymentSection.style.cssText = `
+                background-color: #004359;
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+            `;
+            paymentSection.innerHTML = `
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Payment Details</div>
+                <div style="font-size: 16px; margin-bottom: 10px;">Amount Paid: ${formatPrice(receipt.amount, receipt.currency)}</div>
+                ${clientHasVAT ? `<div style="font-size: 16px; margin-bottom: 10px;">VAT (5%): ${formatPrice(calculateVAT(receipt.amount), receipt.currency)}</div>` : ''}
+                <div style="font-size: 16px; margin-bottom: 10px;">Payment Mode: ${receipt.mode || 'Not specified'}</div>
+                ${receipt.mode === 'cheque' && receipt.chequeNumber ? `<div style="font-size: 16px; margin-bottom: 10px;">Cheque Number: ${receipt.chequeNumber}</div>` : ''}
+                ${receipt.notes ? `<div style="font-size: 16px;">Notes: ${receipt.notes}</div>` : ''}
+            `;
+            pdfContainer.appendChild(paymentSection);
+
+            // Add signature section
+            const signatureSection = document.createElement('div');
+            signatureSection.style.cssText = `
+                position: absolute;
+                bottom: 30mm;
+                left: 20mm;
+                right: 20mm;
+                display: flex;
+                justify-content: space-between;
+            `;
+            signatureSection.innerHTML = `
+                <div style="width: 45%;">
+                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
+                </div>
+                <div style="width: 45%;">
+                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
+                </div>
+            `;
+            pdfContainer.appendChild(signatureSection);
+
+            // Add footer text
+            const footerText = document.createElement('div');
+            footerText.style.cssText = `
+                position: absolute;
+                bottom: 20mm;
+                left: 20mm;
+                right: 20mm;
+                text-align: center;
+                color: #666;
+                font-size: 12px;
+                font-style: italic;
+            `;
+            footerText.innerHTML = 'This is a computer-generated receipt and does not require a physical signature.';
+            pdfContainer.appendChild(footerText);
+
+            // Temporarily add to document to render
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            document.body.appendChild(pdfContainer);
+
+            // Convert to canvas with A3 dimensions
+            const canvas = await html2canvas(pdfContainer, {
                 scale: 2,
                 useCORS: true,
                 logging: false,
-                backgroundColor: colors.cardBg
+                backgroundColor: '#ffffff',
+                width: 1122.5, // 297mm in pixels at 96 DPI
+                height: 1587.4 // 420mm in pixels at 96 DPI
             });
 
-            const imgData = canvas.toDataURL('image/png');
+            // Remove temporary elements
+            document.body.removeChild(pdfContainer);
+
+            // Create PDF with A3 size
             const pdf = new jsPDF({
                 orientation: 'portrait',
-                unit: 'px',
-                format: [canvas.width, canvas.height]
+                unit: 'mm',
+                format: 'a3',
+                compress: true
             });
 
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save(`receipt-${receipt.customId || receipt.id}.pdf`);
+            // Add the image to fit A3 page
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
+
+            // Save the PDF
+            pdf.save(`Receipt_${receipt.customId || receipt.id}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
+            alert('There was an error generating the PDF. Please try again.');
         }
     };
 
@@ -294,6 +560,63 @@ const ReceiptView = () => {
             setIsDeleting(false);
             setShowDeleteModal(false);
         }
+    };
+
+    // Add renderClientSection function
+    const renderClientSection = () => {
+        // Check for TRN in various possible field names
+        const clientTRN = 
+            receipt.clientTRN ||
+            clientData?.trn || 
+            clientData?.TRN || 
+            clientData?.trnNumber ||
+            clientData?.taxRegistrationNumber || 
+            clientData?.tax_registration_number ||
+            clientData?.taxNumber;
+            
+        // Check if client is from UAE
+        const isUAE = (receipt.clientAddress?.country || clientData?.country)?.toLowerCase().includes('emirates') || 
+                      (receipt.clientAddress?.country || clientData?.country)?.toLowerCase().includes('uae');
+
+        // Get client details from either receipt or clientData
+        const clientName = receipt.clientName;
+        const clientAddress = receipt.clientAddress?.street;
+        const clientCity = receipt.clientAddress?.city;
+        const clientPostCode = receipt.clientAddress?.postCode;
+        const clientCountry = receipt.clientAddress?.country;
+        const clientPhone = receipt.clientPhone;
+
+        return (
+            <AddressGroup>
+                <AddressTitle>Bill To</AddressTitle>
+                <AddressText>
+                    <strong>{clientName}</strong>
+                    {clientAddress && (
+                        <>
+                            <br />
+                            {clientAddress}
+                        </>
+                    )}
+                    {clientCity && `, ${clientCity}`}
+                    {clientPostCode && `, ${clientPostCode}`}
+                    {clientCountry && `, ${clientCountry}`}
+                    {clientPhone && (
+                        <>
+                            <br />
+                            {clientPhone}
+                        </>
+                    )}
+                    {isUAE && clientTRN && (
+                        <>
+                            <br />
+                            <span style={{ fontWeight: '600' }}>
+                                TRN: {clientTRN}
+                            </span>
+                        </>
+                    )}
+                </AddressText>
+            </AddressGroup>
+        );
     };
 
     // Show loading state
@@ -351,11 +674,6 @@ const ReceiptView = () => {
     const { subtotal, vatAmount, grandTotal } = calculateTotals();
 
     // Calculate VAT for a single item
-    const calculateVAT = (amount) => {
-        return clientHasVAT ? amount * 0.05 : 0;
-    };
-
-    // Calculate total with VAT for a single item
     const calculateTotalWithVAT = (amount) => {
         return clientHasVAT ? amount * 1.05 : amount;
     };
@@ -449,40 +767,17 @@ const ReceiptView = () => {
                     </InfoHeader>
                     
                     <InfoAddresses className="InfoAddresses">
-                        <AddressGroup>
-                            <AddressTitle>Bill To</AddressTitle>
-                            <AddressText>
-                                <strong>{receipt.clientName}</strong>
-                                {(clientData?.address || receipt.clientAddress?.street) && (
-                                    <>
-                                        <br />
-                                        {clientData?.address || receipt.clientAddress?.street}
-                                    </>
-                                )}
-                                {receipt.clientAddress?.city && `, ${receipt.clientAddress.city}`}
-                                {receipt.clientAddress?.postCode && `, ${receipt.clientAddress.postCode}`}
-                                {(clientData?.country || receipt.clientAddress?.country) && `, ${clientData?.country || receipt.clientAddress?.country}`}
-                                {clientData?.phone && (
-                                    <>
-                                        <br />
-                                        {clientData.phone}
-                                    </>
-                                )}
-                                {clientData?.hasVAT && clientData?.trn && (
-                                    <>
-                                        <br />
-                                        <span style={{ fontWeight: '600' }}>
-                                            TRN: {clientData.trn}
-                                        </span>
-                                    </>
-                                )}
-                            </AddressText>
-                        </AddressGroup>
+                        {renderClientSection()}
                         
                         <AddressGroup align="right">
                             <AddressTitle>Receipt #</AddressTitle>
                             <AddressText>
                                 {receipt.customId || receipt.id}
+                            </AddressText>
+                            <br />
+                            <AddressTitle>Invoice #</AddressTitle>
+                            <AddressText>
+                                {invoiceCustomId || receipt.invoiceId || 'N/A'}
                             </AddressText>
                             <br />
                             <AddressTitle>Payment Date</AddressTitle>
@@ -504,76 +799,30 @@ const ReceiptView = () => {
                         </AddressGroup>
                     )}
                     
-                    {/* Items section */}
+                    {/* Payment Details Section */}
                     <Details className="Details">
-                        <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
-                            <HeaderCell>Item Name</HeaderCell>
-                            <HeaderCell>QTY.</HeaderCell>
-                            <HeaderCell>Price</HeaderCell>
-                            {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
-                            <HeaderCell>Total</HeaderCell>
-                        </ItemsHeader>
-                        
-                        <Items>
-                            {receipt.items && receipt.items.map((item, index) => {
-                                const itemVAT = clientHasVAT ? calculateVAT(item.total || 0) : 0;
-                                
-                                return (
-                                    <Item key={index} showVat={clientHasVAT}>
-                                        <div className="item-details">
-                                            <ItemName>{item.name}</ItemName>
-                                            {item.description && (
-                                                <ItemDescription>{item.description}</ItemDescription>
-                                            )}
-                                            <div className="item-mobile-details">
-                                                <span>
-                                                    {item.quantity || 0} × {formatPrice(item.price || 0, receipt.currency)}
-                                                    {clientHasVAT && ` (+${formatPrice(itemVAT, receipt.currency)} VAT)`}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <ItemQty>{item.quantity || 0}</ItemQty>
-                                        <ItemPrice>
-                                            {formatPrice(item.price || 0, receipt.currency)}
-                                        </ItemPrice>
-                                        {clientHasVAT && (
-                                            <ItemVat>
-                                                {formatPrice(itemVAT, receipt.currency)}
-                                            </ItemVat>
-                                        )}
-                                        <ItemTotal>
-                                            {formatPrice(clientHasVAT ? 
-                                                calculateTotalWithVAT(item.total || 0) : 
-                                                (item.total || 0), 
-                                            receipt.currency)}
-                                        </ItemTotal>
-                                    </Item>
-                                );
-                            })}
-                        </Items>
-                        
                         <Total className="Total">
                             <div>
-                                <TotalText>Grand Total</TotalText>
+                                <TotalText>Amount Paid</TotalText>
                                 {clientHasVAT && (
                                     <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.8, color: 'white' }}>
-                                        Includes VAT: {formatPrice(vatAmount, receipt.currency)}
+                                        Includes VAT: {formatPrice(calculateVAT(receipt.amount), receipt.currency)}
+                                    </div>
+                                )}
+                                <div style={{ marginTop: '8px', fontSize: '13px', opacity: 0.9, color: 'white' }}>
+                                    Payment Mode: {receipt.mode || 'Not specified'}
+                                </div>
+                                {receipt.mode === 'cheque' && receipt.chequeNumber && (
+                                    <div style={{ marginTop: '4px', fontSize: '13px', opacity: 0.9, color: 'white' }}>
+                                        Cheque Number: {receipt.chequeNumber}
                                     </div>
                                 )}
                             </div>
                             <TotalAmount>
-                                {formatPrice(grandTotal, receipt.currency)}
+                                {formatPrice(receipt.amount, receipt.currency)}
                             </TotalAmount>
                         </Total>
                     </Details>
-                    
-                    {/* Terms and conditions section */}
-                    {receipt.termsAndConditions && (
-                        <TermsSection className="TermsSection">
-                            <TermsTitle>Terms and Conditions</TermsTitle>
-                            <TermsText>{receipt.termsAndConditions}</TermsText>
-                        </TermsSection>
-                    )}
                 </InfoCard>
             </Container>
             

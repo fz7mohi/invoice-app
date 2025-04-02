@@ -136,7 +136,10 @@ export const AddressText = styled.p`
 `;
 
 export const Details = styled.div`
-    margin-bottom: 32px;
+    margin-top: 32px;
+    padding: 24px;
+    background: ${({ theme }) => theme.colors.itemBg};
+    border-radius: 8px;
 `;
 
 export const ItemsHeader = styled.div`
@@ -251,21 +254,22 @@ export const Total = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 16px;
+    padding: 24px;
     background: ${({ theme }) => theme.colors.totalBg};
     border-radius: 8px;
-    margin-top: 32px;
 `;
 
 export const TotalText = styled.span`
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: 12px;
+    font-weight: 700;
     line-height: 1.25;
+    letter-spacing: -0.25px;
 `;
 
 export const TotalAmount = styled.span`
     color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.5px;
