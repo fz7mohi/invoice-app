@@ -96,9 +96,9 @@ import {
     CartonDetailsContainer
 } from './NewDeliveryOrderStyles';
 
-const NewDeliveryOrder = ({ onClose }) => {
+const NewDeliveryOrder = ({ onClose, editMode = false, deliveryOrder = null }) => {
     const history = useHistory();
-    const { createDeliveryOrder } = useGlobalContext();
+    const { createDeliveryOrder, updateDeliveryOrder } = useGlobalContext();
     const [invoiceNumber, setInvoiceNumber] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -111,6 +111,39 @@ const NewDeliveryOrder = ({ onClose }) => {
     const [cartonSizes, setCartonSizes] = useState({});
     const [activeItemIndex, setActiveItemIndex] = useState(0);
     const totalSteps = 3;
+
+    // Initialize form data if in edit mode
+    useEffect(() => {
+        if (editMode && deliveryOrder) {
+            setInvoiceNumber(deliveryOrder.invoiceId);
+            
+            // Map the existing delivery order items with their packaging details
+            const mappedItems = deliveryOrder.items.map(item => ({
+                ...item,
+                // For piece packaging
+                deliveryPieces: item.packagingType === 'piece' ? item.quantity : undefined,
+                
+                // For carton packaging
+                cartons: item.packagingType === 'carton' ? item.cartonDetails?.reduce((sum, carton) => sum + carton.count, 0) || 0 : 0,
+                piecesPerCarton: item.packagingType === 'carton' ? 
+                    (item.cartonDetails?.reduce((sum, carton) => sum + (carton.count * carton.piecesPerCarton), 0) || 0) / 
+                    (item.cartonDetails?.reduce((sum, carton) => sum + carton.count, 0) || 1) : 0,
+                
+                // Preserve the original carton details
+                cartonDetails: item.packagingType === 'carton' ? item.cartonDetails.map(detail => ({
+                    size: detail.size || 'Standard',
+                    count: detail.count || 1,
+                    piecesPerCarton: detail.piecesPerCarton || 1
+                })) : []
+            }));
+            
+            console.log('Mapped delivery items for edit:', JSON.stringify(mappedItems, null, 2));
+            setDeliveryItems(mappedItems);
+            
+            // Fetch invoice data
+            fetchInvoiceDetails(deliveryOrder.invoiceId);
+        }
+    }, [editMode, deliveryOrder]);
 
     // Fetch all invoices
     useEffect(() => {
@@ -179,20 +212,21 @@ const NewDeliveryOrder = ({ onClose }) => {
 
     // Fetch invoice details when selected
     useEffect(() => {
-        if (invoiceNumber) {
+        if (invoiceNumber && !editMode) {
             fetchInvoiceDetails();
         }
-    }, [invoiceNumber]);
+    }, [invoiceNumber, editMode]);
 
     useEffect(() => {
         console.log('deliveryItems state changed:', JSON.stringify(deliveryItems, null, 2));
     }, [deliveryItems]);
 
-    const fetchInvoiceDetails = async () => {
+    // Fetch invoice details
+    const fetchInvoiceDetails = async (invoiceId = null) => {
         try {
             setIsLoading(true);
             setError('');
-            const invoiceRef = doc(db, 'invoices', invoiceNumber);
+            const invoiceRef = doc(db, 'invoices', invoiceId || invoiceNumber);
             const invoiceDoc = await getDoc(invoiceRef);
 
             if (!invoiceDoc.exists()) {
@@ -202,27 +236,27 @@ const NewDeliveryOrder = ({ onClose }) => {
 
             const invoiceData = invoiceDoc.data();
             console.log('Fetched Invoice Data:', JSON.stringify(invoiceData, null, 2));
-            console.log('Invoice Amount:', invoiceData.amount);
-            console.log('Invoice Amount Type:', typeof invoiceData.amount);
             
             setInvoice(invoiceData);
             
-            // Initialize delivery items with more detailed default values
-            const initialDeliveryItems = invoiceData.items.map(item => {
-                console.log('Processing item:', JSON.stringify(item, null, 2));
-                return {
-                    ...item,
-                    packagingType: 'piece',
-                    quantity: item.quantity,
-                    cartons: 0,
-                    piecesPerCarton: 0,
-                    deliveryPieces: item.quantity,
-                    cartonDetails: []
-                };
-            });
-            
-            console.log('Initialized Delivery Items:', JSON.stringify(initialDeliveryItems, null, 2));
-            setDeliveryItems(initialDeliveryItems);
+            // Only initialize delivery items if not in edit mode
+            if (!editMode) {
+                // Initialize delivery items with more detailed default values
+                const initialDeliveryItems = invoiceData.items.map(item => {
+                    return {
+                        ...item,
+                        packagingType: 'piece',
+                        quantity: item.quantity,
+                        cartons: 0,
+                        piecesPerCarton: 0,
+                        deliveryPieces: item.quantity,
+                        cartonDetails: []
+                    };
+                });
+                
+                console.log('Initialized Delivery Items:', JSON.stringify(initialDeliveryItems, null, 2));
+                setDeliveryItems(initialDeliveryItems);
+            }
             
             // Fetch client data after setting invoice
             if (invoiceData.clientId) {
@@ -370,38 +404,69 @@ const NewDeliveryOrder = ({ onClose }) => {
         }
 
         try {
+            console.log('Starting handleSubmit');
+            console.log('Current invoice:', JSON.stringify(invoice, null, 2));
+            console.log('Current deliveryItems:', JSON.stringify(deliveryItems, null, 2));
             setIsLoading(true);
             setError('');
 
+            // Ensure all required fields are defined
             const deliveryOrderData = {
-                invoiceId: invoiceNumber,
-                invoiceCustomId: invoice.customId || invoiceNumber,
-                clientName: invoice.clientName,
-                clientAddress: invoice.clientAddress,
+                invoiceId: invoiceNumber || '',
+                invoiceCustomId: invoice.customId || invoiceNumber || '',
+                clientName: invoice.clientName || '',
+                clientAddress: invoice.clientAddress || '',
                 currency: invoice.currency || 'USD',
-                items: deliveryItems.map(item => ({
-                    name: item.name,
-                    quantity: item.packagingType === 'piece' 
-                        ? item.deliveryPieces 
-                        : item.cartons * item.piecesPerCarton,
-                    price: item.price,
-                    packagingType: item.packagingType,
-                    cartons: item.cartons,
-                    piecesPerCarton: item.piecesPerCarton,
-                    deliveryPieces: item.deliveryPieces,
-                    cartonDetails: item.cartonDetails
-                })),
-                status: 'pending',
-                createdAt: serverTimestamp(),
+                items: deliveryItems.map(item => {
+                    // Find the original invoice item to get the correct quantity
+                    const originalInvoiceItem = invoice.items.find(invItem => invItem.name === item.name);
+                    console.log('Processing item:', item.name);
+                    console.log('Original invoice item:', JSON.stringify(originalInvoiceItem, null, 2));
+                    
+                    const mappedItem = {
+                        name: item.name || '',
+                        quantity: originalInvoiceItem?.quantity || 0, // Use the original invoice quantity
+                        price: item.price || 0,
+                        packagingType: item.packagingType || 'piece',
+                        cartons: item.cartons || 0,
+                        piecesPerCarton: item.piecesPerCarton || 0,
+                        deliveryPieces: item.deliveryPieces || 0,
+                        cartonDetails: (item.cartonDetails || []).map(detail => ({
+                            size: detail.size || 'Standard',
+                            count: detail.count || 0,
+                            piecesPerCarton: detail.piecesPerCarton || 0
+                        })),
+                        // Add undelivered quantity calculation
+                        undeliveredQuantity: item.packagingType === 'piece' 
+                            ? Math.max(0, (originalInvoiceItem?.quantity || 0) - (item.deliveryPieces || 0))
+                            : Math.max(0, (originalInvoiceItem?.quantity || 0) - ((item.cartons || 0) * (item.piecesPerCarton || 0)))
+                    };
+                    
+                    console.log('Mapped item:', JSON.stringify(mappedItem, null, 2));
+                    return mappedItem;
+                }),
+                status: deliveryOrder?.status || 'pending',
                 updatedAt: serverTimestamp()
             };
 
-            await createDeliveryOrder(deliveryOrderData);
+            console.log('Final delivery order data:', JSON.stringify(deliveryOrderData, null, 2));
+
+            if (editMode && deliveryOrder) {
+                console.log('Updating existing delivery order:', deliveryOrder.id);
+                await updateDeliveryOrder(deliveryOrder.id, deliveryOrderData);
+                console.log('Delivery order updated successfully');
+            } else {
+                console.log('Creating new delivery order');
+                deliveryOrderData.createdAt = serverTimestamp();
+                await createDeliveryOrder(deliveryOrderData);
+                console.log('Delivery order created successfully');
+            }
+
+            console.log('Closing modal');
             onClose();
-            history.push('/delivery-orders');
         } catch (error) {
-            console.error('Error creating delivery order:', error);
-            setError('Error creating delivery order');
+            console.error('Error in handleSubmit:', error);
+            setError(error.message || 'Error saving delivery order');
         } finally {
             setIsLoading(false);
         }
@@ -726,159 +791,269 @@ const NewDeliveryOrder = ({ onClose }) => {
                                                     <th style={{ 
                                                         padding: '12px 16px', 
                                                         textAlign: 'left',
-                                                        fontWeight: '600'
+                                                        fontWeight: '600',
+                                                        width: '25%'
                                                     }}>Item</th>
                                                     <th style={{ 
                                                         padding: '12px 16px', 
                                                         textAlign: 'left',
-                                                        fontWeight: '600'
-                                                    }}>Price</th>
+                                                        fontWeight: '600',
+                                                        width: '15%'
+                                                    }}>Invoice Qty</th>
                                                     <th style={{ 
                                                         padding: '12px 16px', 
                                                         textAlign: 'left',
-                                                        fontWeight: '600'
+                                                        fontWeight: '600',
+                                                        width: '15%'
                                                     }}>Packaging Type</th>
                                                     <th style={{ 
                                                         padding: '12px 16px', 
                                                         textAlign: 'left',
-                                                        fontWeight: '600'
+                                                        fontWeight: '600',
+                                                        width: '25%'
                                                     }}>Details</th>
                                                     <th style={{ 
                                                         padding: '12px 16px', 
                                                         textAlign: 'right',
-                                                        fontWeight: '600'
+                                                        fontWeight: '600',
+                                                        width: '20%'
                                                     }}>Total</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {deliveryItems.map((item, index) => (
-                                                    <React.Fragment key={index}>
-                                                        <tr style={{ 
-                                                            backgroundColor: '#2a2a2a', 
-                                                            borderBottom: '1px solid #444' 
-                                                        }}>
-                                                            <td style={{ 
-                                                                padding: '12px 16px', 
-                                                                verticalAlign: 'top',
-                                                                fontWeight: '500'
+                                                {deliveryItems.map((item, index) => {
+                                                    // Find the original invoice item to get the correct quantity
+                                                    const originalInvoiceItem = invoice.items.find(invItem => invItem.name === item.name);
+                                                    
+                                                    return (
+                                                        <React.Fragment key={index}>
+                                                            <tr style={{ 
+                                                                backgroundColor: '#2a2a2a', 
+                                                                borderBottom: '1px solid #444' 
                                                             }}>
-                                                                {item.name}
-                                                            </td>
-                                                            <td style={{ 
-                                                                padding: '12px 16px', 
-                                                                verticalAlign: 'top'
-                                                            }}>
-                                                                {formatCurrency(item.price, invoice?.currency)}
-                                                            </td>
-                                                            <td style={{ 
-                                                                padding: '12px 16px', 
-                                                                verticalAlign: 'top'
-                                                            }}>
-                                                                {item.packagingType === 'piece' ? 'Individual Pieces' : 'Carton Packaging'}
-                                                            </td>
-                                                            <td style={{ 
-                                                                padding: '12px 16px', 
-                                                                verticalAlign: 'top'
-                                                            }}>
-                                                                {item.packagingType === 'piece' ? (
-                                                                    <div>
-                                                                        <span style={{ color: '#b0b0b0' }}>Pieces: </span>
-                                                                        <span style={{ fontWeight: '500' }}>{item.deliveryPieces}</span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div>
-                                                                        <span style={{ color: '#b0b0b0' }}>Cartons: </span>
-                                                                        <span style={{ fontWeight: '500' }}>
-                                                                            {item.cartonDetails.reduce((sum, carton) => sum + carton.count, 0)}
+                                                                <td style={{ 
+                                                                    padding: '12px 16px', 
+                                                                    verticalAlign: 'top',
+                                                                    fontWeight: '500'
+                                                                }}>
+                                                                    {item.name}
+                                                                </td>
+                                                                <td style={{ 
+                                                                    padding: '12px 16px', 
+                                                                    verticalAlign: 'top'
+                                                                }}>
+                                                                    {originalInvoiceItem?.quantity || 0}
+                                                                </td>
+                                                                <td style={{ 
+                                                                    padding: '12px 16px', 
+                                                                    verticalAlign: 'top'
+                                                                }}>
+                                                                    {item.packagingType === 'piece' ? 'Individual Pieces' : 'Carton Packaging'}
+                                                                </td>
+                                                                <td style={{ 
+                                                                    padding: '12px 16px', 
+                                                                    verticalAlign: 'top'
+                                                                }}>
+                                                                    {item.packagingType === 'piece' ? (
+                                                                        <div>
+                                                                            <span style={{ color: '#b0b0b0' }}>Pieces: </span>
+                                                                            <span style={{ fontWeight: '500' }}>{item.deliveryPieces}</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div>
+                                                                            <span style={{ color: '#b0b0b0' }}>Cartons: </span>
+                                                                            <span style={{ fontWeight: '500' }}>
+                                                                                {item.cartonDetails.reduce((sum, carton) => sum + carton.count, 0)}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                                <td style={{ 
+                                                                    padding: '12px 16px', 
+                                                                    verticalAlign: 'top',
+                                                                    textAlign: 'right'
+                                                                }}>
+                                                                    {item.packagingType === 'piece' ? (
+                                                                        <span>{item.deliveryPieces} pieces</span>
+                                                                    ) : (
+                                                                        <span>
+                                                                            {item.cartonDetails.reduce((sum, carton) => sum + (carton.count * carton.piecesPerCarton), 0)} pieces
                                                                         </span>
-                                                                    </div>
-                                                                )}
-                                                            </td>
-                                                            <td style={{ 
-                                                                padding: '12px 16px', 
-                                                                verticalAlign: 'top',
-                                                                textAlign: 'right'
-                                                            }}>
-                                                                {item.packagingType === 'piece' ? (
-                                                                    <span>{item.deliveryPieces} pieces</span>
-                                                                ) : (
-                                                                    <span>
-                                                                        {item.cartonDetails.reduce((sum, carton) => sum + (carton.count * carton.piecesPerCarton), 0)} pieces
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                        
-                                                        {item.packagingType === 'carton' && item.cartonDetails && item.cartonDetails.length > 0 && (
-                                                            <tr style={{ backgroundColor: '#222' }}>
-                                                                <td colSpan="5" style={{ padding: '0' }}>
-                                                                    <table style={{ 
-                                                                        width: '100%', 
-                                                                        borderCollapse: 'collapse',
-                                                                        marginLeft: '32px'
-                                                                    }}>
-                                                                        <thead>
-                                                                            <tr style={{ 
-                                                                                backgroundColor: '#333', 
-                                                                                borderBottom: '1px solid #444' 
-                                                                            }}>
-                                                                                <th style={{ 
-                                                                                    padding: '8px 16px', 
-                                                                                    textAlign: 'left',
-                                                                                    fontWeight: '600',
-                                                                                    fontSize: '0.9em'
-                                                                                }}>Carton Size</th>
-                                                                                <th style={{ 
-                                                                                    padding: '8px 16px', 
-                                                                                    textAlign: 'left',
-                                                                                    fontWeight: '600',
-                                                                                    fontSize: '0.9em'
-                                                                                }}>Number of Cartons</th>
-                                                                                <th style={{ 
-                                                                                    padding: '8px 16px', 
-                                                                                    textAlign: 'left',
-                                                                                    fontWeight: '600',
-                                                                                    fontSize: '0.9em'
-                                                                                }}>Pieces per Carton</th>
-                                                                                <th style={{ 
-                                                                                    padding: '8px 16px', 
-                                                                                    textAlign: 'right',
-                                                                                    fontWeight: '600',
-                                                                                    fontSize: '0.9em'
-                                                                                }}>Total Pieces</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            {item.cartonDetails.map((carton, cartonIndex) => (
-                                                                                <tr key={cartonIndex} style={{ 
-                                                                                    borderBottom: '1px solid #444',
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                            
+                                                            {item.packagingType === 'carton' && item.cartonDetails && item.cartonDetails.length > 0 && (
+                                                                <tr style={{ backgroundColor: '#222' }}>
+                                                                    <td colSpan="5" style={{ padding: '0' }}>
+                                                                        <table style={{ 
+                                                                            width: '100%', 
+                                                                            borderCollapse: 'collapse'
+                                                                        }}>
+                                                                            <thead>
+                                                                                <tr style={{ 
+                                                                                    backgroundColor: '#333', 
+                                                                                    borderBottom: '1px solid #444' 
+                                                                                }}>
+                                                                                    <th style={{ 
+                                                                                        padding: '8px 16px', 
+                                                                                        textAlign: 'left',
+                                                                                        fontWeight: '600',
+                                                                                        fontSize: '0.9em',
+                                                                                        width: '25%'
+                                                                                    }}>Carton Size</th>
+                                                                                    <th style={{ 
+                                                                                        padding: '8px 16px', 
+                                                                                        textAlign: 'left',
+                                                                                        fontWeight: '600',
+                                                                                        fontSize: '0.9em',
+                                                                                        width: '25%'
+                                                                                    }}>Number of Cartons</th>
+                                                                                    <th style={{ 
+                                                                                        padding: '8px 16px', 
+                                                                                        textAlign: 'left',
+                                                                                        fontWeight: '600',
+                                                                                        fontSize: '0.9em',
+                                                                                        width: '25%'
+                                                                                    }}>Pieces per Carton</th>
+                                                                                    <th style={{ 
+                                                                                        padding: '8px 16px', 
+                                                                                        textAlign: 'right',
+                                                                                        fontWeight: '600',
+                                                                                        fontSize: '0.9em',
+                                                                                        width: '25%'
+                                                                                    }}>Total Pieces</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {item.cartonDetails.map((carton, cartonIndex) => (
+                                                                                    <tr key={cartonIndex} style={{ 
+                                                                                        borderBottom: '1px solid #444',
+                                                                                        fontSize: '0.9em'
+                                                                                    }}>
+                                                                                        <td style={{ padding: '8px 16px' }}>
+                                                                                            {carton.size}
+                                                                                        </td>
+                                                                                        <td style={{ padding: '8px 16px' }}>
+                                                                                            {carton.count}
+                                                                                        </td>
+                                                                                        <td style={{ padding: '8px 16px' }}>
+                                                                                            {carton.piecesPerCarton}
+                                                                                        </td>
+                                                                                        <td style={{ 
+                                                                                            padding: '8px 16px',
+                                                                                            textAlign: 'right',
+                                                                                            fontWeight: '500'
+                                                                                        }}>
+                                                                                            {carton.count * carton.piecesPerCarton}
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                            <tfoot>
+                                                                                <tr style={{ 
+                                                                                    backgroundColor: '#2a2a2a',
+                                                                                    borderTop: '2px solid #444',
                                                                                     fontSize: '0.9em'
                                                                                 }}>
-                                                                                    <td style={{ padding: '8px 16px' }}>
-                                                                                        {carton.size}
-                                                                                    </td>
-                                                                                    <td style={{ padding: '8px 16px' }}>
-                                                                                        {carton.count}
-                                                                                    </td>
-                                                                                    <td style={{ padding: '8px 16px' }}>
-                                                                                        {carton.piecesPerCarton}
+                                                                                    <td colSpan="3" style={{ 
+                                                                                        padding: '8px 16px',
+                                                                                        textAlign: 'right',
+                                                                                        fontWeight: '600'
+                                                                                    }}>
+                                                                                        Total Delivered:
                                                                                     </td>
                                                                                     <td style={{ 
                                                                                         padding: '8px 16px',
                                                                                         textAlign: 'right',
-                                                                                        fontWeight: '500'
+                                                                                        fontWeight: '600'
                                                                                     }}>
-                                                                                        {carton.count * carton.piecesPerCarton}
+                                                                                        {item.cartonDetails.reduce((sum, carton) => sum + (carton.count * carton.piecesPerCarton), 0)} pieces
                                                                                     </td>
                                                                                 </tr>
-                                                                            ))}
-                                                                        </tbody>
-                                                                    </table>
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </React.Fragment>
-                                                ))}
+                                                                                <tr style={{ 
+                                                                                    backgroundColor: '#2a2a2a',
+                                                                                    fontSize: '0.9em'
+                                                                                }}>
+                                                                                    <td colSpan="3" style={{ 
+                                                                                        padding: '8px 16px',
+                                                                                        textAlign: 'right',
+                                                                                        fontWeight: '600'
+                                                                                    }}>
+                                                                                        Undelivered:
+                                                                                    </td>
+                                                                                    <td style={{ 
+                                                                                        padding: '8px 16px',
+                                                                                        textAlign: 'right',
+                                                                                        fontWeight: '600',
+                                                                                        color: '#ff6b6b'
+                                                                                    }}>
+                                                                                        {Math.max(0, (originalInvoiceItem?.quantity || 0) - item.cartonDetails.reduce((sum, carton) => sum + (carton.count * carton.piecesPerCarton), 0))} pieces
+                                                                                    </td>
+                                                                                </tr>
+                                                                            </tfoot>
+                                                                        </table>
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                            
+                                                            {/* Add footer for piece packaging */}
+                                                            {item.packagingType === 'piece' && (
+                                                                <tr style={{ backgroundColor: '#222' }}>
+                                                                    <td colSpan="5" style={{ padding: '0' }}>
+                                                                        <table style={{ 
+                                                                            width: '100%', 
+                                                                            borderCollapse: 'collapse'
+                                                                        }}>
+                                                                            <tfoot>
+                                                                                <tr style={{ 
+                                                                                    backgroundColor: '#2a2a2a',
+                                                                                    borderTop: '2px solid #444',
+                                                                                    fontSize: '0.9em'
+                                                                                }}>
+                                                                                    <td colSpan="3" style={{ 
+                                                                                        padding: '8px 16px',
+                                                                                        textAlign: 'right',
+                                                                                        fontWeight: '600'
+                                                                                    }}>
+                                                                                        Total Delivered:
+                                                                                    </td>
+                                                                                    <td style={{ 
+                                                                                        padding: '8px 16px',
+                                                                                        textAlign: 'right',
+                                                                                        fontWeight: '600'
+                                                                                    }}>
+                                                                                        {item.deliveryPieces} pieces
+                                                                                    </td>
+                                                                                </tr>
+                                                                                <tr style={{ 
+                                                                                    backgroundColor: '#2a2a2a',
+                                                                                    fontSize: '0.9em'
+                                                                                }}>
+                                                                                    <td colSpan="3" style={{ 
+                                                                                        padding: '8px 16px',
+                                                                                        textAlign: 'right',
+                                                                                        fontWeight: '600'
+                                                                                    }}>
+                                                                                        Undelivered:
+                                                                                    </td>
+                                                                                    <td style={{ 
+                                                                                        padding: '8px 16px',
+                                                                                        textAlign: 'right',
+                                                                                        fontWeight: '600',
+                                                                                        color: '#ff6b6b'
+                                                                                    }}>
+                                                                                        {Math.max(0, (originalInvoiceItem?.quantity || 0) - (item.deliveryPieces || 0))} pieces
+                                                                                    </td>
+                                                                                </tr>
+                                                                            </tfoot>
+                                                                        </table>
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </div>
@@ -951,7 +1126,7 @@ const NewDeliveryOrder = ({ onClose }) => {
             </CloseButton>
 
             <Header>
-                <Title>New Delivery Order</Title>
+                <Title>{editMode ? 'Edit Delivery Order' : 'New Delivery Order'}</Title>
             </Header>
 
             <ProgressBar>
@@ -992,7 +1167,7 @@ const NewDeliveryOrder = ({ onClose }) => {
                         </NextButton>
                     ) : (
                         <SubmitButton type="submit" disabled={isLoading}>
-                            {isLoading ? 'Creating...' : 'Create Delivery Order'}
+                            {isLoading ? 'Saving...' : editMode ? 'Save Changes' : 'Create Delivery Order'}
                         </SubmitButton>
                     )}
                 </StepActions>

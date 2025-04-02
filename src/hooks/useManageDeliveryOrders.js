@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 
 /**
@@ -83,6 +83,42 @@ const useManageDeliveryOrders = () => {
         }
     };
 
+    const updateDeliveryOrder = async (deliveryOrderId, deliveryOrderData) => {
+        try {
+            console.log('Starting updateDeliveryOrder with ID:', deliveryOrderId);
+            console.log('Update data:', JSON.stringify(deliveryOrderData, null, 2));
+            
+            setState(prev => ({ ...prev, isLoading: true }));
+            
+            // Update the delivery order in Firestore
+            const deliveryOrderRef = doc(db, 'deliveryOrders', deliveryOrderId);
+            console.log('Updating document at path:', deliveryOrderRef.path);
+            
+            await updateDoc(deliveryOrderRef, {
+                ...deliveryOrderData,
+                updatedAt: serverTimestamp()
+            });
+            
+            console.log('Document updated successfully');
+            
+            // Refresh the delivery orders list
+            await refreshDeliveryOrders();
+            
+            console.log('Delivery orders list refreshed');
+            return deliveryOrderId;
+        } catch (error) {
+            console.error('Error in updateDeliveryOrder:', error);
+            setState(prev => ({
+                ...prev,
+                isLoading: false,
+                error: error.message
+            }));
+            throw error;
+        } finally {
+            setState(prev => ({ ...prev, isLoading: false }));
+        }
+    };
+
     useEffect(() => {
         refreshDeliveryOrders();
     }, []);
@@ -90,7 +126,8 @@ const useManageDeliveryOrders = () => {
     return {
         state,
         refreshDeliveryOrders,
-        createDeliveryOrder
+        createDeliveryOrder,
+        updateDeliveryOrder
     };
 };
 

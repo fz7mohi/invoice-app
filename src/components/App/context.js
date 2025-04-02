@@ -60,7 +60,8 @@ const AppProvider = ({ children }) => {
     const {
         state: deliveryOrderState,
         refreshDeliveryOrders,
-        createDeliveryOrder
+        createDeliveryOrder,
+        updateDeliveryOrder
     } = useManageDeliveryOrders();
 
     const {
@@ -156,6 +157,7 @@ const AppProvider = ({ children }) => {
                 deliveryOrderState,
                 refreshDeliveryOrders,
                 createDeliveryOrder,
+                updateDeliveryOrder,
                 fortuneGiftsTheme
             }}
         >
