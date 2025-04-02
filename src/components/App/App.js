@@ -20,6 +20,7 @@ import { useGlobalContext } from './context';
 import { AnimatePresence } from 'framer-motion';
 import QuotationView from '../QuotationView/QuotationView';
 import Settings from '../Settings/Settings';
+import Dashboard from '../Dashboard/Dashboard';
 import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '../../utilities/themes';
 
@@ -80,7 +81,10 @@ const App = () => {
                 <AnimatePresence exitBeforeEnter>
                     <Switch location={location} key={location.key}>
                         <Route exact path="/">
-                            <Redirect to="/invoices" />
+                            <Redirect to="/dashboard" />
+                        </Route>
+                        <Route exact path="/dashboard">
+                            <Dashboard />
                         </Route>
                         <Route exact path="/invoices">
                             <Invoices />

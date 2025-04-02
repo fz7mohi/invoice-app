@@ -8,12 +8,12 @@ const Navigation = ({ isMobile, onNavigate }) => {
     const location = useLocation();
     
     const navItems = [
+        { name: 'Dashboard', icon: 'menu', path: '/dashboard' },
         { name: 'Clients', icon: 'clients', path: '/clients' },
         { name: 'Quotations', icon: 'quotation', path: '/quotations' },
         { name: 'Invoices', icon: 'invoice', path: '/' },
         { name: 'Receipts', icon: 'receipt', path: '/receipts' },
         { name: 'Delivery Orders', icon: 'delivery', path: '/delivery-orders' },
-        { name: 'Statements', icon: 'statement', path: '/statements' },
         { name: 'Settings', icon: 'settings', path: '/settings' }
     ];
 
