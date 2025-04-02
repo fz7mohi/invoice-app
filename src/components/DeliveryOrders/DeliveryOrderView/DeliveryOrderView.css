@@ -1,0 +1,130 @@
+.StyledDeliveryOrderView {
+    width: 100%;
+    min-height: 100vh;
+    padding: 32px 24px;
+    background-color: #141625;
+    color: white;
+    overflow-x: hidden;
+}
+
+.StyledLink {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #7e88c3;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.StyledLink:hover {
+    color: #9277ff;
+}
+
+.Controller {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.InfoCard {
+    background-color: #1e2139;
+    border-radius: 8px;
+    padding: 32px;
+    margin-bottom: 32px;
+}
+
+.InfoAddresses {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+
+.Details {
+    background-color: #252945;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 32px;
+}
+
+.ItemsHeader {
+    display: none;
+}
+
+.Items {
+    padding: 24px;
+}
+
+.Item {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid #252945;
+}
+
+.Item:last-child {
+    border-bottom: none;
+}
+
+.item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.item-mobile-details {
+    display: block;
+    margin-top: 8px;
+    color: #b0b0b0;
+    font-size: 14px;
+}
+
+.loading-spinner {
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top: 2px solid #9277ff;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (min-width: 768px) {
+    .StyledDeliveryOrderView {
+        padding: 48px 24px;
+    }
+    
+    .InfoAddresses {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .ItemsHeader {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 16px;
+        padding: 24px;
+        background-color: #252945;
+        color: white;
+    }
+    
+    .Item {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 24px;
+        align-items: center;
+        padding: 16px 24px;
+    }
+    
+    .item-mobile-details {
+        display: none;
+    }
+} 

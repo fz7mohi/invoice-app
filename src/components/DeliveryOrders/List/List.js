@@ -39,7 +39,7 @@ const List = ({ deliveryOrders, isLoading }) => {
         <StyledList>
             {deliveryOrders.map((order) => (
                 <RouterLink
-                    to={`/delivery-order/${order.id}`}
+                    to={`/delivery-orders/${order.id}`}
                     key={order.id}
                     style={{ textDecoration: 'none' }}
                 >
