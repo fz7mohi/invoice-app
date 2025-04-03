@@ -117,7 +117,7 @@ export const InputWrapper = styled.div`
     margin-bottom: 16px;
     display: flex;
     gap: 8px;
-    align-items: flex-start;
+    align-items: flex-end;
 
     &:last-child {
         margin-bottom: 0;
@@ -133,12 +133,16 @@ export const AutoFillButton = styled.button`
     color: #FFFFFF;
     border: none;
     border-radius: 4px;
-    padding: 8px 12px;
+    padding: 10px 12px;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.2s ease;
     white-space: nowrap;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     
     &:hover {
         background-color: #9277FF;
