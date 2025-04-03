@@ -115,9 +115,37 @@ export const InputGroup = styled.div`
 export const InputWrapper = styled.div`
     position: relative;
     margin-bottom: 16px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
 
     &:last-child {
         margin-bottom: 0;
+    }
+`;
+
+export const InputContainer = styled.div`
+    flex: 1;
+`;
+
+export const AutoFillButton = styled.button`
+    background-color: #7C5DFA;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+    
+    &:hover {
+        background-color: #9277FF;
+    }
+    
+    &:active {
+        background-color: #6B4DE6;
     }
 `;
 

@@ -5,6 +5,7 @@ import {
     SectionTitle,
     InputGroup,
     InputWrapper,
+    InputContainer,
     Label,
     Input,
     TextArea,
@@ -12,7 +13,8 @@ import {
     ErrorMessage,
     RequiredIndicator,
     Tooltip,
-    InputWrapperWithTooltip
+    InputWrapperWithTooltip,
+    AutoFillButton
 } from './ClientFormControllerStyles';
 import { useEffect, useRef, useState } from 'react';
 import Icon from '../shared/Icon/Icon';
@@ -196,6 +198,25 @@ const ClientFormContent = ({ isEdited }) => {
 
     const isUAE = client.country === 'United Arab Emirates';
 
+    // Auto-fill handlers
+    const handleAutoFillEmail = () => {
+        handleClientChange({
+            target: {
+                name: 'email',
+                value: 'dummy@email.com'
+            }
+        });
+    };
+
+    const handleAutoFillPhone = () => {
+        handleClientChange({
+            target: {
+                name: 'phone',
+                value: '+974 123 4 5678'
+            }
+        });
+    };
+
     return (
         <>
             {!isEdited && (
@@ -218,45 +239,52 @@ const ClientFormContent = ({ isEdited }) => {
                 </SectionTitle>
                 <InputGroup>
                     <InputWrapper>
-                        <Label htmlFor="companyName" $error={errors?.companyName}>
-                            Company Name<RequiredIndicator>*</RequiredIndicator>
-                        </Label>
-                        <Input
-                            ref={companyNameRef}
-                            type="text"
-                            name="companyName"
-                            value={client.companyName}
-                            $error={errors?.companyName}
-                            $valid={validFields.companyName}
-                            onChange={handleClientChange}
-                            placeholder="Enter company name"
-                            aria-required="true"
-                            aria-invalid={errors?.companyName ? "true" : "false"}
-                        />
-                        {errors?.companyName && (
-                            <ErrorMessage>Company name is required</ErrorMessage>
-                        )}
+                        <InputContainer>
+                            <Label htmlFor="companyName" $error={errors?.companyName}>
+                                Company Name<RequiredIndicator>*</RequiredIndicator>
+                            </Label>
+                            <Input
+                                ref={companyNameRef}
+                                type="text"
+                                name="companyName"
+                                value={client.companyName}
+                                $error={errors?.companyName}
+                                $valid={validFields.companyName}
+                                onChange={handleClientChange}
+                                placeholder="Enter company name"
+                                aria-required="true"
+                                aria-invalid={errors?.companyName ? "true" : "false"}
+                            />
+                            {errors?.companyName && (
+                                <ErrorMessage>Company name is required</ErrorMessage>
+                            )}
+                        </InputContainer>
                     </InputWrapper>
 
                     <InputWrapper>
-                        <Label htmlFor="email" $error={errors?.email}>
-                            Email<RequiredIndicator>*</RequiredIndicator>
-                        </Label>
-                        <Input
-                            ref={emailRef}
-                            type="email"
-                            name="email"
-                            value={client.email}
-                            $error={errors?.email}
-                            $valid={validFields.email}
-                            onChange={handleClientChange}
-                            placeholder="email@example.com"
-                            aria-required="true"
-                            aria-invalid={errors?.email ? "true" : "false"}
-                        />
-                        {errors?.email && (
-                            <ErrorMessage>Please enter a valid email address</ErrorMessage>
-                        )}
+                        <InputContainer>
+                            <Label htmlFor="email" $error={errors?.email}>
+                                Email<RequiredIndicator>*</RequiredIndicator>
+                            </Label>
+                            <Input
+                                ref={emailRef}
+                                type="email"
+                                name="email"
+                                value={client.email}
+                                $error={errors?.email}
+                                $valid={validFields.email}
+                                onChange={handleClientChange}
+                                placeholder="email@example.com"
+                                aria-required="true"
+                                aria-invalid={errors?.email ? "true" : "false"}
+                            />
+                            {errors?.email && (
+                                <ErrorMessage>Please enter a valid email address</ErrorMessage>
+                            )}
+                        </InputContainer>
+                        <AutoFillButton type="button" onClick={handleAutoFillEmail}>
+                            Auto-fill
+                        </AutoFillButton>
                     </InputWrapper>
                 </InputGroup>
             </FormSection>
@@ -268,24 +296,29 @@ const ClientFormContent = ({ isEdited }) => {
                 </SectionTitle>
                 <InputGroup>
                     <InputWrapper>
-                        <Label htmlFor="phone" $error={errors?.phone}>
-                            Phone<RequiredIndicator>*</RequiredIndicator>
-                        </Label>
-                        <Input
-                            ref={phoneRef}
-                            type="text"
-                            name="phone"
-                            value={client.phone}
-                            $error={errors?.phone}
-                            $valid={validFields.phone}
-                            onChange={handlePhoneChange}
-                            placeholder="+971 XX XXX XXXX"
-                            aria-required="true"
-                            aria-invalid={errors?.phone ? "true" : "false"}
-                        />
-                        {errors?.phone && (
-                            <ErrorMessage>Please enter a valid phone number</ErrorMessage>
-                        )}
+                        <InputContainer>
+                            <Label htmlFor="phone" $error={errors?.phone}>
+                                Phone<RequiredIndicator>*</RequiredIndicator>
+                            </Label>
+                            <Input
+                                ref={phoneRef}
+                                type="text"
+                                name="phone"
+                                value={client.phone}
+                                $error={errors?.phone}
+                                $valid={validFields.phone}
+                                onChange={handlePhoneChange}
+                                placeholder="+971 XX XXX XXXX"
+                                aria-required="true"
+                                aria-invalid={errors?.phone ? "true" : "false"}
+                            />
+                            {errors?.phone && (
+                                <ErrorMessage>Please enter a valid phone number</ErrorMessage>
+                            )}
+                        </InputContainer>
+                        <AutoFillButton type="button" onClick={handleAutoFillPhone}>
+                            Auto-fill
+                        </AutoFillButton>
                     </InputWrapper>
 
                     <InputWrapper>

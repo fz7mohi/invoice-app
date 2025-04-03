@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import logo from '../../assets/images/logo.svg';
-import avatar from '../../assets/images/image-avatar.jpg';
+import avatar from '../../assets/images/image-avatar.png';
 
 export const StyledHeader = styled.header`
     display: grid;
