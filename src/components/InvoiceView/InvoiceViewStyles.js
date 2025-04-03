@@ -32,7 +32,7 @@ export const StyledInvoiceView = styled.main`
     padding: 28px 24px 0;
     width: 100%;
     min-height: 100%;
-    margin-bottom: 120px;
+    margin-bottom: 180px;
     background-color: ${({ theme }) => theme.colors.background};
     transition: background-color 0.3s ease;
 
@@ -368,6 +368,7 @@ export const ButtonWrapper = styled.div`
     left: 0;
     right: 0;
     padding: 12px;
+    padding-bottom: 76px;
     background-color: rgba(30, 33, 57, 0.95);
     backdrop-filter: blur(8px);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -377,6 +378,7 @@ export const ButtonWrapper = styled.div`
     @media (min-width: 768px) {
         position: static;
         padding: 0;
+        padding-bottom: 0;
         border: none;
         backdrop-filter: none;
         background: none;

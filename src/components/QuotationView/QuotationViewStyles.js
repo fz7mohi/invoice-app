@@ -6,7 +6,7 @@ export const StyledQuotationView = styled.main`
     padding: 28px 24px 0;
     width: 100%;
     min-height: 100%;
-    margin-bottom: 120px;
+    margin-bottom: 180px;
     background-color: ${({ theme }) => theme.colors.background};
     transition: background-color 0.3s ease;
 
@@ -86,6 +86,7 @@ export const ButtonWrapper = styled.div`
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
     z-index: 10;
     transition: all 0.3s ease;
+    padding-bottom: 76px;
 
     @media (min-width: 768px) {
         position: relative;
@@ -94,6 +95,7 @@ export const ButtonWrapper = styled.div`
         background-color: transparent;
         box-shadow: none;
         padding: 0;
+        padding-bottom: 0;
     }
 `;
 

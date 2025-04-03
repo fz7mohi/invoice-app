@@ -4,6 +4,7 @@ import { useReducedMotion } from 'framer-motion';
 import ModalDelete from './ModalDelete';
 import ModalStatus from './ModalStatus';
 import ModalDeleteQuotation from './ModalDeleteQuotation';
+import QuotationFormController from '../QuotationFormController/QuotationFormController';
 import { modalVariants } from '../../utilities/framerVariants';
 import { useGlobalContext } from '../App/context';
 import { StyledModal } from './ModalStyles';
@@ -16,29 +17,11 @@ const Modal = () => {
         toggleQuotationModal 
     } = useGlobalContext();
     
+    // Simplified conditions
     const isDeleteModal = state.isModalOpen.name === 'delete';
     const isStatusModal = state.isModalOpen.name === 'status';
-    const isQuotationModal = quotationState?.form?.isCreating || quotationState?.form?.isEditing;
+    const isQuotationModal = quotationState?.form?.isCreating === true || quotationState?.form?.isEditing === true;
     const isQuotationDeleteModal = quotationState?.modal?.isOpen && quotationState?.modal?.name === 'delete';
-    
-    console.log('Modal component state:', {
-        isDeleteModal,
-        isStatusModal,
-        isQuotationModal,
-        isQuotationDeleteModal,
-        quotationStateModal: quotationState?.modal,
-        quotationStateForm: quotationState?.form,
-        state: state,
-        quotationState: quotationState
-    });
-
-    // Add effect to track state changes
-    useEffect(() => {
-        console.log('Modal state changed:', {
-            quotationStateModal: quotationState?.modal,
-            state: state
-        });
-    }, [quotationState?.modal, state]);
     
     const modalRef = useRef();
     const shouldReduceMotion = useReducedMotion();
@@ -94,11 +77,12 @@ const Modal = () => {
     };
 
     // Side effect to add event listeners and disable page scrolling.
-    // Removing the event listener in the return function in order to avoid memory leaks.
     useEffect(() => {
         document.addEventListener('keydown', focusTrap);
         document.addEventListener('click', handleClickOutsideModal);
-        modalRef.current.focus();
+        if (modalRef.current) {
+            modalRef.current.focus();
+        }
         document.body.style.overflow = 'hidden';
 
         return () => {
@@ -107,6 +91,11 @@ const Modal = () => {
             document.body.style.overflow = 'unset';
         };
     }, [isQuotationModal, isQuotationDeleteModal]);
+
+    // Only render if any modal should be shown
+    if (!isDeleteModal && !isStatusModal && !isQuotationModal && !isQuotationDeleteModal) {
+        return null;
+    }
 
     const modal = (
         <StyledModal

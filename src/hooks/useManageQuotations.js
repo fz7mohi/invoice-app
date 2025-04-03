@@ -724,7 +724,11 @@ const useManageQuotations = () => {
         // Add first blank item row
         addQuotationItem();
         
-        dispatch({ type: 'CREATE_QUOTATION' });
+        // Explicitly set isCreating to true
+        dispatch({ 
+            type: 'CREATE_QUOTATION',
+            payload: { isCreating: true }
+        });
     };
 
     /**

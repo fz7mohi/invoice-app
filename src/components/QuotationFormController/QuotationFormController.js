@@ -19,6 +19,7 @@ const QuotationFormController = () => {
     const backdropRef = useRef();
     const hasScroll = window.innerWidth > document.documentElement.clientWidth;
     const shouldReduceMotion = useReducedMotion();
+    
     const variant = (element) => {
         return shouldReduceMotion
             ? FormControllerVariants.reduced
@@ -46,7 +47,11 @@ const QuotationFormController = () => {
      */
     const handleClickOutsideForm = (event) => {
         const target = event.target;
-        if (target === backdropRef.current) discardQuotationChanges();
+        
+        // Only close the form if clicking on the backdrop
+        if (target === backdropRef.current) {
+            discardQuotationChanges();
+        }
     };
 
     /**

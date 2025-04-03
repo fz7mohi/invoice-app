@@ -122,7 +122,11 @@ const Quotations = () => {
                     <Button 
                         type="button" 
                         $primary 
-                        onClick={createQuotation}
+                        onClick={() => {
+                            setTimeout(() => {
+                                createQuotation();
+                            }, 0);
+                        }}
                         disabled={isLoading}
                     >
                         New {isDesktop && 'Quotation'}
