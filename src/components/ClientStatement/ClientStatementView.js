@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
@@ -29,7 +29,16 @@ import {
   InvoicesCount,
   InvoicesFilter,
   FilterButton,
+  DateFilterContainer,
+  DateFilterButton,
+  DateFilterDropdown,
+  DateRangeInput,
+  ApplyButton,
+  ClearButton,
   InvoiceItem,
+  UAEInvoiceItem,
+  NonUAEInvoiceItem,
+  ColumnHeader,
   InvoiceNumber,
   InvoiceDate,
   InvoiceDescription,
@@ -62,6 +71,10 @@ const ClientStatementView = () => {
     totalQuotations: 0,
     totalCredits: 0
   });
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const dateFilterRef = useRef(null);
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -111,7 +124,8 @@ const ClientStatementView = () => {
             description: data.description || 'No description',
             total: parseFloat(data.total) || 0,
             vat: data.vat || 0,
-            status: data.status || 'draft'
+            status: data.status || 'draft',
+            currency: data.currency || (clientData.country === 'UAE' ? 'AED' : 'USD')
           };
         });
         
@@ -173,13 +187,66 @@ const ClientStatementView = () => {
     fetchClientData();
   }, [id]);
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'QAR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
+  const getClientCurrency = () => {
+    if (!client?.country) return 'USD';
+    
+    const countryLower = client.country.toLowerCase();
+    if (countryLower.includes('emirates') || countryLower.includes('uae') || countryLower.includes('united arab')) {
+      return 'AED';
+    } else if (countryLower.includes('qatar')) {
+      return 'QAR';
+    } else {
+      return 'USD';
+    }
+  };
+
+  const formatCurrency = (value, currency = null) => {
+    // Use the provided currency or determine based on client country
+    const currencyToUse = currency || getClientCurrency();
+    
+    // For UAE clients, always use AED
+    if (client?.country && (
+      client.country.toLowerCase().includes('emirates') || 
+      client.country.toLowerCase().includes('uae') || 
+      client.country.toLowerCase().includes('united arab')
+    )) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'AED',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+    
+    try {
+      // For Qatar clients
+      if (currencyToUse === 'QAR') {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'QAR',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(value);
+      }
+      // For other currencies
+      else {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: currencyToUse,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(value);
+      }
+    } catch (error) {
+      console.error(`Error formatting currency with ${currencyToUse}:`, error);
+      // Fallback to USD if there's an error with the specified currency
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value);
+    }
   };
 
   const formatDate = (date) => {
@@ -213,9 +280,54 @@ const ClientStatementView = () => {
     setFilter(newFilter);
   };
 
+  const toggleDateFilter = () => {
+    setShowDateFilter(!showDateFilter);
+  };
+
+  const handleApplyDateFilter = () => {
+    setShowDateFilter(false);
+  };
+
+  const handleClearDateFilter = () => {
+    setStartDate('');
+    setEndDate('');
+  };
+
+  // Close date filter dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dateFilterRef.current && !dateFilterRef.current.contains(event.target)) {
+        setShowDateFilter(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const filteredInvoices = invoices.filter(invoice => {
-    if (filter === 'all') return true;
-    return invoice.status === filter;
+    // Filter by status
+    if (filter !== 'all' && invoice.status !== filter) {
+      return false;
+    }
+    
+    // Filter by date range if dates are set
+    if (startDate && endDate) {
+      const invoiceDate = new Date(invoice.date);
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Set end date to end of day
+      end.setHours(23, 59, 59, 999);
+      
+      if (invoiceDate < start || invoiceDate > end) {
+        return false;
+      }
+    }
+    
+    return true;
   });
 
   const handleExport = () => {
@@ -312,7 +424,7 @@ const ClientStatementView = () => {
             <Icon name="receipt" size={24} color={colors.statusPaid} />
           </SummaryIcon>
           <SummaryContent>
-            <SummaryValue>{formatCurrency(summary.totalAmount)}</SummaryValue>
+            <SummaryValue>{formatCurrency(summary.totalAmount, getClientCurrency())}</SummaryValue>
             <SummaryLabel>Total Amount</SummaryLabel>
           </SummaryContent>
         </SummaryCard>
@@ -321,7 +433,7 @@ const ClientStatementView = () => {
             <Icon name="invoice" size={24} color={colors.statusPaid} />
           </SummaryIcon>
           <SummaryContent>
-            <SummaryValue>{formatCurrency(summary.paidAmount)}</SummaryValue>
+            <SummaryValue>{formatCurrency(summary.paidAmount, getClientCurrency())}</SummaryValue>
             <SummaryLabel>Paid Amount</SummaryLabel>
           </SummaryContent>
         </SummaryCard>
@@ -330,7 +442,7 @@ const ClientStatementView = () => {
             <Icon name="calendar" size={24} color={colors.statusPending} />
           </SummaryIcon>
           <SummaryContent>
-            <SummaryValue>{formatCurrency(summary.pendingAmount)}</SummaryValue>
+            <SummaryValue>{formatCurrency(summary.pendingAmount, getClientCurrency())}</SummaryValue>
             <SummaryLabel>Pending Amount</SummaryLabel>
           </SummaryContent>
         </SummaryCard>
@@ -383,32 +495,117 @@ const ClientStatementView = () => {
             >
               Draft
             </FilterButton>
+            <DateFilterContainer ref={dateFilterRef}>
+              <DateFilterButton onClick={toggleDateFilter}>
+                <Icon name="calendar" size={16} color={colors.textSecondary} />
+                Date Range
+                {(startDate || endDate) && (
+                  <span style={{ 
+                    backgroundColor: colors.primary, 
+                    color: 'white', 
+                    borderRadius: '50%', 
+                    width: '18px', 
+                    height: '18px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    fontSize: '0.7rem',
+                    marginLeft: '4px'
+                  }}>
+                    !
+                  </span>
+                )}
+              </DateFilterButton>
+              {showDateFilter && (
+                <DateFilterDropdown>
+                  <DateRangeInput>
+                    <label>Start Date</label>
+                    <input 
+                      type="date" 
+                      value={startDate} 
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </DateRangeInput>
+                  <DateRangeInput>
+                    <label>End Date</label>
+                    <input 
+                      type="date" 
+                      value={endDate} 
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </DateRangeInput>
+                  <ApplyButton onClick={handleApplyDateFilter}>
+                    Apply Filter
+                  </ApplyButton>
+                  {(startDate || endDate) && (
+                    <ClearButton onClick={handleClearDateFilter}>
+                      Clear Date Filter
+                    </ClearButton>
+                  )}
+                </DateFilterDropdown>
+              )}
+            </DateFilterContainer>
           </InvoicesFilter>
         </InvoicesHeader>
 
+        {/* Invoice List Headers */}
+        {client?.country === 'UAE' ? (
+          <UAEInvoiceItem style={{ cursor: 'default', pointerEvents: 'none', border: 'none', background: 'transparent', padding: '0 0.75rem' }}>
+            <ColumnHeader>Invoice#</ColumnHeader>
+            <ColumnHeader>Date</ColumnHeader>
+            <ColumnHeader>Project</ColumnHeader>
+            <ColumnHeader>VAT</ColumnHeader>
+            <ColumnHeader align="right">Total Amount</ColumnHeader>
+            <ColumnHeader align="right">Status</ColumnHeader>
+          </UAEInvoiceItem>
+        ) : (
+          <NonUAEInvoiceItem style={{ cursor: 'default', pointerEvents: 'none', border: 'none', background: 'transparent', padding: '0 0.75rem' }}>
+            <ColumnHeader>Invoice#</ColumnHeader>
+            <ColumnHeader>Date</ColumnHeader>
+            <ColumnHeader>Project</ColumnHeader>
+            <ColumnHeader align="right">Total Amount</ColumnHeader>
+            <ColumnHeader align="right">Status</ColumnHeader>
+          </NonUAEInvoiceItem>
+        )}
+
         {filteredInvoices.length > 0 ? (
-          filteredInvoices.map((invoice, index) => (
-            <InvoiceItem
-              key={invoice.id}
-              as={motion.div}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              onClick={() => history.push(`/invoice/${invoice.id}`)}
-            >
-              <InvoiceNumber>{invoice.number}</InvoiceNumber>
-              <InvoiceDate>{formatDate(invoice.date)}</InvoiceDate>
-              <InvoiceDescription>{invoice.description}</InvoiceDescription>
-              {invoice.vat > 0 && (
-                <InvoiceVAT>{formatCurrency(invoice.vat)}</InvoiceVAT>
-              )}
-              <InvoiceTotal>{formatCurrency(invoice.total)}</InvoiceTotal>
-              <InvoiceStatus>
-                <StatusBadge color={getStatusColor(invoice.status)}>
-                  {invoice.status.replace('_', ' ')}
-                </StatusBadge>
-              </InvoiceStatus>
-            </InvoiceItem>
+          filteredInvoices.map((invoice) => (
+            client?.country === 'UAE' ? (
+              <UAEInvoiceItem
+                key={invoice.id}
+                onClick={() => history.push(`/invoices/${invoice.id}`)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <InvoiceNumber>#{invoice.number}</InvoiceNumber>
+                <InvoiceDate>{formatDate(invoice.date)}</InvoiceDate>
+                <InvoiceDescription>{invoice.description || 'No description'}</InvoiceDescription>
+                <InvoiceVAT>{formatCurrency(invoice.vat, invoice.currency || 'AED')}</InvoiceVAT>
+                <InvoiceTotal>{formatCurrency(invoice.total, invoice.currency || 'AED')}</InvoiceTotal>
+                <InvoiceStatus>
+                  <StatusBadge color={getStatusColor(invoice.status)}>
+                    {invoice.status}
+                  </StatusBadge>
+                </InvoiceStatus>
+              </UAEInvoiceItem>
+            ) : (
+              <NonUAEInvoiceItem
+                key={invoice.id}
+                onClick={() => history.push(`/invoices/${invoice.id}`)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <InvoiceNumber>#{invoice.number}</InvoiceNumber>
+                <InvoiceDate>{formatDate(invoice.date)}</InvoiceDate>
+                <InvoiceDescription>{invoice.description || 'No description'}</InvoiceDescription>
+                <InvoiceTotal>{formatCurrency(invoice.total, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</InvoiceTotal>
+                <InvoiceStatus>
+                  <StatusBadge color={getStatusColor(invoice.status)}>
+                    {invoice.status}
+                  </StatusBadge>
+                </InvoiceStatus>
+              </NonUAEInvoiceItem>
+            )
           ))
         ) : (
           <EmptyState>

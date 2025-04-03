@@ -40,7 +40,7 @@ export const BackButton = styled.button`
   justify-content: center;
   transition: all 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  color: ${({ theme }) => theme.colors.backgroundPrimary};
+  color: ${({ theme }) => theme.colors.backgroundPrimary + ' !important'};
   font-weight: 500;
 
   &:hover {
@@ -48,6 +48,7 @@ export const BackButton = styled.button`
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
     border-color: rgba(147, 112, 219, 0.5);
+    color: ${({ theme }) => theme.colors.textPrimary + ' !important'};
   }
 
   &:focus {
@@ -66,7 +67,7 @@ export const ExportButton = styled.button`
   align-items: center;
   gap: 0.75rem;
   background-color: ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
-  color: ${({ theme }) => theme.colors.backgroundPrimary};
+  color: ${({ theme }) => theme.colors.backgroundPrimary + ' !important'};
   border: 1px solid rgba(147, 112, 219, 0.3);
   border-radius: 12px;
   padding: 0.75rem 1.5rem;
@@ -82,6 +83,7 @@ export const ExportButton = styled.button`
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     border-color: rgba(147, 112, 219, 0.5);
+    color: ${({ theme }) => theme.colors.backgroundPrimary + ' !important'};
   }
 
   &:active {
@@ -278,12 +280,13 @@ export const InvoicesFilter = styled.div`
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  align-items: center;
 `;
 
 export const FilterButton = styled.button`
-  background-color: ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
+  background-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
   color: ${({ active, theme }) => 
-    active ? theme.colors.backgroundPrimary : theme.colors.textSecondary};
+    active ? theme.colors.backgroundPrimary + ' !important' : theme.colors.textPrimary + ' !important'};
   border: 1px solid ${({ active, theme }) => 
     active ? theme.colors.primary : 'rgba(147, 112, 219, 0.3)'};
   border-radius: 10px;
@@ -296,9 +299,9 @@ export const FilterButton = styled.button`
 
   &:hover {
     background-color: ${({ active, theme }) => 
-      active ? theme.colors.primaryDark : theme.colors.backgroundTertiary};
+      active ? theme.colors.primaryDark : theme.colors.backgroundQuaternary};
     color: ${({ active, theme }) => 
-      active ? theme.colors.backgroundPrimary : theme.colors.textPrimary};
+      active ? theme.colors.backgroundPrimary + ' !important' : theme.colors.textPrimary + ' !important'};
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     border-color: ${({ active, theme }) => 
@@ -318,28 +321,135 @@ export const FilterButton = styled.button`
   @media (min-width: 768px) {
     &:hover:not(:disabled) {
       background-color: ${({ active, theme }) => 
-        active ? theme.colors.primaryDark : theme.colors.backgroundTertiary};
+        active ? theme.colors.primaryDark : theme.colors.backgroundQuaternary};
     }
+  }
+`;
+
+export const DateFilterContainer = styled.div`
+  position: relative;
+`;
+
+export const DateFilterButton = styled(FilterButton)`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  
+  &:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`;
+
+export const DateFilterDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 320px;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(147, 112, 219, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+export const DateRangeInput = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  
+  label {
+    font-size: 0.85rem;
+    color: ${({ theme }) => theme.colors.black};
+    font-weight: 500;
+  }
+  
+  input {
+    background-color: ${({ theme }) => theme.colors.backgroundTertiary};
+    border: 1px solid rgba(147, 112, 219, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem;
+    color: black;
+    font-size: 0.9rem;
+    width: 100%;
+    
+    &:focus {
+      outline: none;
+      border-color: ${({ theme }) => theme.colors.primary};
+    }
+  }
+`;
+
+export const ApplyButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.backgroundPrimary + ' !important'};
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.primaryDark};
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    color: ${({ theme }) => theme.colors.backgroundPrimary + ' !important'};
+  }
+  
+  &:focus {
+    outline: 2px solid ${({ theme }) => theme.colors.primary};
+    outline-offset: 2px;
+  }
+`;
+
+export const ClearButton = styled.button`
+  background-color: transparent;
+  color: ${({ theme }) => theme.colors.textPrimary + ' !important'};
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  padding: 0.5rem;
+  
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary + ' !important'};
   }
 `;
 
 export const InvoiceItem = styled(motion.div)`
   background-color: ${({ theme }) => theme.colors.backgroundTertiary};
-  border-radius: 10px;
-  padding: 1.25rem;
+  border-radius: 12px;
+  padding: 1.5rem;
   display: grid;
   grid-template-columns: 1fr 1fr 2fr 1fr 1fr 1fr;
-  gap: 1rem;
+  gap: 1.5rem;
   align-items: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   border: 1px solid rgba(147, 112, 219, 0.3);
+  position: relative;
+  overflow: hidden;
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.backgroundQuaternary};
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-color: rgba(147, 112, 219, 0.5);
+  }
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
+    gap: 1rem;
+    padding: 1.25rem;
   }
 
   @media (max-width: 1024px) {
@@ -358,6 +468,8 @@ export const InvoiceItem = styled(motion.div)`
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    padding: 1rem;
     & > *:nth-child(2) {
       display: none;
     }
@@ -368,11 +480,13 @@ export const InvoiceNumber = styled.span`
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 1rem;
+  letter-spacing: 0.5px;
 `;
 
 export const InvoiceDate = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 0.9rem;
+  white-space: nowrap;
 `;
 
 export const InvoiceDescription = styled.span`
@@ -381,33 +495,42 @@ export const InvoiceDescription = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.9rem;
+  max-width: 100%;
 `;
 
 export const InvoiceTotal = styled.span`
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 1rem;
+  text-align: right;
+  white-space: nowrap;
 `;
 
 export const InvoiceVAT = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 0.85rem;
+  text-align: right;
+  white-space: nowrap;
 `;
 
 export const InvoiceStatus = styled.div`
   display: flex;
   justify-content: flex-end;
+  align-items: center;
 `;
 
 export const StatusBadge = styled.span`
   background-color: ${({ color }) => color}15;
   color: ${({ color }) => color};
-  padding: 0.35rem 0.85rem;
+  padding: 0.5rem 1rem;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   text-transform: capitalize;
   border: 1px solid ${({ color }) => color}30;
+  white-space: nowrap;
+  text-align: center;
+  min-width: 100px;
 `;
 
 export const EmptyState = styled.div`
@@ -454,5 +577,86 @@ export const LoadingSpinner = styled.div`
     text-align: center;
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: 1.1rem;
+  }
+`;
+
+// Add a new component for UAE clients with VAT column
+export const UAEInvoiceItem = styled(InvoiceItem)`
+  grid-template-columns: 1fr 1fr 2fr 1fr 1fr 1fr;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
+  }
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    & > *:nth-child(4) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr 1fr 1fr;
+    & > *:nth-child(3) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr 1fr;
+    & > *:nth-child(2) {
+      display: none;
+    }
+  }
+`;
+
+// Add a new component for non-UAE clients without VAT column
+export const NonUAEInvoiceItem = styled(InvoiceItem)`
+  grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr;
+  }
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    & > *:nth-child(4) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr 1fr 1fr;
+    & > *:nth-child(3) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr 1fr;
+    & > *:nth-child(2) {
+      display: none;
+    }
+  }
+`;
+
+// Add a new component for column headers
+export const ColumnHeader = styled.div`
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.85rem;
+  text-align: ${({ align }) => align || 'left'};
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: ${({ theme }) => theme.colors.border};
   }
 `; 
