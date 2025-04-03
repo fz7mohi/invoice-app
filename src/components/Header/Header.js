@@ -4,6 +4,7 @@ import { useTheme } from 'styled-components';
 import { 
     StyledHeader, 
     Logo, 
+    ThemeToggle, 
     Profile, 
     MobileMenuButton,
     MobileNavOverlay,
@@ -14,7 +15,7 @@ import Navigation from '../Navigation/Navigation';
 
 const Header = () => {
     const { colors } = useTheme();
-    const { discardChanges } = useGlobalContext();
+    const { theme, toggleTheme, discard } = useGlobalContext();
     const isClickable = useRef(true);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -40,7 +41,7 @@ const Header = () => {
         } else {
             isClickable.current = false;
             setTimeout(() => (isClickable.current = true), 1000);
-            discardChanges();
+            discard();
         }
     };
 
@@ -57,6 +58,14 @@ const Header = () => {
             <StyledHeader>
                 <Logo aria-label="Home Page" to="/" onClick={handleClick} />
                 <Navigation onNavigate={closeMobileNav} />
+                <ThemeToggle aria-label="Theme toggle" onClick={toggleTheme}>
+                    <Icon
+                        name={theme === 'light' ? 'moon' : 'sun'}
+                        size={20}
+                        color={colors.btnTheme}
+                        customStyle={{ transition: 'color 350ms ease-in-out' }}
+                    />
+                </ThemeToggle>
                 {isMobile ? (
                     <MobileMenuButton 
                         aria-label="Toggle mobile menu" 
@@ -65,7 +74,7 @@ const Header = () => {
                         <Icon 
                             name="menu" 
                             size={24} 
-                            color="#FFFFFF"
+                            color={colors.btnTheme}
                         />
                     </MobileMenuButton>
                 ) : (

@@ -36,7 +36,7 @@ const MobileTabBar = () => {
                                     <Icon 
                                         name={item.icon} 
                                         size={22} 
-                                        color={isActive ? colors.purple : colors.btnTheme}
+                                        color={isActive ? colors.purple : colors.textTertiary}
                                     />
                                 </TabIcon>
                                 <TabLabel $isActive={isActive}>{item.name}</TabLabel>

@@ -1,16 +1,7 @@
-import React from 'react';
-import { StyledWrapper, ContentContainer } from './WrapperStyles';
-import MobileTabBar from '../Navigation/MobileTabBar';
+import { StyledWrapper } from './WrapperStyles';
 
 const Wrapper = ({ children }) => {
-    return (
-        <StyledWrapper>
-            <ContentContainer>
-                {children}
-            </ContentContainer>
-            <MobileTabBar />
-        </StyledWrapper>
-    );
+    return <StyledWrapper>{children}</StyledWrapper>;
 };
 
 export default Wrapper;

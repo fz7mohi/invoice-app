@@ -24,6 +24,7 @@ import Dashboard from '../Dashboard/Dashboard';
 import ClientStatementView from '../ClientStatement/ClientStatementView';
 import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '../../utilities/themes';
+import MobileTabBar from '../Navigation/MobileTabBar';
 
 // Create spinner animation keyframes
 const spinnerStyle = document.createElement('style');
@@ -126,6 +127,7 @@ const App = () => {
                         </Route>
                     </Switch>
                 </AnimatePresence>
+                <MobileTabBar />
             </Wrapper>
         </ThemeProvider>
     );

@@ -11,10 +11,6 @@ export const StyledNav = styled.nav`
         overflow-y: auto;
         padding: 16px 0;
     }
-    
-    @media (max-width: 767px) {
-        display: none; /* Hide on mobile screens */
-    }
 `;
 
 export const NavList = styled.ul`

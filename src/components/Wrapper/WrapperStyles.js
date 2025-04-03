@@ -7,18 +7,10 @@ export const StyledWrapper = styled.main`
     min-height: 100vh;
     background-color: ${(props) => props.theme?.backgrounds?.main || (props.theme?.mode === 'dark' ? '#141625' : '#f8f8fb')};
     transition: background-color 400ms ease-in-out;
+    padding-bottom: 60px; /* Add padding for mobile tab bar */
 
     @media (min-width: 1024px) {
         flex-flow: row;
-    }
-`;
-
-export const ContentContainer = styled.div`
-    flex: 1;
-    width: 100%;
-    padding-bottom: 60px; /* Space for mobile tab bar */
-    
-    @media (min-width: 768px) {
-        padding-bottom: 0; /* No padding needed on larger screens */
+        padding-bottom: 0; /* Remove padding on desktop */
     }
 `;
