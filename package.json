@@ -4,7 +4,7 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "build": "NODE_OPTIONS='--openssl-legacy-provider --legacy-peer-deps' npx mix",
+        "build": "NODE_OPTIONS='--openssl-legacy-provider --legacy-peer-deps' npm install --legacy-peer-deps && npx mix",
         "mix-watch": "npx mix watch",
         "dev": "NODE_OPTIONS=\"--openssl-legacy-provider\" npx mix && serve -s dist",
         "server": "node server.js"
@@ -44,7 +44,7 @@
         "react": "^17.0.2",
         "react-datepicker": "^4.1.1",
         "react-dom": "^17.0.2",
-        "react-icomoon": "^3.0.0",
+        "react-icomoon": "^2.3.5",
         "react-icons": "^5.5.0",
         "react-router-dom": "^5.2.0",
         "styled-components": "^5.3.0"
