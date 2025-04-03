@@ -76,6 +76,24 @@ const ClientStatementView = () => {
   const [endDate, setEndDate] = useState('');
   const dateFilterRef = useRef(null);
 
+  // Set default date range to current month
+  useEffect(() => {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    // Format dates as YYYY-MM-DD for input fields
+    const formatDateForInput = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    setStartDate(formatDateForInput(firstDayOfMonth));
+    setEndDate(formatDateForInput(lastDayOfMonth));
+  }, []);
+
   useEffect(() => {
     const fetchClientData = async () => {
       try {
