@@ -616,13 +616,38 @@ const ClientStatementView = () => {
         
         // Add VAT column for UAE clients
         if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
-          // Use the totalVat from the database
           rowContent += `<td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatCurrency(invoice.totalVat, invoice.currency || 'AED')}</td>`;
         }
         
+        // Get status color based on invoice status
+        const getStatusColor = (status) => {
+          switch (status) {
+            case 'paid':
+              return '#4CAF50'; // Green
+            case 'pending':
+              return '#FF9800'; // Orange
+            case 'partially_paid':
+              return '#2196F3'; // Blue
+            case 'void':
+              return '#F44336'; // Red
+            default:
+              return '#9E9E9E'; // Grey
+          }
+        };
+
+        // Format status text
+        const formatStatus = (status) => {
+          switch (status) {
+            case 'partially_paid':
+              return 'Partially Paid';
+            default:
+              return status.charAt(0).toUpperCase() + status.slice(1);
+          }
+        };
+
         rowContent += `
           <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatCurrency(invoice.total, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</td>
-          <td style="padding: 15px; text-align: center; color: black; font-size: 16px;">
+          <td style="padding: 15px; text-align: center;">
             <span style="
               display: inline-block;
               padding: 5px 10px;
@@ -630,8 +655,9 @@ const ClientStatementView = () => {
               background-color: ${getStatusColor(invoice.status)};
               color: white;
               font-weight: bold;
+              font-size: 14px;
               text-transform: capitalize;
-            ">${invoice.status}</span>
+            ">${formatStatus(invoice.status)}</span>
           </td>
         `;
         

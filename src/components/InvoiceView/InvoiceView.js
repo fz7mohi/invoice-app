@@ -1737,23 +1737,6 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                             {!isVoid && !isPaid && (
                                 <>
                                     <Button
-                                        $primary
-                                        onClick={() => {/* TODO: Implement DO generation */}}
-                                        disabled={isLoading}
-                                        data-action="generate-do"
-                                        style={{
-                                            backgroundColor: colors.purple,
-                                            border: 'none'
-                                        }}
-                                    >
-                                        <Icon 
-                                            name="file-text" 
-                                            size={14} 
-                                            color="white"
-                                        />
-                                        <span>Generate DO</span>
-                                    </Button>
-                                    <Button
                                         $delete
                                         onClick={handleVoidClick}
                                         disabled={isLoading}
@@ -2233,23 +2216,6 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 <ButtonWrapper>
                     {!isVoid && !isPaid && (
                         <>
-                            <Button
-                                $primary
-                                onClick={() => {/* TODO: Implement DO generation */}}
-                                disabled={isLoading}
-                                data-action="generate-do"
-                                style={{
-                                    backgroundColor: colors.purple,
-                                    border: 'none'
-                                }}
-                            >
-                                <Icon 
-                                    name="file-text" 
-                                    size={14} 
-                                    color="white"
-                                />
-                                <span>Generate DO</span>
-                            </Button>
                             <Button
                                 $delete
                                 onClick={handleVoidClick}
