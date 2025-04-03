@@ -12,13 +12,6 @@ import {
     StatContent,
     StatValue,
     StatLabel,
-    RecentActivity,
-    ActivityList,
-    ActivityItem,
-    ActivityIcon,
-    ActivityContent,
-    ActivityTitle,
-    ActivityTime,
     EmptyState,
     EmptyIcon,
     EmptyText,
@@ -43,7 +36,6 @@ import {
 } from './DashboardStyles';
 import useDashboardStats from '../../hooks/useDashboardStats';
 import useClientsData from '../../hooks/useClientsData';
-import useRecentActivity from '../../hooks/useRecentActivity';
 import LoadingSpinner from '../shared/LoadingSpinner/LoadingSpinner';
 import { useHistory } from 'react-router-dom';
 
@@ -65,9 +57,6 @@ const Dashboard = () => {
         totalClients
     } = useClientsData(searchQuery, currentPage, itemsPerPage);
     
-    // Fetch recent activity
-    const { activities, loading: activitiesLoading, error: activitiesError } = useRecentActivity(4);
-
     // Calculate total pages for pagination
     const totalPages = Math.ceil(totalClients / itemsPerPage);
 
@@ -261,42 +250,6 @@ const Dashboard = () => {
                     </>
                 )}
             </ClientsStatement>
-
-            <RecentActivity>
-                <Title>Recent Activity</Title>
-                {activitiesError ? (
-                    <ErrorMessage>Error loading activity: {activitiesError}</ErrorMessage>
-                ) : activitiesLoading ? (
-                    <LoadingSpinner text="Loading recent activity..." />
-                ) : activities.length > 0 ? (
-                    <ActivityList>
-                        {activities.map((activity, index) => (
-                            <ActivityItem
-                                key={activity.id}
-                                as={motion.div}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.3, delay: index * 0.1 }}
-                            >
-                                <ActivityIcon>
-                                    <Icon name={activity.icon} size={20} color={colors.textTertiary} />
-                                </ActivityIcon>
-                                <ActivityContent>
-                                    <ActivityTitle>{activity.title}</ActivityTitle>
-                                    <ActivityTime>{activity.time}</ActivityTime>
-                                </ActivityContent>
-                            </ActivityItem>
-                        ))}
-                    </ActivityList>
-                ) : (
-                    <EmptyState>
-                        <EmptyIcon>
-                            <Icon name="menu" size={48} color={colors.textTertiary} />
-                        </EmptyIcon>
-                        <EmptyText>No recent activity</EmptyText>
-                    </EmptyState>
-                )}
-            </RecentActivity>
         </Container>
     );
 };
