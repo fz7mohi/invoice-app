@@ -211,10 +211,6 @@ const Dashboard = () => {
                                                 <ClientStatValue>{formatCurrency(parseFloat(client.totalAmount))}</ClientStatValue>
                                                 <ClientStatLabel>Total Amount</ClientStatLabel>
                                             </StatItem>
-                                            <StatItem>
-                                                <ClientStatValue>{client.lastInvoice}</ClientStatValue>
-                                                <ClientStatLabel>Last Invoice</ClientStatLabel>
-                                            </StatItem>
                                         </ClientStats>
                                     </ClientItem>
                                 ))
