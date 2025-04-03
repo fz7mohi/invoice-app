@@ -29,9 +29,12 @@ export const invoicesReducer = (state, action) => {
                 id: action.payload.id,
                 paymentDue: action.payload.paymentDue,
                 status: action.payload.status,
-                total: action.payload.invoice.items.reduce((curr, acc) => {
-                    return (curr += acc.total);
+                total: action.payload.invoice.items.reduce((sum, item) => {
+                    return sum + (parseFloat(item.total) || 0);
                 }, 0),
+                grandTotal: action.payload.invoice.grandTotal || action.payload.invoice.totalVat + action.payload.invoice.items.reduce((sum, item) => {
+                    return sum + (parseFloat(item.total) || 0);
+                }, 0)
             },
             ...state.invoices,
         ];
@@ -42,7 +45,13 @@ export const invoicesReducer = (state, action) => {
     if (action.type === ACTION_TYPES.SAVE_CHANGES) {
         const newList = state.invoices.map((item) => {
             if (item.id === state.currInvoiceIndex) {
-                return { ...action.payload.invoice, status: 'pending' };
+                return { 
+                    ...action.payload.invoice, 
+                    status: 'pending',
+                    grandTotal: action.payload.invoice.grandTotal || action.payload.invoice.totalVat + action.payload.invoice.items.reduce((sum, item) => {
+                        return sum + (parseFloat(item.total) || 0);
+                    }, 0)
+                };
             }
             return item;
         });

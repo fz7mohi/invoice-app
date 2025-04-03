@@ -510,7 +510,7 @@ const QuotationView = () => {
                 </thead>
                 <tbody>
                     ${quotation.items.map(item => {
-                        const itemVAT = clientHasVAT ? calculateVAT(item.total || 0) : 0;
+                        const itemVAT = item.vat || 0;
                         return `
                             <tr style="border-bottom: 1px solid #e0e0e0;">
                                 <td style="padding: 15px; color: black; font-size: 16px;">
@@ -520,7 +520,7 @@ const QuotationView = () => {
                                 <td style="padding: 15px; text-align: center; color: black; font-size: 16px;">${item.quantity || 0}</td>
                                 <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.price || 0, quotation.currency)}</td>
                                 ${clientHasVAT ? `<td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(itemVAT, quotation.currency)}</td>` : ''}
-                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(clientHasVAT ? calculateTotalWithVAT(item.total || 0) : (item.total || 0), quotation.currency)}</td>
+                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.total || 0, quotation.currency)}</td>
                             </tr>
                         `;
                     }).join('')}
@@ -539,8 +539,8 @@ const QuotationView = () => {
             `;
             totalSection.innerHTML = `
                 <div style="font-size: 18px; margin-bottom: 4px;">Grand Total</div>
-                ${clientHasVAT ? `<div style="font-size: 11px; opacity: 0.8;">Includes VAT: ${formatPrice(vatAmount, quotation.currency)}</div>` : ''}
-                <div style="font-size: 24px; font-weight: bold;">${formatPrice(grandTotal, quotation.currency)}</div>
+                ${clientHasVAT ? `<div style="font-size: 11px; opacity: 0.8;">Includes VAT: ${formatPrice(quotation.items.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0), quotation.currency)}</div>` : ''}
+                <div style="font-size: 24px; font-weight: bold;">${formatPrice(quotation.grandTotal || quotation.total || 0, quotation.currency)}</div>
             `;
             pdfContainer.appendChild(totalSection);
 
@@ -669,18 +669,6 @@ const QuotationView = () => {
         }
     }, [clientData, quotation]);
 
-    // Calculate VAT amount (5%) only for UAE clients
-    const calculateVAT = (amount) => {
-        if (!clientHasVAT) return 0;
-        return parseFloat(amount) * 0.05;
-    };
-    
-    // Calculate total with VAT only for UAE clients
-    const calculateTotalWithVAT = (amount) => {
-        if (!clientHasVAT) return parseFloat(amount);
-        return parseFloat(amount) + calculateVAT(amount);
-    };
-
     // Render client section with TRN from client data if available
     const renderClientSection = () => {
         // Check if client is from UAE
@@ -760,10 +748,18 @@ const QuotationView = () => {
         try {
             setIsConverting(true);
             
-            // Calculate total amount with or without VAT
-            const subtotal = quotation.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
-            const vatAmount = clientHasVAT ? subtotal * 0.05 : 0;
-            const totalAmount = clientHasVAT ? subtotal + vatAmount : subtotal;
+            // Calculate subtotal first (without VAT)
+            const subtotal = quotation.items.reduce((sum, item) => {
+                const itemPrice = parseFloat(item.price) || 0;
+                const itemQuantity = parseFloat(item.quantity) || 0;
+                return sum + (itemPrice * itemQuantity);
+            }, 0);
+            
+            // Calculate VAT amount
+            const vatAmount = quotation.items.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0);
+            
+            // Total is subtotal plus VAT
+            const totalAmount = subtotal + vatAmount;
             
             // Get all invoices to find the next available number
             const invoicesRef = collection(db, 'invoices');
@@ -801,13 +797,16 @@ const QuotationView = () => {
                 clientAddress: quotation.clientAddress,
                 items: quotation.items.map(item => ({
                     ...item,
-                    total: clientHasVAT ? calculateTotalWithVAT(item.total || 0) : (item.total || 0)
+                    total: parseFloat(item.total) || 0,
+                    vat: parseFloat(item.vat) || 0
                 })),
+                subtotal: subtotal,
                 total: totalAmount,
+                totalVat: vatAmount,
                 status: 'pending',
-                quotationId: quotation.id, // Reference to original quotation
+                quotationId: quotation.id,
                 currency: quotation.currency || 'USD',
-                customId: customId // Add the custom ID in FTINXXXX format
+                customId: customId
             };
 
             // Add clientId only if it exists in the quotation
@@ -826,7 +825,7 @@ const QuotationView = () => {
             const quotationRef = doc(db, 'quotations', id);
             await updateDoc(quotationRef, {
                 status: 'invoiced',
-                convertedToInvoice: customId // Store the custom ID in FTINXXXX format
+                convertedToInvoice: customId
             });
 
             // Refresh quotations list
@@ -967,6 +966,21 @@ const QuotationView = () => {
                 vatAmount: quotation.vatAmount || 0,
                 grandTotal: quotation.grandTotal || 0
             };
+            
+            // Calculate totalVat for UAE clients
+            if (quotation.clientAddress?.country?.toLowerCase().includes('emirates') || 
+                quotation.clientAddress?.country?.toLowerCase().includes('uae')) {
+                // Calculate 5% VAT for each product individually and sum them up
+                const totalVat = quotation.items.reduce((sum, item) => {
+                    const itemTotal = parseFloat(item.total) || 0;
+                    const itemVat = itemTotal * 0.05; // 5% VAT for each product
+                    return sum + itemVat;
+                }, 0);
+                
+                newQuotation.totalVat = totalVat;
+            } else {
+                newQuotation.totalVat = 0;
+            }
             
             // Remove any undefined or null values
             Object.keys(newQuotation).forEach(key => 
@@ -1345,7 +1359,8 @@ const QuotationView = () => {
                         
                         <Items>
                             {quotation.items && quotation.items.map((item, index) => {
-                                const itemVAT = clientHasVAT ? calculateVAT(item.total || 0) : 0;
+                                // Use the stored VAT value from the database instead of recalculating
+                                const itemVAT = item.vat || 0;
                                 
                                 return (
                                     <Item key={index} showVat={clientHasVAT}>
@@ -1371,10 +1386,7 @@ const QuotationView = () => {
                                             </ItemVat>
                                         )}
                                         <ItemTotal>
-                                            {formatPrice(clientHasVAT ? 
-                                                calculateTotalWithVAT(item.total || 0) : 
-                                                (item.total || 0), 
-                                            quotation.currency)}
+                                            {formatPrice(item.total || 0, quotation.currency)}
                                         </ItemTotal>
                                     </Item>
                                 );
@@ -1386,12 +1398,12 @@ const QuotationView = () => {
                                 <TotalText>Grand Total</TotalText>
                                 {clientHasVAT && (
                                     <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.8, color: 'white' }}>
-                                        Includes VAT: {formatPrice(vatAmount, quotation.currency)}
+                                        Includes VAT: {formatPrice(quotation.items.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0), quotation.currency)}
                                     </div>
                                 )}
                             </div>
                             <TotalAmount>
-                                {formatPrice(grandTotal, quotation.currency)}
+                                {formatPrice(quotation.grandTotal || quotation.total || 0, quotation.currency)}
                             </TotalAmount>
                         </Total>
                     </Details>

@@ -463,6 +463,21 @@ const useManageQuotations = () => {
                     senderAddress: quotationDoc.senderAddress || {}
                 };
 
+                // Calculate totalVat for UAE clients
+                if (quotationDoc.clientAddress?.country?.toLowerCase().includes('emirates') || 
+                    quotationDoc.clientAddress?.country?.toLowerCase().includes('uae')) {
+                    // Calculate 5% VAT for each product individually and sum them up
+                    const totalVat = processedItems.reduce((sum, item) => {
+                        const itemTotal = parseFloat(item.total) || 0;
+                        const itemVat = itemTotal * 0.05; // 5% VAT for each product
+                        return sum + itemVat;
+                    }, 0);
+                    
+                    firestoreDoc.totalVat = totalVat;
+                } else {
+                    firestoreDoc.totalVat = 0;
+                }
+
                 if (isEditing) {
                     // Update existing document
                     const documentId = quotation.id || state.modal.id;

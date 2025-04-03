@@ -5,7 +5,7 @@ import { useReducedMotion } from 'framer-motion';
 import { useGlobalContext } from '../App/context';
 import Icon from '../shared/Icon/Icon';
 import Button from '../shared/Button/Button';
-import { formatDate, formatPrice } from '../../utilities/helpers';
+import { formatDate, formatPrice, formatCurrency } from '../../utilities/helpers';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import { jsPDF } from 'jspdf';
@@ -288,6 +288,15 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         document.title = `Invoice | ${invoice?.customId || generateCustomId()}`;
     }, [invoice]);
 
+    // Ensure VAT is always set for UAE clients
+    useEffect(() => {
+        if (clientData) {
+            const isUAE = clientData.country?.toLowerCase().includes('emirates') || 
+                         clientData.country?.toLowerCase().includes('uae');
+            setClientHasVAT(isUAE || clientData.hasVAT || false);
+        }
+    }, [clientData]);
+
     // Fetch client data
     const fetchClientData = async (clientId, fallbackName) => {
         try {
@@ -307,7 +316,10 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     setClientData(data);
-                    setClientHasVAT(data.hasVAT || false);
+                    // Always set VAT for UAE clients
+                    const isUAE = data.country?.toLowerCase().includes('emirates') || 
+                                 data.country?.toLowerCase().includes('uae');
+                    setClientHasVAT(isUAE || data.hasVAT || false);
                     return;
                 }
             }
@@ -349,7 +361,10 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                 const matchDoc = allClientsSnapshot.docs.find(doc => doc.id === exactMatch.id);
                                 const data = matchDoc.data();
                                 setClientData(data);
-                                setClientHasVAT(data.hasVAT || false);
+                                // Always set VAT for UAE clients
+                                const isUAE = data.country?.toLowerCase().includes('emirates') || 
+                                             data.country?.toLowerCase().includes('uae');
+                                setClientHasVAT(isUAE || data.hasVAT || false);
                                 return;
                             }
                             
@@ -363,14 +378,20 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                 const matchDoc = allClientsSnapshot.docs.find(doc => doc.id === partialMatch.id);
                                 const data = matchDoc.data();
                                 setClientData(data);
-                                setClientHasVAT(data.hasVAT || false);
+                                // Always set VAT for UAE clients
+                                const isUAE = data.country?.toLowerCase().includes('emirates') || 
+                                             data.country?.toLowerCase().includes('uae');
+                                setClientHasVAT(isUAE || data.hasVAT || false);
                                 return;
                             }
                         }
                     } else {
                         const data = querySnapshot.docs[0].data();
                         setClientData(data);
-                        setClientHasVAT(data.hasVAT || false);
+                        // Always set VAT for UAE clients
+                        const isUAE = data.country?.toLowerCase().includes('emirates') || 
+                                     data.country?.toLowerCase().includes('uae');
+                        setClientHasVAT(isUAE || data.hasVAT || false);
                         return;
                     }
                 } catch (queryError) {
@@ -391,6 +412,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 setClientHasVAT(true);
             } else {
                 setClientData({ name: fallbackName });
+                setClientHasVAT(false);
             }
             
         } catch (error) {
@@ -408,6 +430,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 setClientHasVAT(true);
             } else {
                 setClientData({ name: fallbackName });
+                setClientHasVAT(false);
             }
         } finally {
             setIsClientFetching(false);
@@ -444,7 +467,12 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                     createdAt,
                     paymentDue,
                     items: Array.isArray(data.items) ? data.items : [],
-                    currency: data.currency || 'USD'
+                    currency: data.currency || 'USD',
+                    totalVat: data.totalVat || (data.items?.reduce((sum, item) => {
+                        const itemTotal = parseFloat(item.total) || 0;
+                        return sum + (clientHasVAT ? calculateVAT(itemTotal) : 0);
+                    }, 0) || 0),
+                    grandTotal: data.grandTotal || (data.totalVat ? data.totalVat + (data.total || 0) : data.total || 0)
                 };
                 
                 setInvoice(fetchedInvoice);
@@ -1003,7 +1031,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 </thead>
                 <tbody>
                     ${invoice.items.map(item => {
-                        const itemVAT = clientHasVAT ? calculateVAT(item.total || 0) : 0;
+                        const itemVAT = item.vat || 0;
                         return `
                             <tr style="border-bottom: 1px solid #e0e0e0;">
                                 <td style="padding: 15px; color: black; font-size: 16px;">
@@ -1013,7 +1041,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                 <td style="padding: 15px; text-align: center; color: black; font-size: 16px;">${item.quantity || 0}</td>
                                 <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.price || 0, invoice.currency)}</td>
                                 ${clientHasVAT ? `<td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(itemVAT, invoice.currency)}</td>` : ''}
-                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(clientHasVAT ? calculateTotalWithVAT(item.total || 0) : (item.total || 0), invoice.currency)}</td>
+                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.total || 0, invoice.currency)}</td>
                             </tr>
                         `;
                     }).join('')}
@@ -1034,8 +1062,8 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
             `;
             totalSection.innerHTML = `
                 <div style="font-size: 18px; margin-bottom: 4px;">Grand Total</div>
-                ${clientHasVAT ? `<div style="font-size: 11px; opacity: 0.8;">Includes VAT: ${formatPrice(vatAmount, invoice.currency)}</div>` : ''}
-                <div style="font-size: 24px; font-weight: bold;">${formatPrice(grandTotal, invoice.currency)}</div>
+                ${clientHasVAT ? `<div style="font-size: 11px; opacity: 0.8;">Includes VAT: ${formatPrice(invoice.totalVat || 0, invoice.currency)}</div>` : ''}
+                <div style="font-size: 24px; font-weight: bold;">${formatPrice(invoice.grandTotal || invoice.total || 0, invoice.currency)}</div>
             `;
             pdfContainer.appendChild(totalSection);
 
@@ -2084,8 +2112,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         
                         <Items>
                             {invoice.items && invoice.items.map((item, index) => {
-                                const itemVAT = clientHasVAT ? calculateVAT(item.total || 0) : 0;
-                                
+                                const itemVAT = item.vat || 0;
                                 return (
                                     <Item key={index} showVat={clientHasVAT}>
                                         <div className="item-details">
@@ -2110,28 +2137,28 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                             </ItemVat>
                                         )}
                                         <ItemTotal>
-                                            {formatPrice(clientHasVAT ? 
-                                                calculateTotalWithVAT(item.total || 0) : 
-                                                (item.total || 0), 
-                                            invoice.currency)}
+                                            {formatPrice(item.total || 0, invoice.currency)}
                                         </ItemTotal>
                                     </Item>
                                 );
                             })}
                         </Items>
                         
-                        <Total className="Total">
+                        <Total>
                             <div>
-                                <TotalText>Grand Total</TotalText>
-                                {clientHasVAT && (
-                                    <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.8, color: 'white' }}>
-                                        Includes VAT: {formatPrice(vatAmount, invoice.currency)}
-                                    </div>
-                                )}
+                                <TotalText>Subtotal</TotalText>
+                                <TotalAmount>{formatPrice(invoice.subtotal || 0, invoice.currency)}</TotalAmount>
                             </div>
-                            <TotalAmount>
-                                {formatPrice(grandTotal, invoice.currency)}
-                            </TotalAmount>
+                            {clientHasVAT && (
+                                <div>
+                                    <TotalText>VAT (5%)</TotalText>
+                                    <TotalAmount>{formatPrice(invoice.totalVat || 0, invoice.currency)}</TotalAmount>
+                                </div>
+                            )}
+                            <div className="grand-total">
+                                <TotalText>Total</TotalText>
+                                <TotalAmount>{formatPrice(invoice.total || 0, invoice.currency)}</TotalAmount>
+                            </div>
                         </Total>
                     </Details>
                     

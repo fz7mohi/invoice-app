@@ -213,8 +213,22 @@ const useManageInvoices = () => {
                 } else {
                     newItems[index][name] = value;
                 }
-                newItems[index]['total'] =
-                    newItems[index].price * newItems[index].quantity;
+                // Calculate item subtotal (before VAT)
+                const itemPrice = parseFloat(newItems[index].price) || 0;
+                const itemQuantity = parseFloat(newItems[index].quantity) || 0;
+                const itemSubtotal = itemPrice * itemQuantity;
+                
+                // Calculate VAT for UAE clients
+                if (clientAddress?.country?.toLowerCase().includes('emirates') || 
+                    clientAddress?.country?.toLowerCase().includes('uae')) {
+                    const itemVat = itemSubtotal * 0.05;
+                    newItems[index]['vat'] = itemVat;
+                    newItems[index]['total'] = itemSubtotal + itemVat; // Store total including VAT
+                } else {
+                    newItems[index]['vat'] = 0;
+                    newItems[index]['total'] = itemSubtotal;
+                }
+                
                 setItems(newItems);
                 break;
             default:
@@ -318,6 +332,58 @@ const useManageInvoices = () => {
                         status: type === 'new' ? 'pending' : 'draft'
                     };
                     
+                    // Calculate totalVat for UAE clients
+                    if (invoice.clientAddress?.country?.toLowerCase().includes('emirates') || 
+                        invoice.clientAddress?.country?.toLowerCase().includes('uae')) {
+                        // Calculate subtotal first (sum of price * quantity for each item)
+                        const subtotal = invoice.items?.reduce((sum, item) => {
+                            const itemPrice = parseFloat(item.price) || 0;
+                            const itemQuantity = parseFloat(item.quantity) || 0;
+                            return sum + (itemPrice * itemQuantity);
+                        }, 0) || 0;
+                        
+                        // Calculate VAT (5% of subtotal)
+                        const totalVat = subtotal * 0.05;
+                        
+                        // Total is subtotal plus VAT
+                        const total = subtotal + totalVat;
+                        
+                        firestoreInvoice.subtotal = subtotal;
+                        firestoreInvoice.totalVat = totalVat;
+                        firestoreInvoice.total = total;
+                        
+                        // Add VAT to each item
+                        firestoreInvoice.items = invoice.items?.map(item => {
+                            const itemSubtotal = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+                            const itemVat = itemSubtotal * 0.05;
+                            return {
+                                ...item,
+                                total: itemSubtotal + itemVat,
+                                vat: itemVat
+                            };
+                        }) || [];
+                    } else {
+                        // For non-UAE clients, calculate total without VAT
+                        const subtotal = invoice.items?.reduce((sum, item) => {
+                            const itemPrice = parseFloat(item.price) || 0;
+                            const itemQuantity = parseFloat(item.quantity) || 0;
+                            return sum + (itemPrice * itemQuantity);
+                        }, 0) || 0;
+                        
+                        firestoreInvoice.subtotal = subtotal;
+                        firestoreInvoice.totalVat = 0;
+                        firestoreInvoice.total = subtotal;
+                        
+                        firestoreInvoice.items = invoice.items?.map(item => {
+                            const itemSubtotal = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+                            return {
+                                ...item,
+                                total: itemSubtotal,
+                                vat: 0
+                            };
+                        }) || [];
+                    }
+                    
                     const docRef = await addDoc(collection(db, 'invoices'), firestoreInvoice);
                     
                     newInvoice = {
@@ -359,6 +425,58 @@ const useManageInvoices = () => {
                         createdAt: Timestamp.fromDate(invoice.createdAt || new Date()),
                         paymentDue: invoice.paymentDue ? Timestamp.fromDate(new Date(invoice.paymentDue)) : null
                     };
+                    
+                    // Calculate totalVat and grandTotal for UAE clients
+                    if (invoice.clientAddress?.country?.toLowerCase().includes('emirates') || 
+                        invoice.clientAddress?.country?.toLowerCase().includes('uae')) {
+                        // Calculate subtotal first (sum of price * quantity for each item)
+                        const subtotal = invoice.items?.reduce((sum, item) => {
+                            const itemPrice = parseFloat(item.price) || 0;
+                            const itemQuantity = parseFloat(item.quantity) || 0;
+                            return sum + (itemPrice * itemQuantity);
+                        }, 0) || 0;
+                        
+                        // Calculate VAT (5% of subtotal)
+                        const totalVat = subtotal * 0.05;
+                        
+                        // Total is subtotal plus VAT
+                        const total = subtotal + totalVat;
+                        
+                        firestoreInvoice.subtotal = subtotal;
+                        firestoreInvoice.totalVat = totalVat;
+                        firestoreInvoice.total = total;
+                        
+                        // Add VAT to each item
+                        firestoreInvoice.items = invoice.items?.map(item => {
+                            const itemSubtotal = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+                            const itemVat = itemSubtotal * 0.05;
+                            return {
+                                ...item,
+                                total: itemSubtotal + itemVat,
+                                vat: itemVat
+                            };
+                        }) || [];
+                    } else {
+                        // For non-UAE clients, calculate total without VAT
+                        const subtotal = invoice.items?.reduce((sum, item) => {
+                            const itemPrice = parseFloat(item.price) || 0;
+                            const itemQuantity = parseFloat(item.quantity) || 0;
+                            return sum + (itemPrice * itemQuantity);
+                        }, 0) || 0;
+                        
+                        firestoreInvoice.subtotal = subtotal;
+                        firestoreInvoice.totalVat = 0;
+                        firestoreInvoice.total = subtotal;
+                        
+                        firestoreInvoice.items = invoice.items?.map(item => {
+                            const itemSubtotal = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+                            return {
+                                ...item,
+                                total: itemSubtotal,
+                                vat: 0
+                            };
+                        }) || [];
+                    }
                     
                     const invoiceRef = doc(db, 'invoices', id);
                     await updateDoc(invoiceRef, firestoreInvoice);

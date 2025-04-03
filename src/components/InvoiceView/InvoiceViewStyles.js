@@ -286,24 +286,37 @@ export const ItemTotal = styled.div`
 export const Total = styled.div`
     background-color: #004359;
     padding: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: white;
     border-radius: 0 0 8px 8px;
+    color: white;
+
+    > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+
+        &.grand-total {
+            margin-top: 8px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    }
 `;
 
-export const TotalText = styled.p`
+export const TotalText = styled.div`
     font-size: 14px;
-    margin: 0;
     color: white;
+    opacity: 0.8;
 `;
 
-export const TotalAmount = styled.p`
-    font-size: 20px;
+export const TotalAmount = styled.div`
+    font-size: 16px;
     font-weight: 700;
-    margin: 0;
     color: white;
+
+    .grand-total & {
+        font-size: 20px;
+    }
 `;
 
 export const MetaInfo = styled.div`

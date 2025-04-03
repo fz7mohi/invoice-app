@@ -53,6 +53,8 @@ import {
   ExportButton,
   ExportIcon
 } from './ClientStatementStyles';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const ClientStatementView = () => {
   const { id } = useParams();
@@ -142,6 +144,7 @@ const ClientStatementView = () => {
             description: data.description || 'No description',
             total: parseFloat(data.total) || 0,
             vat: data.vat || 0,
+            totalVat: data.totalVat || 0,
             status: data.status || 'draft',
             currency: data.currency || (clientData.country === 'UAE' ? 'AED' : 'USD')
           };
@@ -270,7 +273,7 @@ const ClientStatementView = () => {
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'short',
+      month: 'long',
       day: 'numeric'
     });
   };
@@ -348,9 +351,283 @@ const ClientStatementView = () => {
     return true;
   });
 
-  const handleExport = () => {
-    // This would be implemented to export the client statement as PDF or CSV
-    alert('Export functionality would be implemented here');
+  const handleExport = async () => {
+    try {
+      // Get the client's country from the client data
+      const clientCountry = client?.country || 'qatar';
+      
+      // Determine which company profile to use
+      let companyProfile;
+      try {
+        if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
+          companyProfile = await getCompanyProfile('uae');
+        } else {
+          companyProfile = await getCompanyProfile('qatar');
+        }
+      } catch (profileError) {
+        companyProfile = {
+          name: 'Fortune Gifts',
+          address: 'Doha, Qatar',
+          phone: '+974 1234 5678',
+          vatNumber: 'VAT123456789',
+          crNumber: 'CR123456789'
+        };
+      }
+
+      // Create a new container for PDF content
+      const pdfContainer = document.createElement('div');
+      pdfContainer.style.cssText = `
+        width: 297mm;
+        min-height: 420mm;
+        padding: 5mm 20mm 20mm 20mm;
+        margin: 0;
+        background-color: white;
+        box-sizing: border-box;
+        position: relative;
+        font-family: Arial, sans-serif;
+      `;
+
+      // Add header
+      pdfContainer.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div>
+            <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+          </div>
+          <div style="text-align: right; font-size: 19px; color: #000000;">
+            <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
+            <div>${companyProfile.address}</div>
+            <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+            <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
+          </div>
+        </div>
+        <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
+        <div style="text-align: center; margin-top: 25px;">
+          <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">CLIENT STATEMENT</h1>
+        </div>
+      `;
+
+      // Add client section
+      const clientSection = document.createElement('div');
+      clientSection.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding: 20px;
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+      `;
+      clientSection.innerHTML = `
+        <div style="flex: 1;">
+          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Client Details</div>
+          <div style="color: black; font-size: 16px;">
+            <strong>${client?.companyName || 'Unnamed Client'}</strong><br />
+            ${client?.address || ''}
+            ${client?.phone ? `<br />${client.phone}` : ''}
+            ${client?.email ? `<br />${client.email}` : ''}
+            ${client?.country ? `<br />${client.country}` : ''}
+            ${client?.trn ? `<br /><span style="font-weight: 600;">TRN: ${client.trn}</span>` : ''}
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Statement Date</div>
+          <div style="color: black; font-size: 16px; margin-bottom: 15px;">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Date Range</div>
+          <div style="color: black; font-size: 16px;">
+            ${startDate ? new Date(startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'All time'} - 
+            ${endDate ? new Date(endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'All time'}
+          </div>
+        </div>
+      `;
+      pdfContainer.appendChild(clientSection);
+
+      // Add summary section
+      const summarySection = document.createElement('div');
+      summarySection.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+      `;
+      summarySection.innerHTML = `
+        <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
+          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Total Invoices</div>
+          <div style="color: black; font-size: 24px; font-weight: bold;">${summary.totalInvoices}</div>
+        </div>
+        <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
+          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Total Amount</div>
+          <div style="color: black; font-size: 24px; font-weight: bold;">${formatCurrency(summary.totalAmount)}</div>
+        </div>
+        <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
+          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Pending Amount</div>
+          <div style="color: black; font-size: 24px; font-weight: bold;">${formatCurrency(summary.pendingAmount)}</div>
+        </div>
+      `;
+      pdfContainer.appendChild(summarySection);
+
+      // Add invoices table
+      const invoicesTable = document.createElement('table');
+      invoicesTable.style.cssText = `
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+      `;
+      
+      // Create table header based on client country
+      let tableHeader = `
+        <thead style="background-color: #004359; color: white;">
+          <tr>
+            <th style="padding: 15px; text-align: left; font-size: 18px;">Invoice#</th>
+            <th style="padding: 15px; text-align: left; font-size: 18px;">Date</th>
+            <th style="padding: 15px; text-align: left; font-size: 18px;">Project</th>
+      `;
+      
+      // Add VAT column for UAE clients
+      if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
+        tableHeader += `<th style="padding: 15px; text-align: right; font-size: 18px;">VAT</th>`;
+      }
+      
+      tableHeader += `
+            <th style="padding: 15px; text-align: right; font-size: 18px;">Total Amount</th>
+            <th style="padding: 15px; text-align: center; font-size: 18px;">Status</th>
+          </tr>
+        </thead>
+      `;
+      
+      invoicesTable.innerHTML = tableHeader;
+      
+      // Add table body with filtered invoices
+      const tableBody = document.createElement('tbody');
+      
+      // Use the filtered invoices based on date range and status
+      const filteredInvoicesForPDF = invoices.filter(invoice => {
+        // Filter by status
+        if (filter !== 'all' && invoice.status !== filter) {
+          return false;
+        }
+        
+        // Filter by date range if dates are set
+        if (startDate && endDate) {
+          const invoiceDate = new Date(invoice.date);
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          
+          // Set end date to end of day
+          end.setHours(23, 59, 59, 999);
+          
+          if (invoiceDate < start || invoiceDate > end) {
+            return false;
+          }
+        }
+        
+        return true;
+      });
+      
+      // Add rows for each invoice
+      filteredInvoicesForPDF.forEach(invoice => {
+        const row = document.createElement('tr');
+        row.style.cssText = 'border-bottom: 1px solid #e0e0e0;';
+        
+        let rowContent = `
+          <td style="padding: 15px; color: black; font-size: 16px;">#${invoice.number}</td>
+          <td style="padding: 15px; color: black; font-size: 16px;">${formatDate(invoice.date)}</td>
+          <td style="padding: 15px; color: black; font-size: 16px;">${invoice.description || 'No description'}</td>
+        `;
+        
+        // Add VAT column for UAE clients
+        if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
+          // Use the totalVat from the database
+          rowContent += `<td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatCurrency(invoice.totalVat, invoice.currency || 'AED')}</td>`;
+        }
+        
+        rowContent += `
+          <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatCurrency(invoice.total, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</td>
+          <td style="padding: 15px; text-align: center; color: black; font-size: 16px;">
+            <span style="
+              display: inline-block;
+              padding: 5px 10px;
+              border-radius: 4px;
+              background-color: ${getStatusColor(invoice.status)};
+              color: white;
+              font-weight: bold;
+              text-transform: capitalize;
+            ">${invoice.status}</span>
+          </td>
+        `;
+        
+        row.innerHTML = rowContent;
+        tableBody.appendChild(row);
+      });
+      
+      invoicesTable.appendChild(tableBody);
+      pdfContainer.appendChild(invoicesTable);
+
+      // Add spacer for signature section
+      const spacer = document.createElement('div');
+      spacer.style.height = '150px';
+      pdfContainer.appendChild(spacer);
+
+      // Add signature section
+      const signatureSection = document.createElement('div');
+      signatureSection.style.cssText = `
+        position: absolute;
+        bottom: 30mm;
+        left: 20mm;
+        right: 20mm;
+        display: flex;
+        justify-content: space-between;
+      `;
+      signatureSection.innerHTML = `
+        <div style="width: 45%;">
+          <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+          <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
+        </div>
+        <div style="width: 45%;">
+          <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+          <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
+        </div>
+      `;
+      pdfContainer.appendChild(signatureSection);
+
+      // Temporarily add to document to render
+      pdfContainer.style.position = 'absolute';
+      pdfContainer.style.left = '-9999px';
+      document.body.appendChild(pdfContainer);
+
+      // Convert to canvas with A3 dimensions
+      const canvas = await html2canvas(pdfContainer, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 1122.5, // 297mm in pixels at 96 DPI
+        height: 1587.4 // 420mm in pixels at 96 DPI
+      });
+
+      // Remove temporary elements
+      document.body.removeChild(pdfContainer);
+
+      // Create PDF with A3 size
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a3',
+        compress: true
+      });
+
+      // Add the image to fit A3 page
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
+
+      // Save the PDF
+      pdf.save(`ClientStatement_${client?.companyName || 'Client'}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('There was an error generating the PDF. Please try again.');
+    }
   };
 
   if (loading) {
@@ -598,7 +875,7 @@ const ClientStatementView = () => {
                 <InvoiceNumber>#{invoice.number}</InvoiceNumber>
                 <InvoiceDate>{formatDate(invoice.date)}</InvoiceDate>
                 <InvoiceDescription>{invoice.description || 'No description'}</InvoiceDescription>
-                <InvoiceVAT>{formatCurrency(invoice.vat, invoice.currency || 'AED')}</InvoiceVAT>
+                <InvoiceVAT>{formatCurrency(invoice.totalVat, invoice.currency || 'AED')}</InvoiceVAT>
                 <InvoiceTotal>{formatCurrency(invoice.total, invoice.currency || 'AED')}</InvoiceTotal>
                 <InvoiceStatus>
                   <StatusBadge color={getStatusColor(invoice.status)}>
