@@ -146,7 +146,8 @@ const ClientStatementView = () => {
             vat: data.vat || 0,
             totalVat: data.totalVat || 0,
             status: data.status || 'draft',
-            currency: data.currency || (clientData.country === 'UAE' ? 'AED' : 'USD')
+            currency: data.currency || (clientData.country === 'UAE' ? 'AED' : 'USD'),
+            paidAmount: parseFloat(data.paidAmount) || 0
           };
         });
         
@@ -156,9 +157,7 @@ const ClientStatementView = () => {
         // Calculate summary statistics
         const totalInvoices = processedInvoices.length;
         const totalAmount = processedInvoices.reduce((sum, inv) => sum + inv.total, 0);
-        const paidAmount = processedInvoices
-          .filter(inv => inv.status === 'paid')
-          .reduce((sum, inv) => sum + inv.total, 0);
+        const paidAmount = processedInvoices.reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
         const pendingAmount = totalAmount - paidAmount;
         
         // Fetch quotations and credits
