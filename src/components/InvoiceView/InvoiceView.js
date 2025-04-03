@@ -1061,9 +1061,22 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 page-break-inside: avoid;
             `;
             totalSection.innerHTML = `
-                <div style="font-size: 18px; margin-bottom: 4px;">Grand Total</div>
-                ${clientHasVAT ? `<div style="font-size: 11px; opacity: 0.8;">Includes VAT: ${formatPrice(invoice.totalVat || 0, invoice.currency)}</div>` : ''}
-                <div style="font-size: 24px; font-weight: bold;">${formatPrice(invoice.grandTotal || invoice.total || 0, invoice.currency)}</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
+                        <span style="font-size: 14px;">Subtotal:</span>
+                        <span style="font-size: 14px;">${formatPrice(invoice.subtotal || 0, invoice.currency)}</span>
+                    </div>
+                    ${clientHasVAT ? `
+                        <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
+                            <span style="font-size: 14px;">VAT (5%):</span>
+                            <span style="font-size: 14px;">${formatPrice(invoice.totalVat || 0, invoice.currency)}</span>
+                        </div>
+                    ` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <span style="font-size: 16px;">Total:</span>
+                        <span style="font-size: 20px; font-weight: bold;">${formatPrice(invoice.total || 0, invoice.currency)}</span>
+                    </div>
+                </div>
             `;
             pdfContainer.appendChild(totalSection);
 
