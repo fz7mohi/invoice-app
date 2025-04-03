@@ -280,15 +280,24 @@ const ClientStatementView = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'paid':
-        return colors.statusPaid;
+        return '#4CAF50'; // Green
       case 'pending':
-        return colors.statusPending;
+        return '#FF9800'; // Orange
       case 'partially_paid':
-        return colors.statusPartiallyPaid;
+        return '#2196F3'; // Blue
       case 'void':
-        return colors.statusVoid;
+        return '#F44336'; // Red
       default:
-        return colors.statusDraft;
+        return '#9E9E9E'; // Grey
+    }
+  };
+
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'partially_paid':
+        return 'Partially Paid';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -517,26 +526,30 @@ const ClientStatementView = () => {
       const summarySection = document.createElement('div');
       summarySection.style.cssText = `
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 15px;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
         margin-bottom: 20px;
       `;
       summarySection.innerHTML = `
-        <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
-          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Total Invoices</div>
-          <div style="color: black; font-size: 24px; font-weight: bold;">${summary.totalInvoices}</div>
+        <div style="background-color: #f0f4f8; padding: 12px; border-radius: 4px; text-align: center;">
+          <div style="color: #004359; font-weight: bold; font-size: 14px; margin-bottom: 3px;">Total Invoices</div>
+          <div style="color: black; font-size: 18px; font-weight: bold;">${summary.totalInvoices}</div>
         </div>
-        <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
-          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Total Amount</div>
-          <div style="color: black; font-size: 24px; font-weight: bold;">${formatCurrency(summary.totalAmount)}</div>
+        <div style="background-color: #f0f4f8; padding: 12px; border-radius: 4px; text-align: center;">
+          <div style="color: #004359; font-weight: bold; font-size: 14px; margin-bottom: 3px;">Total Amount</div>
+          <div style="color: black; font-size: 18px; font-weight: bold;">${formatCurrency(summary.totalAmount)}</div>
         </div>
-        <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
-          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Total VAT</div>
-          <div style="color: black; font-size: 24px; font-weight: bold;">${formatCurrency(filteredInvoices.reduce((sum, inv) => sum + (inv.totalVat || 0), 0))}</div>
+        <div style="background-color: #f0f4f8; padding: 12px; border-radius: 4px; text-align: center;">
+          <div style="color: #004359; font-weight: bold; font-size: 14px; margin-bottom: 3px;">Total VAT</div>
+          <div style="color: black; font-size: 18px; font-weight: bold;">${formatCurrency(filteredInvoices.reduce((sum, inv) => sum + (inv.totalVat || 0), 0))}</div>
         </div>
-        <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
-          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Pending Amount</div>
-          <div style="color: black; font-size: 24px; font-weight: bold;">${formatCurrency(summary.pendingAmount)}</div>
+        <div style="background-color: #f0f4f8; padding: 12px; border-radius: 4px; text-align: center;">
+          <div style="color: #004359; font-weight: bold; font-size: 14px; margin-bottom: 3px;">Total Paid</div>
+          <div style="color: black; font-size: 18px; font-weight: bold;">${formatCurrency(summary.paidAmount)}</div>
+        </div>
+        <div style="background-color: #f0f4f8; padding: 12px; border-radius: 4px; text-align: center;">
+          <div style="color: #004359; font-weight: bold; font-size: 14px; margin-bottom: 3px;">Pending Amount</div>
+          <div style="color: black; font-size: 18px; font-weight: bold;">${formatCurrency(summary.pendingAmount)}</div>
         </div>
       `;
       pdfContainer.appendChild(summarySection);
@@ -568,6 +581,7 @@ const ClientStatementView = () => {
       
       tableHeader += `
             <th style="padding: 15px; text-align: right; font-size: 18px;">Total Amount</th>
+            <th style="padding: 15px; text-align: right; font-size: 18px;">Paid Amount</th>
             <th style="padding: 15px; text-align: center; font-size: 18px;">Status</th>
           </tr>
         </thead>
@@ -618,34 +632,9 @@ const ClientStatementView = () => {
           rowContent += `<td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatCurrency(invoice.totalVat, invoice.currency || 'AED')}</td>`;
         }
         
-        // Get status color based on invoice status
-        const getStatusColor = (status) => {
-          switch (status) {
-            case 'paid':
-              return '#4CAF50'; // Green
-            case 'pending':
-              return '#FF9800'; // Orange
-            case 'partially_paid':
-              return '#2196F3'; // Blue
-            case 'void':
-              return '#F44336'; // Red
-            default:
-              return '#9E9E9E'; // Grey
-          }
-        };
-
-        // Format status text
-        const formatStatus = (status) => {
-          switch (status) {
-            case 'partially_paid':
-              return 'Partially Paid';
-            default:
-              return status.charAt(0).toUpperCase() + status.slice(1);
-          }
-        };
-
         rowContent += `
           <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatCurrency(invoice.total, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</td>
+          <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatCurrency(invoice.paidAmount || 0, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</td>
           <td style="padding: 15px; text-align: center;">
             <span style="
               display: inline-block;
@@ -953,6 +942,7 @@ const ClientStatementView = () => {
             <ColumnHeader>Project</ColumnHeader>
             <ColumnHeader>VAT</ColumnHeader>
             <ColumnHeader align="right">Total Amount</ColumnHeader>
+            <ColumnHeader align="right">Paid Amount</ColumnHeader>
             <ColumnHeader align="right">Status</ColumnHeader>
           </UAEInvoiceItem>
         ) : (
@@ -961,6 +951,7 @@ const ClientStatementView = () => {
             <ColumnHeader>Date</ColumnHeader>
             <ColumnHeader>Project</ColumnHeader>
             <ColumnHeader align="right">Total Amount</ColumnHeader>
+            <ColumnHeader align="right">Paid Amount</ColumnHeader>
             <ColumnHeader align="right">Status</ColumnHeader>
           </NonUAEInvoiceItem>
         )}
@@ -979,6 +970,7 @@ const ClientStatementView = () => {
                 <InvoiceDescription>{invoice.description || 'No description'}</InvoiceDescription>
                 <InvoiceVAT>{formatCurrency(invoice.totalVat, invoice.currency || 'AED')}</InvoiceVAT>
                 <InvoiceTotal>{formatCurrency(invoice.total, invoice.currency || 'AED')}</InvoiceTotal>
+                <InvoiceTotal>{formatCurrency(invoice.paidAmount || 0, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</InvoiceTotal>
                 <InvoiceStatus>
                   <StatusBadge color={getStatusColor(invoice.status)}>
                     {invoice.status}
@@ -996,6 +988,7 @@ const ClientStatementView = () => {
                 <InvoiceDate>{formatDate(invoice.date)}</InvoiceDate>
                 <InvoiceDescription>{invoice.description || 'No description'}</InvoiceDescription>
                 <InvoiceTotal>{formatCurrency(invoice.total, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</InvoiceTotal>
+                <InvoiceTotal>{formatCurrency(invoice.paidAmount || 0, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</InvoiceTotal>
                 <InvoiceStatus>
                   <StatusBadge color={getStatusColor(invoice.status)}>
                     {invoice.status}
