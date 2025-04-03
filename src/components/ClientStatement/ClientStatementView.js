@@ -351,6 +351,79 @@ const ClientStatementView = () => {
     return true;
   });
 
+  // Add getCompanyProfile function
+  const getCompanyProfile = async (country) => {
+    try {
+      // Convert country to lowercase and handle variations
+      const countryLower = country.toLowerCase();
+      let searchCountry = countryLower;
+      
+      // Handle UAE variations
+      if (countryLower.includes('emirates') || countryLower.includes('uae')) {
+        searchCountry = 'uae';
+      }
+      
+      // Query the companies collection
+      const companiesRef = collection(db, 'companies');
+      
+      // Query for the specific country
+      const q = query(companiesRef, where('country', '==', searchCountry));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const profile = querySnapshot.docs[0].data();
+        
+        const result = {
+          name: profile.name || '',
+          address: profile.address || '',
+          phone: profile.phone || '',
+          vatNumber: profile.vatNumber || '',
+          crNumber: profile.crNumber || '',
+          bankDetails: {
+            bankName: profile.bankName || '',
+            accountName: profile.accountName || '',
+            accountNumber: profile.accountNumber || '',
+            iban: profile.iban || '',
+            swift: profile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+          }
+        };
+        
+        return result;
+      }
+      
+      // If no profile found for UAE, return Qatar profile as default
+      if (searchCountry === 'uae') {
+        const qatarQuery = query(companiesRef, where('country', '==', 'qatar'));
+        const qatarSnapshot = await getDocs(qatarQuery);
+        
+        if (!qatarSnapshot.empty) {
+          const qatarProfile = qatarSnapshot.docs[0].data();
+          
+          const result = {
+            name: qatarProfile.name || '',
+            address: qatarProfile.address || '',
+            phone: qatarProfile.phone || '',
+            vatNumber: qatarProfile.vatNumber || '',
+            crNumber: qatarProfile.crNumber || '',
+            bankDetails: {
+              bankName: qatarProfile.bankName || '',
+              accountName: qatarProfile.accountName || '',
+              accountNumber: qatarProfile.accountNumber || '',
+              iban: qatarProfile.iban || '',
+              swift: qatarProfile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+            }
+          };
+          
+          return result;
+        }
+      }
+      
+      throw new Error('No company profile found');
+    } catch (error) {
+      return null;
+    }
+  };
+
   const handleExport = async () => {
     try {
       // Get the client's country from the client data
@@ -445,7 +518,7 @@ const ClientStatementView = () => {
       const summarySection = document.createElement('div');
       summarySection.style.cssText = `
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 15px;
         margin-bottom: 20px;
       `;
@@ -457,6 +530,10 @@ const ClientStatementView = () => {
         <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
           <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Total Amount</div>
           <div style="color: black; font-size: 24px; font-weight: bold;">${formatCurrency(summary.totalAmount)}</div>
+        </div>
+        <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
+          <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Total VAT</div>
+          <div style="color: black; font-size: 24px; font-weight: bold;">${formatCurrency(filteredInvoices.reduce((sum, inv) => sum + (inv.totalVat || 0), 0))}</div>
         </div>
         <div style="background-color: #f8f8f8; padding: 15px; border-radius: 4px; text-align: center;">
           <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 5px;">Pending Amount</div>
