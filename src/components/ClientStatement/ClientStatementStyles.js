@@ -30,43 +30,73 @@ export const Title = styled.h1`
 `;
 
 export const BackButton = styled.button`
-  background: ${({ theme }) => theme.colors.backgroundSecondary};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
+  border: 1px solid rgba(147, 112, 219, 0.3);
   cursor: pointer;
   padding: 0.75rem;
-  border-radius: 50%;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: ${({ theme }) => theme.colors.backgroundPrimary};
+  font-weight: 500;
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.backgroundTertiary};
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+    border-color: rgba(147, 112, 219, 0.5);
+  }
+
+  &:focus {
+    outline: 2px solid ${({ theme }) => theme.colors.primary};
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
 export const ExportButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.75rem 1.25rem;
-  font-size: 0.9rem;
+  gap: 0.75rem;
+  background-color: ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
+  color: ${({ theme }) => theme.colors.backgroundPrimary};
+  border: 1px solid rgba(147, 112, 219, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.3px;
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.primaryDark};
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border-color: rgba(147, 112, 219, 0.5);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  &:focus {
+    outline: 2px solid ${({ theme }) => theme.colors.primary};
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
@@ -74,6 +104,15 @@ export const ExportIcon = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: rgba(173, 184, 205, 0.55);
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  ${ExportButton}:hover & {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+  }
 `;
 
 export const ClientInfo = styled.div`
@@ -83,7 +122,7 @@ export const ClientInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid rgba(147, 112, 219, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 `;
 
@@ -107,7 +146,7 @@ export const ClientDetails = styled.div`
   gap: 1.5rem;
   margin-top: 0.5rem;
   padding-top: 1rem;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  border-top: 1px solid rgba(147, 112, 219, 0.2);
 `;
 
 export const ClientDetail = styled.div`
@@ -131,8 +170,13 @@ export const DetailValue = styled.span`
 
 export const SummaryCards = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
+  margin-bottom: 2rem;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 `;
 
 export const SummaryCard = styled.div`
@@ -143,19 +187,19 @@ export const SummaryCard = styled.div`
   align-items: center;
   gap: 1rem;
   transition: all 0.3s;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid rgba(147, 112, 219, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
   &:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-    border-color: ${({ theme }) => theme.colors.primary}40;
+    border-color: rgba(147, 112, 219, 0.5);
   }
 `;
 
 export const SummaryIcon = styled.div`
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   background-color: ${({ color }) => color}15;
   display: flex;
@@ -168,19 +212,26 @@ export const SummaryContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  min-width: 0;
 `;
 
 export const SummaryValue = styled.span`
-  font-size: 1.75rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   letter-spacing: -0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const SummaryLabel = styled.span`
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: ${({ theme }) => theme.colors.textSecondary};
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const InvoicesList = styled.div`
@@ -190,7 +241,7 @@ export const InvoicesList = styled.div`
   background-color: ${({ theme }) => theme.colors.backgroundSecondary};
   border-radius: 12px;
   padding: 1.5rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid rgba(147, 112, 219, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 `;
 
@@ -202,7 +253,7 @@ export const InvoicesHeader = styled.div`
   flex-wrap: wrap;
   gap: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid rgba(147, 112, 219, 0.2);
 `;
 
 export const InvoicesTitle = styled.h3`
@@ -220,7 +271,7 @@ export const InvoicesCount = styled.span`
   padding: 0.35rem 0.85rem;
   border-radius: 20px;
   font-weight: 500;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid rgba(147, 112, 219, 0.3);
 `;
 
 export const InvoicesFilter = styled.div`
@@ -230,25 +281,45 @@ export const InvoicesFilter = styled.div`
 `;
 
 export const FilterButton = styled.button`
-  background-color: ${({ active, theme }) => 
-    active ? theme.colors.primary : theme.colors.backgroundTertiary};
+  background-color: ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
   color: ${({ active, theme }) => 
-    active ? 'white' : theme.colors.textSecondary};
+    active ? theme.colors.backgroundPrimary : theme.colors.textSecondary};
   border: 1px solid ${({ active, theme }) => 
-    active ? theme.colors.primary : theme.colors.border};
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
+    active ? theme.colors.primary : 'rgba(147, 112, 219, 0.3)'};
+  border-radius: 10px;
+  padding: 0.6rem 1.2rem;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: ${({ active }) => active ? '0 2px 4px rgba(0, 0, 0, 0.2)' : 'none'};
 
   &:hover {
     background-color: ${({ active, theme }) => 
-      active ? theme.colors.primaryDark : theme.colors.backgroundQuaternary};
+      active ? theme.colors.primaryDark : theme.colors.backgroundTertiary};
     color: ${({ active, theme }) => 
-      active ? 'white' : theme.colors.textPrimary};
+      active ? theme.colors.backgroundPrimary : theme.colors.textPrimary};
     transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border-color: ${({ active, theme }) => 
+      active ? theme.colors.primaryDark : 'rgba(147, 112, 219, 0.5)'};
+  }
+
+  &:focus {
+    outline: 2px solid ${({ theme }) => theme.colors.primary};
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  @media (min-width: 768px) {
+    &:hover:not(:disabled) {
+      background-color: ${({ active, theme }) => 
+        active ? theme.colors.primaryDark : theme.colors.backgroundTertiary};
+    }
   }
 `;
 
@@ -262,13 +333,13 @@ export const InvoiceItem = styled(motion.div)`
   align-items: center;
   cursor: pointer;
   transition: all 0.2s;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid rgba(147, 112, 219, 0.3);
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.backgroundQuaternary};
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-color: ${({ theme }) => theme.colors.primary}40;
+    border-color: rgba(147, 112, 219, 0.5);
   }
 
   @media (max-width: 1024px) {
@@ -348,7 +419,7 @@ export const EmptyState = styled.div`
   padding: 4rem 2rem;
   background-color: ${({ theme }) => theme.colors.backgroundTertiary};
   border-radius: 12px;
-  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border: 1px dashed rgba(147, 112, 219, 0.3);
 `;
 
 export const EmptyIcon = styled.div`
@@ -359,7 +430,7 @@ export const EmptyIcon = styled.div`
   height: 80px;
   border-radius: 50%;
   background-color: ${({ theme }) => theme.colors.backgroundQuaternary};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid rgba(147, 112, 219, 0.3);
 `;
 
 export const EmptyText = styled.p`
@@ -377,7 +448,11 @@ export const LoadingSpinner = styled.div`
   justify-content: center;
   gap: 1.5rem;
   height: 100vh;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 1.1rem;
-  background-color: ${({ theme }) => theme.colors.backgroundPrimary};
+  width: 100%;
+  
+  span {
+    text-align: center;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 1.1rem;
+  }
 `; 

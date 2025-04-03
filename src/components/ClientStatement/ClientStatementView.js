@@ -58,7 +58,9 @@ const ClientStatementView = () => {
     totalInvoices: 0,
     totalAmount: 0,
     paidAmount: 0,
-    pendingAmount: 0
+    pendingAmount: 0,
+    totalQuotations: 0,
+    totalCredits: 0
   });
 
   useEffect(() => {
@@ -124,11 +126,39 @@ const ClientStatementView = () => {
           .reduce((sum, inv) => sum + inv.total, 0);
         const pendingAmount = totalAmount - paidAmount;
         
+        // Fetch quotations and credits
+        const quotationsQuery = query(
+          collection(db, 'quotations'),
+          where('clientId', '==', id)
+        );
+        const quotationsSnapshot = await getDocs(quotationsQuery);
+        const totalQuotations = quotationsSnapshot.size;
+        
+        // If no quotations found by clientId, try searching by clientName
+        let totalQuotationsCount = totalQuotations;
+        if (quotationsSnapshot.empty && clientData.companyName) {
+          const nameQuery = query(
+            collection(db, 'quotations'),
+            where('clientName', '==', clientData.companyName)
+          );
+          const nameSnapshot = await getDocs(nameQuery);
+          totalQuotationsCount = nameSnapshot.size;
+        }
+        
+        const creditsQuery = query(
+          collection(db, 'credits'),
+          where('clientId', '==', id)
+        );
+        const creditsSnapshot = await getDocs(creditsQuery);
+        const totalCredits = creditsSnapshot.size;
+        
         setSummary({
           totalInvoices,
           totalAmount,
           paidAmount,
-          pendingAmount
+          pendingAmount,
+          totalQuotations: totalQuotationsCount,
+          totalCredits
         });
         
         setInvoices(processedInvoices);
@@ -147,8 +177,8 @@ const ClientStatementView = () => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'QAR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(value);
   };
 
@@ -195,20 +225,22 @@ const ClientStatementView = () => {
 
   if (loading) {
     return (
-      <LoadingSpinner>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          style={{ 
-            width: 40, 
-            height: 40, 
-            border: `3px solid ${colors.border}`,
-            borderTop: `3px solid ${colors.primary}`,
-            borderRadius: '50%'
-          }}
-        />
-        <span>Loading client statement...</span>
-      </LoadingSpinner>
+      <Container>
+        <LoadingSpinner>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            style={{ 
+              width: 40, 
+              height: 40, 
+              border: `3px solid rgba(147, 112, 219, 0.3)`,
+              borderTop: `3px solid ${colors.primary}`,
+              borderRadius: '50%'
+            }}
+          />
+          <span>Loading client statement...</span>
+        </LoadingSpinner>
+      </Container>
     );
   }
 
@@ -277,7 +309,7 @@ const ClientStatementView = () => {
         </SummaryCard>
         <SummaryCard>
           <SummaryIcon color={colors.statusPaid}>
-            <Icon name="dollar" size={24} color={colors.statusPaid} />
+            <Icon name="receipt" size={24} color={colors.statusPaid} />
           </SummaryIcon>
           <SummaryContent>
             <SummaryValue>{formatCurrency(summary.totalAmount)}</SummaryValue>
@@ -286,7 +318,7 @@ const ClientStatementView = () => {
         </SummaryCard>
         <SummaryCard>
           <SummaryIcon color={colors.statusPaid}>
-            <Icon name="check" size={24} color={colors.statusPaid} />
+            <Icon name="invoice" size={24} color={colors.statusPaid} />
           </SummaryIcon>
           <SummaryContent>
             <SummaryValue>{formatCurrency(summary.paidAmount)}</SummaryValue>
@@ -295,11 +327,29 @@ const ClientStatementView = () => {
         </SummaryCard>
         <SummaryCard>
           <SummaryIcon color={colors.statusPending}>
-            <Icon name="clock" size={24} color={colors.statusPending} />
+            <Icon name="calendar" size={24} color={colors.statusPending} />
           </SummaryIcon>
           <SummaryContent>
             <SummaryValue>{formatCurrency(summary.pendingAmount)}</SummaryValue>
             <SummaryLabel>Pending Amount</SummaryLabel>
+          </SummaryContent>
+        </SummaryCard>
+        <SummaryCard>
+          <SummaryIcon color={colors.blueGrayish}>
+            <Icon name="quotation" size={24} color={colors.blueGrayish} />
+          </SummaryIcon>
+          <SummaryContent>
+            <SummaryValue>{summary.totalQuotations}</SummaryValue>
+            <SummaryLabel>Total Quotations</SummaryLabel>
+          </SummaryContent>
+        </SummaryCard>
+        <SummaryCard>
+          <SummaryIcon color={colors.statusPartiallyPaid}>
+            <Icon name="statement" size={24} color={colors.statusPartiallyPaid} />
+          </SummaryIcon>
+          <SummaryContent>
+            <SummaryValue>{summary.totalCredits}</SummaryValue>
+            <SummaryLabel>Total Credits</SummaryLabel>
           </SummaryContent>
         </SummaryCard>
       </SummaryCards>
