@@ -75,6 +75,7 @@ const AppProvider = ({ children }) => {
         createClient,
         handleClientDelete,
         toggleForm,
+        addClients
     } = useManageClients();
 
     const { filteredInvoices, filterType, changeFilterType } = useFilter(invoiceState);
@@ -160,6 +161,7 @@ const AppProvider = ({ children }) => {
                 createClient,
                 handleClientDelete,
                 toggleForm,
+                addClients,
                 filteredInvoices,
                 filterType,
                 changeFilterType,

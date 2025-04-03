@@ -425,6 +425,62 @@ const useManageClients = () => {
         });
     };
 
+    /**
+     * Function to add multiple clients at once (for import functionality)
+     * @param {Array} newClients - Array of client objects to add
+     */
+    const addClients = async (newClients) => {
+        try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            
+            // Process each client
+            for (const newClient of newClients) {
+                // Skip if required fields are missing
+                if (!newClient.companyName || !newClient.email) {
+                    console.warn('Skipping client due to missing required fields:', newClient);
+                    continue;
+                }
+
+                // Clean and prepare client data
+                const cleanedClient = {
+                    companyName: newClient.companyName || '',
+                    email: newClient.email || '',
+                    phone: newClient.phone || '',
+                    address: newClient.address || '',
+                    country: newClient.country || '',
+                    trnNumber: newClient.trnNumber || '',
+                    vatPercentage: newClient.vatPercentage || '5',
+                    createdAt: new Date()
+                };
+                
+                // Generate a unique ID for each client
+                const clientWithId = {
+                    ...cleanedClient,
+                    id: generateId()
+                };
+                
+                // Add to Firestore
+                try {
+                    const docRef = await addDoc(collection(db, 'clients'), cleanedClient);
+                    clientWithId.id = docRef.id; // Update with Firestore ID
+                } catch (firebaseError) {
+                    console.error('Firebase error adding client:', firebaseError);
+                    // Continue with local ID if Firestore fails
+                }
+                
+                // Add to local state
+                dispatch({ type: 'ADD_CLIENT', payload: clientWithId });
+            }
+            
+            dispatch({ type: 'SET_FIREBASE_ERROR', payload: false });
+        } catch (error) {
+            console.error('Error adding clients:', error);
+            dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: false });
+        }
+    };
+
     return {
         state,
         client,
@@ -434,7 +490,8 @@ const useManageClients = () => {
         handleClientDelete: deleteClient,
         toggleForm,
         toggleClientModal: toggleModal,
-        setErrors
+        setErrors,
+        addClients
     };
 };
 

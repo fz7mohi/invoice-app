@@ -47,38 +47,38 @@ export const ClientCount = styled.p`
 
 export const ButtonContainer = styled.div`
     display: flex;
-    justify-content: space-between;
+    gap: 1rem;
     align-items: center;
 `;
 
 export const NewClientButton = styled.button`
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
     background-color: #7C5DFA;
     color: white;
     border: none;
     border-radius: 24px;
-    padding: 8px 14px;
-    font-size: 12px;
     font-weight: 700;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    
+
     &:hover {
         background-color: #9277FF;
     }
-    
+
     &:disabled {
-        background-color: #9277FF;
-        opacity: 0.7;
+        opacity: 0.5;
         cursor: not-allowed;
     }
+`;
+
+export const ImportExportButton = styled(NewClientButton)`
+    background-color: #252945;
     
-    @media (min-width: 768px) {
-        padding: 8px 16px;
-        font-size: 14px;
+    &:hover {
+        background-color: #373B53;
     }
 `;
 

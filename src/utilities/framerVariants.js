@@ -348,11 +348,12 @@ export const clientsVariants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
-            transition: { duration: 0.5 },
+            transition: {
+                duration: 0.5,
+            },
         },
-        exit: { 
+        exit: {
             opacity: 0,
-            transition: { duration: 0.3 }
         },
     },
     clientItem: (index) => {
@@ -380,12 +381,12 @@ export const clientsVariants = {
             },
         };
     },
-    emptyState: {
-        hidden: { scale: 0.9, opacity: 0 },
+    error: {
+        hidden: { x: -50, opacity: 0 },
         visible: {
-            scale: 1,
+            x: 0,
             opacity: 1,
-            transition: { type: 'spring', duration: 1 },
+            transition: { type: 'spring' },
         },
         exit: { opacity: 0 },
     },

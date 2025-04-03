@@ -24,12 +24,15 @@ import {
     SearchInput,
     SearchIcon,
     HeaderContent,
-    TitleGroup
+    TitleGroup,
+    ImportExportButton
 } from './ClientsStyles';
 import Icon from '../shared/Icon/Icon';
 import ConfirmModal from '../shared/ConfirmModal/ConfirmModal';
+import ErrorMessage from './ErrorMessage/ErrorMessage';
 import { clientsVariants } from '../../utilities/framerVariants';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import Papa from 'papaparse';
 
 const Clients = () => {
     const { 
@@ -37,12 +40,14 @@ const Clients = () => {
         toggleForm, 
         editClient, 
         toggleClientModal,
-        handleClientDelete
+        handleClientDelete,
+        addClients
     } = useGlobalContext();
     
     const { clients, isModalOpen, isLoading } = clientState;
     const [searchQuery, setSearchQuery] = useState('');
     const shouldReduceMotion = useReducedMotion();
+    const fileInputRef = useRef(null);
     
     // Enhanced search functionality
     const filteredClients = useMemo(() => {
@@ -104,6 +109,68 @@ const Clients = () => {
         setSearchQuery(e.target.value);
     };
 
+    const handleExport = () => {
+        const csv = Papa.unparse(clients.map(client => ({
+            companyName: client.companyName,
+            email: client.email,
+            phone: client.phone || '',
+            address: client.address || '',
+            country: client.country || '',
+            trnNumber: client.trnNumber || ''
+        })));
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'clients.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImport = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            Papa.parse(file, {
+                complete: (results) => {
+                    // Skip the first row if it contains "clients"
+                    const data = results.data[0][0] === 'clients' ? results.data.slice(1) : results.data;
+                    
+                    // Get the header row
+                    const headers = data[0];
+                    
+                    // Process the data rows
+                    const importedClients = data.slice(1).map(row => {
+                        // Create an object with the correct field names
+                        const client = {};
+                        headers.forEach((header, index) => {
+                            // Clean the value - remove quotes and trim whitespace
+                            let value = row[index] || '';
+                            if (typeof value === 'string') {
+                                value = value.replace(/^["']|["']$/g, '').trim();
+                            }
+                            client[header] = value;
+                        });
+                        return client;
+                    }).filter(client => client.companyName && client.email); // Filter out rows without required fields
+                    
+                    if (importedClients.length > 0) {
+                        addClients(importedClients);
+                    } else {
+                        console.warn('No valid clients found in the CSV file');
+                    }
+                },
+                header: false, // We'll handle headers manually
+                skipEmptyLines: true
+            });
+        }
+        // Reset the file input
+        event.target.value = '';
+    };
+
     return (
         <StyledClients
             as={motion.main}
@@ -130,6 +197,27 @@ const Clients = () => {
                     </TitleGroup>
                     
                     <ButtonContainer>
+                        <ImportExportButton
+                            onClick={handleExport}
+                            disabled={isLoading || filteredClients.length === 0}
+                        >
+                            <Icon name="download" size={15} color="#FFF" />
+                            Export
+                        </ImportExportButton>
+                        <ImportExportButton
+                            onClick={() => fileInputRef.current.click()}
+                            disabled={isLoading}
+                        >
+                            <Icon name="upload" size={15} color="#FFF" />
+                            Import
+                        </ImportExportButton>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleImport}
+                            accept=".csv"
+                            style={{ display: 'none' }}
+                        />
                         <NewClientButton
                             onClick={handleNewClientClick}
                             disabled={isLoading}
@@ -167,21 +255,7 @@ const Clients = () => {
                     </EmptyText>
                 </EmptyState>
             ) : filteredClients.length === 0 ? (
-                <EmptyState
-                    as={motion.div}
-                    variants={variant('emptyState')}
-                >
-                    <img 
-                        src={require('../../assets/images/illustration-empty.svg')} 
-                        alt="No clients" 
-                    />
-                    <EmptyHeading>There is nothing here</EmptyHeading>
-                    <EmptyText>
-                        {searchQuery 
-                            ? 'No clients found matching your search.'
-                            : 'Create a client by clicking the New Client button.'}
-                    </EmptyText>
-                </EmptyState>
+                <ErrorMessage variant={variant} />
             ) : (
                 <ClientList>
                     {filteredClients.map((client, index) => (
