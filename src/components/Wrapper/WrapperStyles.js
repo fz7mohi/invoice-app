@@ -12,3 +12,13 @@ export const StyledWrapper = styled.main`
         flex-flow: row;
     }
 `;
+
+export const ContentContainer = styled.div`
+    flex: 1;
+    width: 100%;
+    padding-bottom: 60px; /* Space for mobile tab bar */
+    
+    @media (min-width: 768px) {
+        padding-bottom: 0; /* No padding needed on larger screens */
+    }
+`;
