@@ -21,6 +21,7 @@ import { AnimatePresence } from 'framer-motion';
 import QuotationView from '../QuotationView/QuotationView';
 import Settings from '../Settings/Settings';
 import Dashboard from '../Dashboard/Dashboard';
+import ClientStatementView from '../ClientStatement/ClientStatementView';
 import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '../../utilities/themes';
 
@@ -113,6 +114,9 @@ const App = () => {
                         </Route>
                         <Route path="/delivery-orders/:id">
                             <DeliveryOrderView />
+                        </Route>
+                        <Route path="/client-statement/:id">
+                            <ClientStatementView />
                         </Route>
                         <Route path="/settings">
                             <Settings />

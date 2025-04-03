@@ -36,31 +36,46 @@ export const Title = styled.h1`
 
 export const StatsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 24px;
     margin-bottom: 48px;
 
     @media (min-width: 768px) {
         grid-template-columns: repeat(2, 1fr);
-        gap: 32px;
+        gap: 24px;
     }
 
     @media (min-width: 1024px) {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 40px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 24px;
+
+        & > * {
+            flex: 1;
+            min-width: 240px;
+            max-width: 320px;
+        }
+
+        & > *:nth-last-child(-n+2) {
+            margin-left: auto;
+            margin-right: auto;
+        }
     }
 `;
 
 export const StatCard = styled.div`
     background-color: ${({ theme }) => theme.colors.backgroundItem};
     border-radius: 16px;
-    padding: 28px;
+    padding: 20px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 12px;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease-in-out;
     border: 1px solid ${({ theme }) => `${theme.colors.purple}30`};
+    height: 100%;
+    min-height: 100px;
 
     &:hover {
         transform: translateY(-4px);
@@ -70,9 +85,10 @@ export const StatCard = styled.div`
 `;
 
 export const StatIcon = styled.div`
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -87,22 +103,23 @@ export const StatIcon = styled.div`
 
 export const StatContent = styled.div`
     flex: 1;
+    min-width: 0;
 `;
 
 export const StatValue = styled.div`
-    font-size: 28px;
+    font-size: 20px;
     font-weight: 700;
     color: ${({ theme }) => theme.colors.textPrimary};
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     line-height: 1.2;
 
     @media (min-width: 768px) {
-        font-size: 32px;
+        font-size: 24px;
     }
 `;
 
 export const StatLabel = styled.div`
-    font-size: 15px;
+    font-size: 13px;
     color: ${({ theme }) => theme.colors.textTertiary};
     font-weight: 500;
 `;
@@ -367,4 +384,22 @@ export const PageButton = styled.button`
 export const PageInfo = styled.div`
     font-size: 14px;
     color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+export const ErrorMessage = styled.div`
+    background-color: ${({ theme }) => `${theme.colors.statusDraft}15`};
+    color: ${({ theme }) => theme.colors.statusDraft};
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    border: 1px solid ${({ theme }) => `${theme.colors.statusDraft}30`};
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    &::before {
+        content: "⚠️";
+        font-size: 16px;
+    }
 `; 

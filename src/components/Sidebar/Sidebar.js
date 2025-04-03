@@ -8,16 +8,16 @@ const Sidebar = () => {
     return (
         <StyledSidebar>
             <LogoContainer>
-                <Link to="/">
+                <Link to="/dashboard">
                     <img src={logo} alt="Logo" />
                 </Link>
             </LogoContainer>
             <Menu>
                 <MenuItem
                     exact
-                    to="/"
+                    to="/dashboard"
                     activeStyle={{ color: '#7c5dfa' }}
-                    title="Home"
+                    title="Dashboard"
                 >
                     <BiHomeAlt />
                 </MenuItem>
