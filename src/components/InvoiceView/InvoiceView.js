@@ -269,6 +269,7 @@ const InvoiceView = () => {
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [emailData, setEmailData] = useState(null);
     const [pdfData, setPdfData] = useState(null);
+    const [isSending, setIsSending] = useState(false);
     
     // Add default terms and conditions
     const defaultTermsAndConditions = `50% advance payment along with the issuance of the LPO (Local Purchase Order), and the remaining 50% to be settled before the delivery of the order.
@@ -2447,20 +2448,29 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                             </div>
                             <Button
                                 $secondary
-                                onClick={handleSendEmail}
+                                onClick={async () => {
+                                    setIsSending(true);
+                                    await handleSendEmail();
+                                    setIsSending(false);
+                                }}
+                                disabled={isSending}
                                 style={{
                                     padding: '8px 16px',
                                     borderRadius: '8px',
                                     border: `1px solid ${colors.border}`,
                                     backgroundColor: 'transparent',
                                     color: colors.text,
-                                    cursor: 'pointer',
+                                    cursor: isSending ? 'not-allowed' : 'pointer',
                                     transition: 'all 0.2s ease',
                                     fontSize: '0.9rem'
                                 }}
                             >
-                                <Icon name="mail" size={13} style={{ marginRight: '6px' }} />
-                                Send
+                                {isSending ? (
+                                    <Icon name="spinner" size={13} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                    <Icon name="mail" size={13} style={{ marginRight: '6px' }} />
+                                )}
+                                {isSending ? 'Sending...' : 'Send'}
                             </Button>
                         </AddressGroup>
                     )}

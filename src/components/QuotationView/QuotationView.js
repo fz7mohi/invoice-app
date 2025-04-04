@@ -120,6 +120,7 @@ const QuotationView = () => {
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [emailData, setEmailData] = useState(null);
     const [pdfData, setPdfData] = useState(null);
+    const [isSending, setIsSending] = useState(false);
     
     // Variant selector for animations
     const variant = (element) => {
@@ -1441,20 +1442,29 @@ const QuotationView = () => {
                             </div>
                             <Button
                                 $secondary
-                                onClick={handleSendEmail}
+                                onClick={async () => {
+                                    setIsSending(true);
+                                    await handleSendEmail();
+                                    setIsSending(false);
+                                }}
+                                disabled={isSending}
                                 style={{
                                     padding: '8px 16px',
                                     borderRadius: '8px',
                                     border: `1px solid ${colors.border}`,
                                     backgroundColor: 'transparent',
                                     color: colors.text,
-                                    cursor: 'pointer',
+                                    cursor: isSending ? 'not-allowed' : 'pointer',
                                     transition: 'all 0.2s ease',
                                     fontSize: '0.9rem'
                                 }}
                             >
-                                <Icon name="mail" size={13} style={{ marginRight: '6px' }} />
-                                Send
+                                {isSending ? (
+                                    <Icon name="spinner" size={13} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                    <Icon name="mail" size={13} style={{ marginRight: '6px' }} />
+                                )}
+                                {isSending ? 'Sending...' : 'Send'}
                             </Button>
                         </AddressGroup>
                     )}
