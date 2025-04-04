@@ -1,99 +1,122 @@
-import { useState, useEffect } from 'react';
-import { collection, query, getDocs, where, orderBy, limit } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, query, getDocs, where, orderBy, limit, startAfter, getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
+
+// Cache for client data
+const clientCache = new Map();
+const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 const useClientsData = (searchQuery = '', currentPage = 1, itemsPerPage = 5) => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalClients, setTotalClients] = useState(0);
+  const [lastDoc, setLastDoc] = useState(null);
 
+  // Memoized function to get client summary from cache or Firestore
+  const getClientSummary = useCallback(async (clientId) => {
+    // Check cache first
+    const cachedData = clientCache.get(clientId);
+    if (cachedData && Date.now() - cachedData.timestamp < CACHE_EXPIRY) {
+      return cachedData.data;
+    }
+
+    try {
+      // Get client doc
+      const clientRef = doc(db, 'clients', clientId);
+      const clientSnap = await getDoc(clientRef);
+      
+      if (!clientSnap.exists()) {
+        return null;
+      }
+
+      const clientData = clientSnap.data();
+
+      // Get invoices count and total amount in a single query
+      const invoicesQuery = query(
+        collection(db, 'invoices'),
+        where('clientId', '==', clientId)
+      );
+      const invoicesSnapshot = await getDocs(invoicesQuery);
+      
+      let totalAmount = 0;
+      let lastInvoiceDate = null;
+
+      invoicesSnapshot.forEach(doc => {
+        const invoiceData = doc.data();
+        totalAmount += parseFloat(invoiceData.total) || 0;
+        
+        const invoiceDate = invoiceData.createdAt?.toDate?.() || invoiceData.createdAt;
+        if (invoiceDate && (!lastInvoiceDate || invoiceDate > lastInvoiceDate)) {
+          lastInvoiceDate = invoiceDate;
+        }
+      });
+
+      const summary = {
+        id: clientId,
+        name: clientData.companyName || 'Unnamed Client',
+        email: clientData.email || 'No email',
+        totalInvoices: invoicesSnapshot.size,
+        totalAmount: totalAmount.toFixed(2),
+        lastInvoice: lastInvoiceDate ? new Date(lastInvoiceDate).toLocaleDateString() : 'No invoices'
+      };
+
+      // Cache the result
+      clientCache.set(clientId, {
+        data: summary,
+        timestamp: Date.now()
+      });
+
+      return summary;
+    } catch (err) {
+      console.error('Error fetching client summary:', err);
+      return null;
+    }
+  }, []);
+
+  // Fetch clients with pagination and search
   useEffect(() => {
     const fetchClients = async () => {
       try {
         setLoading(true);
         
-        // Get all clients
-        const clientsQuery = query(collection(db, 'clients'));
-        const clientsSnapshot = await getDocs(clientsQuery);
-        const clientsData = [];
-        
-        // Process each client to get their invoice data
-        for (const clientDoc of clientsSnapshot.docs) {
-          const clientData = clientDoc.data();
-          
-          // Get invoices for this client - try both clientId and clientName
-          const clientInvoicesQuery = query(
-            collection(db, 'invoices'),
-            where('clientId', '==', clientDoc.id)
-          );
-          const invoicesSnapshot = await getDocs(clientInvoicesQuery);
-          
-          // If no invoices found by clientId, try searching by clientName
-          let additionalInvoices = [];
-          if (invoicesSnapshot.empty && clientData.companyName) {
-            const nameQuery = query(
-              collection(db, 'invoices'),
-              where('clientName', '==', clientData.companyName)
-            );
-            const nameSnapshot = await getDocs(nameQuery);
-            additionalInvoices = nameSnapshot.docs;
-          }
-          
-          // Combine both query results
-          const allInvoices = [...invoicesSnapshot.docs, ...additionalInvoices];
-          
-          // Calculate total amount for this client
-          let totalAmount = 0;
-          let lastInvoiceDate = null;
-          
-          allInvoices.forEach(doc => {
-            const invoiceData = doc.data();
-            
-            // Ensure we're working with a number for the total
-            const invoiceTotal = parseFloat(invoiceData.total) || 0;
-            totalAmount += invoiceTotal;
-            
-            // Track the most recent invoice date
-            const invoiceDate = invoiceData.createdAt?.toDate?.() || invoiceData.createdAt;
-            if (invoiceDate && (!lastInvoiceDate || invoiceDate > lastInvoiceDate)) {
-              lastInvoiceDate = invoiceDate;
-            }
-          });
-          
-          // Format the last invoice date
-          const formattedLastInvoice = lastInvoiceDate 
-            ? new Date(lastInvoiceDate).toLocaleDateString() 
-            : 'No invoices';
-          
-          // Add client with invoice stats to the array
-          clientsData.push({
-            id: clientDoc.id,
-            name: clientData.companyName || 'Unnamed Client',
-            email: clientData.email || 'No email',
-            totalInvoices: allInvoices.length,
-            totalAmount: totalAmount.toFixed(2),
-            lastInvoice: formattedLastInvoice
-          });
-        }
-        
-        // Filter clients based on search query
-        const filteredClients = clientsData.filter(client => 
-          client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          client.email.toLowerCase().includes(searchQuery.toLowerCase())
+        // Simple query for clients with ordering
+        let clientsQuery = query(
+          collection(db, 'clients'),
+          orderBy('companyName'),
+          limit(itemsPerPage)
         );
+
+        // Get the clients
+        const clientsSnapshot = await getDocs(clientsQuery);
         
-        // Sort by total invoices (descending)
-        const sortedClients = filteredClients.sort((a, b) => b.totalInvoices - a.totalInvoices);
+        // Update lastDoc for pagination
+        const lastVisible = clientsSnapshot.docs[clientsSnapshot.docs.length - 1];
+        setLastDoc(lastVisible);
+
+        // Get total count
+        const totalQuery = query(collection(db, 'clients'));
+        const totalSnapshot = await getDocs(totalQuery);
+        setTotalClients(totalSnapshot.size);
+
+        // Process clients in parallel
+        const clientPromises = clientsSnapshot.docs.map(doc => getClientSummary(doc.id));
+        const clientSummaries = await Promise.all(clientPromises);
         
-        // Set total count for pagination
-        setTotalClients(sortedClients.length);
-        
-        // Apply pagination
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const paginatedClients = sortedClients.slice(startIndex, startIndex + itemsPerPage);
-        
-        setClients(paginatedClients);
+        // Filter out any null results and sort by total invoices
+        const validClients = clientSummaries
+          .filter(Boolean)
+          .sort((a, b) => b.totalInvoices - a.totalInvoices);
+
+        // Apply search filter if needed
+        const filteredClients = searchQuery
+          ? validClients.filter(client => 
+              client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              client.email.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+          : validClients;
+
+        setClients(filteredClients);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching clients data:', err);
@@ -103,7 +126,14 @@ const useClientsData = (searchQuery = '', currentPage = 1, itemsPerPage = 5) => 
     };
     
     fetchClients();
-  }, [searchQuery, currentPage, itemsPerPage]);
+  }, [searchQuery, currentPage, itemsPerPage, getClientSummary]);
+
+  // Clear cache when component unmounts
+  useEffect(() => {
+    return () => {
+      clientCache.clear();
+    };
+  }, []);
   
   return { clients, loading, error, totalClients };
 };

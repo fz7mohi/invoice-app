@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import { useTheme } from 'styled-components';
 import { motion } from 'framer-motion';
+import { FixedSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 import Icon from '../shared/Icon/Icon';
+import { useClientStatement } from '../../hooks/useClientStatement';
 import {
   Container,
   Header,
@@ -51,7 +54,8 @@ import {
   EmptyText,
   LoadingSpinner,
   ExportButton,
-  ExportIcon
+  ExportIcon,
+  LoadMoreButton
 } from './ClientStatementStyles';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -60,23 +64,22 @@ const ClientStatementView = () => {
   const { id } = useParams();
   const history = useHistory();
   const { colors } = useTheme();
-  const [client, setClient] = useState(null);
-  const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
-  const [summary, setSummary] = useState({
-    totalInvoices: 0,
-    totalAmount: 0,
-    paidAmount: 0,
-    pendingAmount: 0,
-    totalQuotations: 0,
-    totalCredits: 0
-  });
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const dateFilterRef = useRef(null);
+  const listRef = useRef();
+
+  const {
+    client,
+    invoices,
+    loading,
+    error,
+    summary,
+    hasMore,
+    fetchMoreInvoices
+  } = useClientStatement(id);
 
   // Set default date range to current month
   useEffect(() => {
@@ -84,7 +87,6 @@ const ClientStatementView = () => {
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     
-    // Format dates as YYYY-MM-DD for input fields
     const formatDateForInput = (date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -95,211 +97,6 @@ const ClientStatementView = () => {
     setStartDate(formatDateForInput(firstDayOfMonth));
     setEndDate(formatDateForInput(lastDayOfMonth));
   }, []);
-
-  useEffect(() => {
-    const fetchClientData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch client data
-        const clientRef = doc(db, 'clients', id);
-        const clientSnap = await getDoc(clientRef);
-        
-        if (!clientSnap.exists()) {
-          setError('Client not found');
-          return;
-        }
-        
-        const clientData = clientSnap.data();
-        setClient({
-          id: clientSnap.id,
-          ...clientData
-        });
-        
-        // Fetch invoices for this client
-        const invoicesQuery = query(
-          collection(db, 'invoices'),
-          where('clientId', '==', id)
-        );
-        const invoicesSnapshot = await getDocs(invoicesQuery);
-        
-        // If no invoices found by clientId, try searching by clientName
-        let allInvoices = [...invoicesSnapshot.docs];
-        if (invoicesSnapshot.empty && clientData.companyName) {
-          const nameQuery = query(
-            collection(db, 'invoices'),
-            where('clientName', '==', clientData.companyName)
-          );
-          const nameSnapshot = await getDocs(nameQuery);
-          allInvoices = [...nameSnapshot.docs];
-        }
-        
-        // Process invoices
-        const processedInvoices = allInvoices.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            number: data.customId || doc.id,
-            date: data.createdAt?.toDate?.() || data.createdAt,
-            description: data.description || 'No description',
-            total: parseFloat(data.total) || 0,
-            vat: data.vat || 0,
-            totalVat: data.totalVat || 0,
-            status: data.status || 'draft',
-            currency: data.currency || (clientData.country === 'UAE' ? 'AED' : 'USD'),
-            paidAmount: parseFloat(data.paidAmount) || 0
-          };
-        });
-        
-        // Sort invoices by date (newest first)
-        processedInvoices.sort((a, b) => b.date - a.date);
-        
-        // Calculate summary statistics
-        const totalInvoices = processedInvoices.length;
-        const totalAmount = processedInvoices.reduce((sum, inv) => sum + inv.total, 0);
-        const paidAmount = processedInvoices.reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
-        const pendingAmount = totalAmount - paidAmount;
-        
-        // Fetch quotations and credits
-        const quotationsQuery = query(
-          collection(db, 'quotations'),
-          where('clientId', '==', id)
-        );
-        const quotationsSnapshot = await getDocs(quotationsQuery);
-        const totalQuotations = quotationsSnapshot.size;
-        
-        // If no quotations found by clientId, try searching by clientName
-        let totalQuotationsCount = totalQuotations;
-        if (quotationsSnapshot.empty && clientData.companyName) {
-          const nameQuery = query(
-            collection(db, 'quotations'),
-            where('clientName', '==', clientData.companyName)
-          );
-          const nameSnapshot = await getDocs(nameQuery);
-          totalQuotationsCount = nameSnapshot.size;
-        }
-        
-        const creditsQuery = query(
-          collection(db, 'credits'),
-          where('clientId', '==', id)
-        );
-        const creditsSnapshot = await getDocs(creditsQuery);
-        const totalCredits = creditsSnapshot.size;
-        
-        setSummary({
-          totalInvoices,
-          totalAmount,
-          paidAmount,
-          pendingAmount,
-          totalQuotations: totalQuotationsCount,
-          totalCredits
-        });
-        
-        setInvoices(processedInvoices);
-      } catch (err) {
-        console.error('Error fetching client data:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchClientData();
-  }, [id]);
-
-  const getClientCurrency = () => {
-    if (!client?.country) return 'USD';
-    
-    const countryLower = client.country.toLowerCase();
-    if (countryLower.includes('emirates') || countryLower.includes('uae') || countryLower.includes('united arab')) {
-      return 'AED';
-    } else if (countryLower.includes('qatar')) {
-      return 'QAR';
-    } else {
-      return 'USD';
-    }
-  };
-
-  const formatCurrency = (value, currency = null) => {
-    // Use the provided currency or determine based on client country
-    const currencyToUse = currency || getClientCurrency();
-    
-    // For UAE clients, always use AED
-    if (client?.country && (
-      client.country.toLowerCase().includes('emirates') || 
-      client.country.toLowerCase().includes('uae') || 
-      client.country.toLowerCase().includes('united arab')
-    )) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'AED',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }).format(value);
-    }
-    
-    try {
-      // For Qatar clients
-      if (currencyToUse === 'QAR') {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'QAR',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }).format(value);
-      }
-      // For other currencies
-      else {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: currencyToUse,
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }).format(value);
-      }
-    } catch (error) {
-      console.error(`Error formatting currency with ${currencyToUse}:`, error);
-      // Fallback to USD if there's an error with the specified currency
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }).format(value);
-    }
-  };
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'paid':
-        return '#4CAF50'; // Green
-      case 'pending':
-        return '#FF9800'; // Orange
-      case 'partially_paid':
-        return '#2196F3'; // Blue
-      case 'void':
-        return '#F44336'; // Red
-      default:
-        return '#9E9E9E'; // Grey
-    }
-  };
-
-  const formatStatus = (status) => {
-    switch (status) {
-      case 'partially_paid':
-        return 'Partially Paid';
-      default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
-    }
-  };
 
   const handleBack = () => {
     history.push('/dashboard');
@@ -337,18 +134,14 @@ const ClientStatementView = () => {
   }, []);
 
   const filteredInvoices = invoices.filter(invoice => {
-    // Filter by status
     if (filter !== 'all' && invoice.status !== filter) {
       return false;
     }
     
-    // Filter by date range if dates are set
     if (startDate && endDate) {
       const invoiceDate = new Date(invoice.date);
       const start = new Date(startDate);
       const end = new Date(endDate);
-      
-      // Set end date to end of day
       end.setHours(23, 59, 59, 999);
       
       if (invoiceDate < start || invoiceDate > end) {
@@ -359,78 +152,73 @@ const ClientStatementView = () => {
     return true;
   });
 
-  // Add getCompanyProfile function
-  const getCompanyProfile = async (country) => {
-    try {
-      // Convert country to lowercase and handle variations
-      const countryLower = country.toLowerCase();
-      let searchCountry = countryLower;
-      
-      // Handle UAE variations
-      if (countryLower.includes('emirates') || countryLower.includes('uae')) {
-        searchCountry = 'uae';
-      }
-      
-      // Query the companies collection
-      const companiesRef = collection(db, 'companies');
-      
-      // Query for the specific country
-      const q = query(companiesRef, where('country', '==', searchCountry));
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        const profile = querySnapshot.docs[0].data();
-        
-        const result = {
-          name: profile.name || '',
-          address: profile.address || '',
-          phone: profile.phone || '',
-          vatNumber: profile.vatNumber || '',
-          crNumber: profile.crNumber || '',
-          bankDetails: {
-            bankName: profile.bankName || '',
-            accountName: profile.accountName || '',
-            accountNumber: profile.accountNumber || '',
-            iban: profile.iban || '',
-            swift: profile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
-          }
-        };
-        
-        return result;
-      }
-      
-      // If no profile found for UAE, return Qatar profile as default
-      if (searchCountry === 'uae') {
-        const qatarQuery = query(companiesRef, where('country', '==', 'qatar'));
-        const qatarSnapshot = await getDocs(qatarQuery);
-        
-        if (!qatarSnapshot.empty) {
-          const qatarProfile = qatarSnapshot.docs[0].data();
-          
-          const result = {
-            name: qatarProfile.name || '',
-            address: qatarProfile.address || '',
-            phone: qatarProfile.phone || '',
-            vatNumber: qatarProfile.vatNumber || '',
-            crNumber: qatarProfile.crNumber || '',
-            bankDetails: {
-              bankName: qatarProfile.bankName || '',
-              accountName: qatarProfile.accountName || '',
-              accountNumber: qatarProfile.accountNumber || '',
-              iban: qatarProfile.iban || '',
-              swift: qatarProfile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
-            }
-          };
-          
-          return result;
-        }
-      }
-      
-      throw new Error('No company profile found');
-    } catch (error) {
-      return null;
+  const formatCurrency = (value, currency = null) => {
+    const currencyToUse = currency || (client?.country === 'UAE' ? 'AED' : client?.country === 'Qatar' ? 'QAR' : 'USD');
+    
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyToUse,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'paid': return '#4CAF50';
+      case 'pending': return '#FF9800';
+      case 'partially_paid': return '#2196F3';
+      case 'void': return '#F44336';
+      default: return '#9E9E9E';
     }
   };
+
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'partially_paid': return 'Partially Paid';
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  const handleLoadMore = () => {
+    fetchMoreInvoices();
+  };
+
+  const InvoiceRow = useCallback(({ index, style }) => {
+    const invoice = filteredInvoices[index];
+    const isUAE = client?.country === 'UAE';
+
+    const InvoiceComponent = isUAE ? UAEInvoiceItem : NonUAEInvoiceItem;
+
+    return (
+      <InvoiceComponent
+        style={style}
+        onClick={() => history.push(`/invoices/${invoice.id}`)}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+      >
+        <InvoiceNumber>#{invoice.number}</InvoiceNumber>
+        <InvoiceDate>{formatDate(invoice.date)}</InvoiceDate>
+        <InvoiceDescription>{invoice.description || 'No description'}</InvoiceDescription>
+        {isUAE && <InvoiceVAT>{formatCurrency(invoice.totalVat, invoice.currency || 'AED')}</InvoiceVAT>}
+        <InvoiceTotal>{formatCurrency(invoice.total, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</InvoiceTotal>
+        <InvoiceTotal>{formatCurrency(invoice.paidAmount || 0, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</InvoiceTotal>
+        <InvoiceStatus>
+          <StatusBadge color={getStatusColor(invoice.status)}>
+            {formatStatus(invoice.status)}
+          </StatusBadge>
+        </InvoiceStatus>
+      </InvoiceComponent>
+    );
+  }, [client?.country, filteredInvoices, history]);
 
   const handleExport = async () => {
     try {
@@ -721,6 +509,79 @@ const ClientStatementView = () => {
     }
   };
 
+  // Add getCompanyProfile function
+  const getCompanyProfile = async (country) => {
+    try {
+      // Convert country to lowercase and handle variations
+      const countryLower = country.toLowerCase();
+      let searchCountry = countryLower;
+      
+      // Handle UAE variations
+      if (countryLower.includes('emirates') || countryLower.includes('uae')) {
+        searchCountry = 'uae';
+      }
+      
+      // Query the companies collection
+      const companiesRef = collection(db, 'companies');
+      
+      // Query for the specific country
+      const q = query(companiesRef, where('country', '==', searchCountry));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const profile = querySnapshot.docs[0].data();
+        
+        const result = {
+          name: profile.name || '',
+          address: profile.address || '',
+          phone: profile.phone || '',
+          vatNumber: profile.vatNumber || '',
+          crNumber: profile.crNumber || '',
+          bankDetails: {
+            bankName: profile.bankName || '',
+            accountName: profile.accountName || '',
+            accountNumber: profile.accountNumber || '',
+            iban: profile.iban || '',
+            swift: profile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+          }
+        };
+        
+        return result;
+      }
+      
+      // If no profile found for UAE, return Qatar profile as default
+      if (searchCountry === 'uae') {
+        const qatarQuery = query(companiesRef, where('country', '==', 'qatar'));
+        const qatarSnapshot = await getDocs(qatarQuery);
+        
+        if (!qatarSnapshot.empty) {
+          const qatarProfile = qatarSnapshot.docs[0].data();
+          
+          const result = {
+            name: qatarProfile.name || '',
+            address: qatarProfile.address || '',
+            phone: qatarProfile.phone || '',
+            vatNumber: qatarProfile.vatNumber || '',
+            crNumber: qatarProfile.crNumber || '',
+            bankDetails: {
+              bankName: qatarProfile.bankName || '',
+              accountName: qatarProfile.accountName || '',
+              accountNumber: qatarProfile.accountNumber || '',
+              iban: qatarProfile.iban || '',
+              swift: qatarProfile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+            }
+          };
+          
+          return result;
+        }
+      }
+      
+      throw new Error('No company profile found');
+    } catch (error) {
+      return null;
+    }
+  };
+
   if (loading) {
     return (
       <Container>
@@ -810,7 +671,7 @@ const ClientStatementView = () => {
             <Icon name="receipt" size={24} color={colors.statusPaid} />
           </SummaryIcon>
           <SummaryContent>
-            <SummaryValue>{formatCurrency(summary.totalAmount, getClientCurrency())}</SummaryValue>
+            <SummaryValue>{formatCurrency(summary.totalAmount)}</SummaryValue>
             <SummaryLabel>Total Amount</SummaryLabel>
           </SummaryContent>
         </SummaryCard>
@@ -819,7 +680,7 @@ const ClientStatementView = () => {
             <Icon name="invoice" size={24} color={colors.statusPaid} />
           </SummaryIcon>
           <SummaryContent>
-            <SummaryValue>{formatCurrency(summary.paidAmount, getClientCurrency())}</SummaryValue>
+            <SummaryValue>{formatCurrency(summary.paidAmount)}</SummaryValue>
             <SummaryLabel>Paid Amount</SummaryLabel>
           </SummaryContent>
         </SummaryCard>
@@ -828,7 +689,7 @@ const ClientStatementView = () => {
             <Icon name="calendar" size={24} color={colors.statusPending} />
           </SummaryIcon>
           <SummaryContent>
-            <SummaryValue>{formatCurrency(summary.pendingAmount, getClientCurrency())}</SummaryValue>
+            <SummaryValue>{formatCurrency(summary.pendingAmount)}</SummaryValue>
             <SummaryLabel>Pending Amount</SummaryLabel>
           </SummaryContent>
         </SummaryCard>
@@ -883,120 +744,52 @@ const ClientStatementView = () => {
             </FilterButton>
             <DateFilterContainer ref={dateFilterRef}>
               <DateFilterButton onClick={toggleDateFilter}>
-                <Icon name="calendar" size={16} color={colors.textSecondary} />
-                Date Range
-                {(startDate || endDate) && (
-                  <span style={{ 
-                    backgroundColor: colors.primary, 
-                    color: 'white', 
-                    borderRadius: '50%', 
-                    width: '18px', 
-                    height: '18px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    fontSize: '0.7rem',
-                    marginLeft: '4px'
-                  }}>
-                    !
-                  </span>
-                )}
+                <Icon name="calendar" size={20} color={colors.textPrimary} />
+                Date Filter
               </DateFilterButton>
               {showDateFilter && (
                 <DateFilterDropdown>
-                  <DateRangeInput>
-                    <label>Start Date</label>
-                    <input 
-                      type="date" 
-                      value={startDate} 
-                      onChange={(e) => setStartDate(e.target.value)}
-                    />
-                  </DateRangeInput>
-                  <DateRangeInput>
-                    <label>End Date</label>
-                    <input 
-                      type="date" 
-                      value={endDate} 
-                      onChange={(e) => setEndDate(e.target.value)}
-                    />
-                  </DateRangeInput>
-                  <ApplyButton onClick={handleApplyDateFilter}>
-                    Apply Filter
-                  </ApplyButton>
-                  {(startDate || endDate) && (
-                    <ClearButton onClick={handleClearDateFilter}>
-                      Clear Date Filter
-                    </ClearButton>
-                  )}
+                  <DateRangeInput
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                  <DateRangeInput
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                  <ApplyButton onClick={handleApplyDateFilter}>Apply</ApplyButton>
+                  <ClearButton onClick={handleClearDateFilter}>Clear</ClearButton>
                 </DateFilterDropdown>
               )}
             </DateFilterContainer>
           </InvoicesFilter>
         </InvoicesHeader>
 
-        {/* Invoice List Headers */}
-        {client?.country === 'UAE' ? (
-          <UAEInvoiceItem style={{ cursor: 'default', pointerEvents: 'none', border: 'none', background: 'transparent', padding: '0 0.75rem' }}>
-            <ColumnHeader>Invoice#</ColumnHeader>
-            <ColumnHeader>Date</ColumnHeader>
-            <ColumnHeader>Project</ColumnHeader>
-            <ColumnHeader>VAT</ColumnHeader>
-            <ColumnHeader align="right">Total Amount</ColumnHeader>
-            <ColumnHeader align="right">Paid Amount</ColumnHeader>
-            <ColumnHeader align="right">Status</ColumnHeader>
-          </UAEInvoiceItem>
-        ) : (
-          <NonUAEInvoiceItem style={{ cursor: 'default', pointerEvents: 'none', border: 'none', background: 'transparent', padding: '0 0.75rem' }}>
-            <ColumnHeader>Invoice#</ColumnHeader>
-            <ColumnHeader>Date</ColumnHeader>
-            <ColumnHeader>Project</ColumnHeader>
-            <ColumnHeader align="right">Total Amount</ColumnHeader>
-            <ColumnHeader align="right">Paid Amount</ColumnHeader>
-            <ColumnHeader align="right">Status</ColumnHeader>
-          </NonUAEInvoiceItem>
-        )}
-
         {filteredInvoices.length > 0 ? (
-          filteredInvoices.map((invoice) => (
-            client?.country === 'UAE' ? (
-              <UAEInvoiceItem
-                key={invoice.id}
-                onClick={() => history.push(`/invoices/${invoice.id}`)}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                <InvoiceNumber>#{invoice.number}</InvoiceNumber>
-                <InvoiceDate>{formatDate(invoice.date)}</InvoiceDate>
-                <InvoiceDescription>{invoice.description || 'No description'}</InvoiceDescription>
-                <InvoiceVAT>{formatCurrency(invoice.totalVat, invoice.currency || 'AED')}</InvoiceVAT>
-                <InvoiceTotal>{formatCurrency(invoice.total, invoice.currency || 'AED')}</InvoiceTotal>
-                <InvoiceTotal>{formatCurrency(invoice.paidAmount || 0, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</InvoiceTotal>
-                <InvoiceStatus>
-                  <StatusBadge color={getStatusColor(invoice.status)}>
-                    {invoice.status}
-                  </StatusBadge>
-                </InvoiceStatus>
-              </UAEInvoiceItem>
-            ) : (
-              <NonUAEInvoiceItem
-                key={invoice.id}
-                onClick={() => history.push(`/invoices/${invoice.id}`)}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                <InvoiceNumber>#{invoice.number}</InvoiceNumber>
-                <InvoiceDate>{formatDate(invoice.date)}</InvoiceDate>
-                <InvoiceDescription>{invoice.description || 'No description'}</InvoiceDescription>
-                <InvoiceTotal>{formatCurrency(invoice.total, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</InvoiceTotal>
-                <InvoiceTotal>{formatCurrency(invoice.paidAmount || 0, invoice.currency || (client?.country === 'Qatar' ? 'QAR' : 'USD'))}</InvoiceTotal>
-                <InvoiceStatus>
-                  <StatusBadge color={getStatusColor(invoice.status)}>
-                    {invoice.status}
-                  </StatusBadge>
-                </InvoiceStatus>
-              </NonUAEInvoiceItem>
-            )
-          ))
+          <>
+            <div style={{ height: '600px', width: '100%' }}>
+              <AutoSizer>
+                {({ height, width }) => (
+                  <List
+                    ref={listRef}
+                    height={height}
+                    width={width}
+                    itemCount={filteredInvoices.length}
+                    itemSize={80}
+                  >
+                    {InvoiceRow}
+                  </List>
+                )}
+              </AutoSizer>
+            </div>
+            {hasMore && (
+              <LoadMoreButton onClick={handleLoadMore}>
+                Load More
+              </LoadMoreButton>
+            )}
+          </>
         ) : (
           <EmptyState>
             <EmptyIcon>

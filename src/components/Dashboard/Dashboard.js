@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../shared/Icon/Icon';
 import { useTheme } from 'styled-components';
@@ -43,7 +43,8 @@ const Dashboard = () => {
     const { colors } = useTheme();
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
-    const itemsPerPage = 5;
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+    const itemsPerPage = 10;
     const history = useHistory();
 
     // Fetch dashboard statistics
@@ -55,10 +56,20 @@ const Dashboard = () => {
         loading: clientsLoading, 
         error: clientsError,
         totalClients
-    } = useClientsData(searchQuery, currentPage, itemsPerPage);
+    } = useClientsData(debouncedSearchQuery, currentPage, itemsPerPage);
     
     // Calculate total pages for pagination
     const totalPages = Math.ceil(totalClients / itemsPerPage);
+
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+            setCurrentPage(1); // Reset to first page on new search
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     const handlePageChange = (page) => {
         setCurrentPage(page);
@@ -169,7 +180,7 @@ const Dashboard = () => {
                     <Title>Clients Statement</Title>
                     <SearchBar>
                         <SearchIcon>
-                            <Icon name="clients" size={20} color={colors.textTertiary} />
+                            <Icon name="search" size={20} color={colors.textTertiary} />
                         </SearchIcon>
                         <SearchInput
                             type="text"
@@ -192,9 +203,9 @@ const Dashboard = () => {
                                     <ClientItem
                                         key={client.id}
                                         as={motion.div}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: index * 0.05 }}
                                         onClick={() => handleClientClick(client.id)}
                                         style={{ cursor: 'pointer' }}
                                     >

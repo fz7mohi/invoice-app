@@ -237,14 +237,17 @@ export const SummaryLabel = styled.span`
 `;
 
 export const InvoicesList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  background-color: ${({ theme }) => theme.colors.backgroundSecondary};
+  background-color: ${({ theme }) => theme.colors.backgroundItem};
   border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid rgba(147, 112, 219, 0.3);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid ${({ theme }) => `${theme.colors.purple}15`};
+  overflow: hidden;
+
+  @media (min-width: 768px) {
+    padding: 24px;
+    border-radius: 16px;
+  }
 `;
 
 export const InvoicesHeader = styled.div`
@@ -580,63 +583,61 @@ export const LoadingSpinner = styled.div`
   }
 `;
 
-// Add a new component for UAE clients with VAT column
-export const UAEInvoiceItem = styled(InvoiceItem)`
-  grid-template-columns: 1fr 1fr 2fr 1fr 1fr 1fr;
-  
-  @media (max-width: 1200px) {
-    grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
+export const LoadMoreButton = styled.button`
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  background-color: ${({ theme }) => theme.colors.backgroundTertiary};
+  border: 1px solid ${({ theme }) => `${theme.colors.purple}15`};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.backgroundSecondary};
+    border-color: ${({ theme }) => theme.colors.purple};
   }
 
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    & > *:nth-child(4) {
-      display: none;
-    }
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr 1fr 1fr;
-    & > *:nth-child(3) {
-      display: none;
-    }
-  }
-
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr 1fr;
-    & > *:nth-child(2) {
-      display: none;
-    }
+  &:active {
+    transform: scale(0.98);
   }
 `;
 
-// Add a new component for non-UAE clients without VAT column
-export const NonUAEInvoiceItem = styled(InvoiceItem)`
-  grid-template-columns: 1fr 1fr 2fr 1fr 1fr;
-  
-  @media (max-width: 1200px) {
-    grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr;
-  }
+// Update existing styles for virtual scrolling
+export const UAEInvoiceItem = styled(motion.div)`
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr 1fr 1fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  background-color: ${({ theme }) => theme.colors.backgroundPrimary};
+  border: 1px solid ${({ theme }) => `${theme.colors.purple}15`};
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    & > *:nth-child(4) {
-      display: none;
-    }
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.purple};
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
   }
+`;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr 1fr 1fr;
-    & > *:nth-child(3) {
-      display: none;
-    }
-  }
+export const NonUAEInvoiceItem = styled(motion.div)`
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr 1fr 1fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  background-color: ${({ theme }) => theme.colors.backgroundPrimary};
+  border: 1px solid ${({ theme }) => `${theme.colors.purple}15`};
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
 
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr 1fr;
-    & > *:nth-child(2) {
-      display: none;
-    }
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.purple};
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
   }
 `;
 
