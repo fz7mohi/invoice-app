@@ -2,7 +2,8 @@ import axios from 'axios';
 
 // API configuration from environment variables
 // Use a fallback value for development/testing
-const BREVO_API_KEY = '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'; // Replace with your actual API key
+// IMPORTANT: This API key must have SMTP/Transactional Email permissions in your Brevo account
+const BREVO_API_KEY = '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';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const SENDER_EMAIL = 'sales@fortunegiftz.com';
 const SENDER_NAME = 'Fortune Giftz';
@@ -70,6 +71,15 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
     if (error.response) {
       console.error('Error response data:', error.response.data);
       console.error('Error response status:', error.response.status);
+      
+      // Provide more specific error messages based on the response
+      if (error.response.status === 401) {
+        if (error.response.data.message === 'API Key is not enabled') {
+          console.error('API Key is valid but does not have the necessary permissions. Please check your Brevo account settings and ensure the API key has SMTP/Transactional Email permissions.');
+        } else if (error.response.data.message === 'Key not found') {
+          console.error('API Key is invalid or has been revoked. Please check your API key and update it if necessary.');
+        }
+      }
     }
     throw error;
   }
