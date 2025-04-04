@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://fodox.netlify.app/api/send-email'  // Replace with your actual backend URL
+  ? '/api/send-email'  // In production, use relative path
   : 'http://localhost:3000/api/send-email';  // In development, use full URL
 
 const SENDER_EMAIL = 'sales@fortunegiftz.com';
@@ -114,7 +114,7 @@ export const generateEmailTemplate = ({
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${window.location.origin}/images/white-logo.png" alt="Fortune Gifts" style="max-width: 200px; height: auto;">
+        <img src="${window.location.origin}/assets/images/black-logo.png" alt="Fortune Gifts" style="max-width: 200px; height: auto;">
       </div>
       
       <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">

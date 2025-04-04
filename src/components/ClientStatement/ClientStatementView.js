@@ -273,7 +273,6 @@ const ClientStatementView = () => {
         <div style="text-align: center; margin-top: 25px;">
           <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">CLIENT STATEMENT</h1>
         </div>
-        <div style="height: 2px; background-color: #004359; margin: 10px 0;"></div>
       `;
 
       // Add client section
