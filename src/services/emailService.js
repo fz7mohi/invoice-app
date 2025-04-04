@@ -10,9 +10,6 @@ const SENDER_NAME = 'Fortune Giftz';
 
 // Debug: Log the API key (first 10 characters only for security)
 console.log('API Key loaded:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
-console.log('Environment variables available:', Object.keys(process.env));
-console.log('REACT_APP_BREVO_API_KEY exists:', !!process.env.REACT_APP_BREVO_API_KEY);
-console.log('API Key length:', BREVO_API_KEY ? BREVO_API_KEY.length : 0);
 
 /**
  * Sends an email with a PDF attachment using Brevo API
