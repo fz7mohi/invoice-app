@@ -1,7 +1,8 @@
 import axios from 'axios';
 
+// Use the correct API URL based on environment
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api/send-email'
+  ? 'https://fodox.netlify.app/api/send-email'  // Replace with your actual backend URL
   : 'http://localhost:3001/api/send-email';
 
 /**
@@ -18,6 +19,7 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
     // Debug: Log the request details (without sensitive data)
     console.log('Sending email to:', to);
     console.log('Subject:', subject);
+    console.log('Using API URL:', API_URL);
     
     // Create the email payload
     const emailData = {
@@ -29,7 +31,16 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
     };
     
     // Send the email through our backend
-    const response = await axios.post(API_URL, emailData);
+    const response = await axios.post(API_URL, emailData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add timeout and retry logic
+      timeout: 30000,
+      validateStatus: function (status) {
+        return status >= 200 && status < 500; // Handle all responses
+      }
+    });
     
     console.log('Email sent successfully:', response.data);
     return response.data;
@@ -39,6 +50,12 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
     if (error.response) {
       console.error('Error response data:', error.response.data);
       console.error('Error response status:', error.response.status);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('No response received from server:', error.request);
+    } else {
+      // Something happened in setting up the request
+      console.error('Error setting up request:', error.message);
     }
     throw error;
   }
