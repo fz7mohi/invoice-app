@@ -23,56 +23,54 @@ import {
 } from './ListStyles';
 import styled from 'styled-components';
 
-// Simple button component for force loading
-const ForceLoadButton = ({ onClick }) => (
-    <button 
-        onClick={onClick}
-        style={{
-            padding: '8px 16px',
-            backgroundColor: '#7c5dfa',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            margin: '20px auto',
-            display: 'block'
-        }}
-    >
-        Force Load Quotations
-    </button>
-);
-
 // Add a header component
 const ListHeader = styled.div`
     display: none;
     
     @media (min-width: 768px) {
         display: grid;
-        grid-template-areas: 'date id client description price status icon';
-        grid-template-columns: 110px 110px 150px 1fr 120px 120px 20px;
+        grid-template-areas: 'date project id client price status icon';
+        grid-template-columns: 110px 140px 100px 1fr 140px 100px 20px;
         padding: 0 24px 16px 24px;
         font-weight: 500;
         font-size: 12px;
         color: ${({ theme }) => theme.colors.textSecondary};
+        margin-bottom: 8px;
     }
     
     @media (min-width: 1024px) {
-        grid-template-columns: 120px 120px 180px 1fr 150px 140px 20px;
+        grid-template-columns: 120px 180px 120px 1fr 160px 140px 20px;
         padding: 0 32px 16px 32px;
     }
     
     @media (min-width: 1440px) {
-        grid-template-columns: 140px 140px 220px 1fr 180px 160px 20px;
+        grid-template-columns: 140px 200px 140px 1fr 180px 160px 20px;
     }
 `;
 
 const HeaderItem = styled.div`
     &.date { grid-area: date; }
+    &.project { grid-area: project; }
     &.id { grid-area: id; }
     &.client { grid-area: client; }
-    &.description { grid-area: description; }
     &.price { grid-area: price; text-align: right; }
     &.status { grid-area: status; text-align: center; }
+`;
+
+// Add LoadingContainer styled component
+const LoadingContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    color: ${({ theme }) => theme.colors.textTertiary};
+    font-size: 14px;
+    text-align: center;
+    width: 100%;
+    
+    @media (max-width: 767px) {
+        padding: 32px 16px;
+    }
 `;
 
 const List = ({ quotations, isLoading, variant }) => {
@@ -152,10 +150,9 @@ const List = ({ quotations, isLoading, variant }) => {
     };
 
     // Choose which data to display
-    const dataToDisplay = directData.length > 0 ? directData : quotations;
-    const showEmptyState = dataToDisplay.length === 0 && !loading;
+    const dataToDisplay = quotations || [];
     
-    if (isLoading) {
+    if (isLoading || loading) {
         return (
             <StyledList
                 variants={variant('list', 0)}
@@ -163,77 +160,72 @@ const List = ({ quotations, isLoading, variant }) => {
                 animate="visible"
                 exit="exit"
             >
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center', 
-                    padding: '40px',
-                    color: '#DFE3FA',
-                    fontSize: '14px'
-                }}>
+                <LoadingContainer>
                     Loading quotations...
-                </div>
+                </LoadingContainer>
             </StyledList>
         );
     }
 
-    if (isEmpty) {
+    if (dataToDisplay.length === 0) {
         return (
-            <>
-                {showEmptyState && <ErrorMessage variant={variant} />}
-                <ForceLoadButton onClick={fetchDirectly} />
-            </>
+            <ErrorMessage variant={variant} />
         );
     }
 
     return (
-        <StyledList
-            variants={variant('list', 0)}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-        >
-            {dataToDisplay.map((quotation, index) => (
-                <RouterLink 
-                    to={`/quotation/${quotation.id}`} 
-                    key={quotation.id}
-                    style={{ textDecoration: 'none' }}
-                >
-                    <Item
-                        variants={variant('list', index)}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
+        <>
+            <ListHeader>
+                <HeaderItem className="date">Due Date</HeaderItem>
+                <HeaderItem className="project">Project</HeaderItem>
+                <HeaderItem className="id">Quotation ID</HeaderItem>
+                <HeaderItem className="client">Client</HeaderItem>
+                <HeaderItem className="price">Amount</HeaderItem>
+                <HeaderItem className="status">Status</HeaderItem>
+            </ListHeader>
+            <StyledList>
+                {dataToDisplay.map((quotation, index) => (
+                    <RouterLink 
+                        to={`/quotation/${quotation.id}`} 
+                        key={quotation.id}
+                        style={{ textDecoration: 'none' }}
                     >
-                        <Link>
-                            <PaymentDue>
-                                {formatDate(quotation.createdAt)}
-                            </PaymentDue>
-                            <Description>
-                                {quotation.description || 'No description'}
-                            </Description>
-                            <Uid>
-                                <Hashtag>#</Hashtag>
-                                {quotation.customId || quotation.id}
-                            </Uid>
-                            <ClientName>
-                                {quotation.clientName}
-                            </ClientName>
-                        </Link>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: windowWidth <= 768 ? '8px' : '0' }}>
-                            <StatusBadge status={quotation.status}>
-                                <StatusDot status={quotation.status} />
-                                {formatStatus(quotation.status)}
-                            </StatusBadge>
-                            <TotalPrice>
-                                {formatPrice(quotation.total, quotation.currency)}
-                                <Icon name="arrow-right" size={12} color="#7C5DFA" />
-                            </TotalPrice>
-                        </div>
-                    </Item>
-                </RouterLink>
-            ))}
-        </StyledList>
+                        <Item
+                            variants={variant('list', index)}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                        >
+                            <Link>
+                                <PaymentDue>
+                                    {formatDate(quotation.createdAt)}
+                                </PaymentDue>
+                                <Description>
+                                    {quotation.description || 'No description'}
+                                </Description>
+                                <Uid>
+                                    <Hashtag>#</Hashtag>
+                                    {quotation.customId || quotation.id}
+                                </Uid>
+                                <ClientName>
+                                    {quotation.clientName}
+                                </ClientName>
+                            </Link>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: windowWidth <= 768 ? '8px' : '0' }}>
+                                <StatusBadge status={quotation.status}>
+                                    <StatusDot status={quotation.status} />
+                                    {formatStatus(quotation.status)}
+                                </StatusBadge>
+                                <TotalPrice>
+                                    {formatPrice(quotation.total, quotation.currency)}
+                                    <Icon name="arrow-right" size={12} color="#7C5DFA" />
+                                </TotalPrice>
+                            </div>
+                        </Item>
+                    </RouterLink>
+                ))}
+            </StyledList>
+        </>
     );
 };
 

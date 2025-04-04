@@ -23,25 +23,6 @@ import {
 } from './ListStyles';
 import styled from 'styled-components';
 
-// Simple button component for force loading
-const ForceLoadButton = ({ onClick }) => (
-    <button 
-        onClick={onClick}
-        style={{
-            padding: '8px 16px',
-            backgroundColor: '#7c5dfa',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            margin: '20px auto',
-            display: 'block'
-        }}
-    >
-        Force Load Invoices
-    </button>
-);
-
 // Add a header component
 const ListHeader = styled.div`
     display: none;
@@ -154,7 +135,7 @@ const List = ({ invoices, isLoading, variant }) => {
         }
     };
 
-    if (isLoading || loading) {
+    if (isLoading) {
         return (
             <StyledList
                 variants={variant('list', 0)}
@@ -171,10 +152,7 @@ const List = ({ invoices, isLoading, variant }) => {
 
     if (isEmpty) {
         return (
-            <>
-                <ErrorMessage variant={variant} />
-                <ForceLoadButton onClick={fetchDirectly} />
-            </>
+            <ErrorMessage variant={variant} />
         );
     }
 

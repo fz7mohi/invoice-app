@@ -329,8 +329,24 @@ const useManageInvoices = () => {
                         ...invoiceData,
                         createdAt: Timestamp.fromDate(invoice.createdAt || new Date()),
                         paymentDue: invoice.paymentDue ? Timestamp.fromDate(new Date(invoice.paymentDue)) : null,
-                        status: type === 'new' ? 'pending' : 'draft'
+                        status: type === 'new' ? 'pending' : 'draft',
+                        clientId: invoice.clientId || null // Ensure clientId is set
                     };
+                    
+                    // If we have client data but no clientId, try to find the client by name
+                    if (!firestoreInvoice.clientId && invoice.clientName) {
+                        try {
+                            const clientsRef = collection(db, 'clients');
+                            const q = query(clientsRef, where('companyName', '==', invoice.clientName));
+                            const querySnapshot = await getDocs(q);
+                            
+                            if (!querySnapshot.empty) {
+                                firestoreInvoice.clientId = querySnapshot.docs[0].id;
+                            }
+                        } catch (error) {
+                            console.error('Error finding client by name:', error);
+                        }
+                    }
                     
                     // Calculate totalVat for UAE clients
                     if (invoice.clientAddress?.country?.toLowerCase().includes('emirates') || 

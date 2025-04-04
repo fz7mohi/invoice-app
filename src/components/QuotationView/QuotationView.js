@@ -806,12 +806,23 @@ const QuotationView = () => {
                 status: 'pending',
                 quotationId: quotation.id,
                 currency: quotation.currency || 'USD',
-                customId: customId
+                customId: customId,
+                clientId: quotation.clientId || null // Ensure clientId is set
             };
 
-            // Add clientId only if it exists in the quotation
-            if (quotation.clientId) {
-                newInvoice.clientId = quotation.clientId;
+            // If we have client data but no clientId, try to find the client by name
+            if (!newInvoice.clientId && quotation.clientName) {
+                try {
+                    const clientsRef = collection(db, 'clients');
+                    const q = query(clientsRef, where('companyName', '==', quotation.clientName));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        newInvoice.clientId = querySnapshot.docs[0].id;
+                    }
+                } catch (error) {
+                    console.error('Error finding client by name:', error);
+                }
             }
 
             // Add to Firestore

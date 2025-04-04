@@ -18,7 +18,7 @@ export const StyledQuotationFormController = styled(motion.div)`
     /* Form elements styling */
     input, select, textarea {
         background-color: #1E2139 !important;
-        border: 1px solid #252945 !important;
+        border: 1px solid rgb(132, 136, 168) !important;
         color: #FFFFFF !important;
 
         &::placeholder {
@@ -26,7 +26,7 @@ export const StyledQuotationFormController = styled(motion.div)`
         }
 
         &:focus {
-            border-color: #7C5DFA !important;
+            border-color:rgb(179, 165, 232) !important;
         }
     }
 

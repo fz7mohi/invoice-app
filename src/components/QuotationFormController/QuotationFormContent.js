@@ -608,10 +608,8 @@ const QuotationFormContent = ({ isEdited }) => {
     
     const [isDropdownExpanded, setIsDropdownExpanded] = useState(false);
     const [isClientDropdownExpanded, setIsClientDropdownExpanded] = useState(false);
-    const [isCurrencyDropdownExpanded, setIsCurrencyDropdownExpanded] = useState(false);
     const selectRef = useRef();
     const clientSelectRef = useRef();
-    const currencySelectRef = useRef();
     const isDesktop = windowWidth >= 768;
     
     const errors = quotationState?.errors?.fields || {};
@@ -673,9 +671,6 @@ const QuotationFormContent = ({ isEdited }) => {
             if (isClientDropdownExpanded && clientSelectRef.current && !clientSelectRef.current.contains(target)) {
                 setIsClientDropdownExpanded(false);
             }
-            if (isCurrencyDropdownExpanded && currencySelectRef.current && !currencySelectRef.current.contains(target)) {
-                setIsCurrencyDropdownExpanded(false);
-            }
         };
         
         document.addEventListener('click', checkIfClickedOutside);
@@ -684,7 +679,7 @@ const QuotationFormContent = ({ isEdited }) => {
             isMounted = false;
             document.removeEventListener('click', checkIfClickedOutside);
         };
-    }, [isDropdownExpanded, isClientDropdownExpanded, isCurrencyDropdownExpanded]);
+    }, [isDropdownExpanded, isClientDropdownExpanded]);
     
     const toggleDropdown = () => {
         setIsDropdownExpanded(!isDropdownExpanded);
@@ -692,10 +687,6 @@ const QuotationFormContent = ({ isEdited }) => {
     
     const toggleClientDropdown = () => {
         setIsClientDropdownExpanded(!isClientDropdownExpanded);
-    };
-    
-    const toggleCurrencyDropdown = () => {
-        setIsCurrencyDropdownExpanded(!isCurrencyDropdownExpanded);
     };
     
     const handleSelectOption = (event) => {
@@ -976,161 +967,10 @@ const QuotationFormContent = ({ isEdited }) => {
                             Select a client to display their details
                         </ClientDetailsCard>
                     )}
-                    
-                    <InputWrapper>
-                        <Label
-                            htmlFor="termsAndConditions"
-                            $error={errors?.termsAndConditions}
-                        >
-                            Terms and Conditions
-                            {errors?.termsAndConditions && (
-                                <Error>can't be empty</Error>
-                            )}
-                        </Label>
-                        <TextArea
-                            id="terms-and-conditions"
-                            name="termsAndConditions"
-                            placeholder="Enter terms and conditions"
-                            value={quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS}
-                            $error={errors?.termsAndConditions}
-                            onChange={(event) => handleQuotationChange(event, 'quotation')}
-                            required
-                        />
-                    </InputWrapper>
-
-                    {/* Add a currency selector component after the Terms and Conditions field */}
-                    <InputWrapper>
-                        <Label htmlFor="currency">Currency</Label>
-                        <SelectWrapper>
-                            <SelectButton
-                                type="button"
-                                aria-label="Select currency"
-                                aria-expanded={isCurrencyDropdownExpanded}
-                                aria-controls="currency-select-list"
-                                onClick={toggleCurrencyDropdown}
-                            >
-                                {quotation.currency || 'USD'}
-                                <Icon name={'arrow-down'} size={12} color={colors.purple} />
-                            </SelectButton>
-                            {isCurrencyDropdownExpanded && (
-                                <DropdownList id="currency-select-list" ref={currencySelectRef}>
-                                    <DropdownItem>
-                                        <DropdownOption
-                                            type="button"
-                                            onClick={() => {
-                                                handleQuotationChange({
-                                                    target: { name: 'currency', value: 'USD' }
-                                                }, 'quotation');
-                                                setIsCurrencyDropdownExpanded(false);
-                                            }}
-                                        >
-                                            USD
-                                        </DropdownOption>
-                                    </DropdownItem>
-                                    <DropdownItem>
-                                        <DropdownOption
-                                            type="button"
-                                            onClick={() => {
-                                                handleQuotationChange({
-                                                    target: { name: 'currency', value: 'AED' }
-                                                }, 'quotation');
-                                                setIsCurrencyDropdownExpanded(false);
-                                            }}
-                                        >
-                                            AED
-                                        </DropdownOption>
-                                    </DropdownItem>
-                                    <DropdownItem>
-                                        <DropdownOption
-                                            type="button"
-                                            onClick={() => {
-                                                handleQuotationChange({
-                                                    target: { name: 'currency', value: 'EUR' }
-                                                }, 'quotation');
-                                                setIsCurrencyDropdownExpanded(false);
-                                            }}
-                                        >
-                                            EUR
-                                        </DropdownOption>
-                                    </DropdownItem>
-                                </DropdownList>
-                            )}
-                        </SelectWrapper>
-                    </InputWrapper>
                 </Fieldset>
                 
-                {/* Invoice Date and Terms Section */}
+                {/* Project Description Section */}
                 <Fieldset>
-                    <InputsGroup $fullWidthMobile>
-                        <InputWrapper>
-                            <Label>Quotation Date</Label>
-                            <ReactDatePicker
-                                selected={new Date(quotation.createdAt)}
-                                onChange={(date) => handleQuotationChange(false, 'date', date)}
-                                minDate={new Date()}
-                                customInput={<CustomInput isDisabled={isEdited} />}
-                            />
-                        </InputWrapper>
-                        <InputWrapper>
-                            <Label>Payment Terms</Label>
-                            <SelectWrapper>
-                                <SelectButton
-                                    type="button"
-                                    aria-label="Select payment terms"
-                                    aria-expanded={isDropdownExpanded}
-                                    aria-controls="select-list"
-                                    onClick={toggleDropdown}
-                                >
-                                    Net {quotation.paymentTerms} Days
-                                    <Icon name={'arrow-down'} size={12} color={colors.purple} />
-                                </SelectButton>
-                                {isDropdownExpanded && (
-                                    <DropdownList id="select-list" ref={selectRef}>
-                                        <DropdownItem>
-                                            <DropdownOption
-                                                type="button"
-                                                onClick={() => handleQuotationChange({
-                                                    target: { name: 'paymentTerms', value: '1' }
-                                                }, 'quotation')}
-                                            >
-                                                Net 1 Day
-                                            </DropdownOption>
-                                        </DropdownItem>
-                                        <DropdownItem>
-                                            <DropdownOption
-                                                type="button"
-                                                onClick={() => handleQuotationChange({
-                                                    target: { name: 'paymentTerms', value: '7' }
-                                                }, 'quotation')}
-                                            >
-                                                Net 7 Days
-                                            </DropdownOption>
-                                        </DropdownItem>
-                                        <DropdownItem>
-                                            <DropdownOption
-                                                type="button"
-                                                onClick={() => handleQuotationChange({
-                                                    target: { name: 'paymentTerms', value: '14' }
-                                                }, 'quotation')}
-                                            >
-                                                Net 14 Days
-                                            </DropdownOption>
-                                        </DropdownItem>
-                                        <DropdownItem>
-                                            <DropdownOption
-                                                type="button"
-                                                onClick={() => handleQuotationChange({
-                                                    target: { name: 'paymentTerms', value: '30' }
-                                                }, 'quotation')}
-                                            >
-                                                Net 30 Days
-                                            </DropdownOption>
-                                        </DropdownItem>
-                                    </DropdownList>
-                                )}
-                            </SelectWrapper>
-                        </InputWrapper>
-                    </InputsGroup>
                     <InputWrapper>
                         <Label htmlFor="description" $error={errors?.description}>
                             Project Description
@@ -1321,6 +1161,105 @@ const QuotationFormContent = ({ isEdited }) => {
                             + Add New Item
                         </Button>
                     </Wrapper>
+                </Fieldset>
+                
+                {/* Quotation Date and Payment Terms Section */}
+                <Fieldset>
+                    <InputsGroup $fullWidthMobile>
+                        <InputWrapper>
+                            <Label>Quotation Date</Label>
+                            <ReactDatePicker
+                                selected={new Date(quotation.createdAt)}
+                                onChange={(date) => handleQuotationChange(false, 'date', date)}
+                                minDate={new Date()}
+                                customInput={<CustomInput isDisabled={isEdited} />}
+                            />
+                        </InputWrapper>
+                        <InputWrapper>
+                            <Label>Payment Terms</Label>
+                            <SelectWrapper>
+                                <SelectButton
+                                    type="button"
+                                    aria-label="Select payment terms"
+                                    aria-expanded={isDropdownExpanded}
+                                    aria-controls="select-list"
+                                    onClick={toggleDropdown}
+                                >
+                                    Net {quotation.paymentTerms} Days
+                                    <Icon name={'arrow-down'} size={12} color={colors.purple} />
+                                </SelectButton>
+                                {isDropdownExpanded && (
+                                    <DropdownList id="select-list" ref={selectRef}>
+                                        <DropdownItem>
+                                            <DropdownOption
+                                                type="button"
+                                                onClick={() => handleQuotationChange({
+                                                    target: { name: 'paymentTerms', value: '1' }
+                                                }, 'quotation')}
+                                            >
+                                                Net 1 Day
+                                            </DropdownOption>
+                                        </DropdownItem>
+                                        <DropdownItem>
+                                            <DropdownOption
+                                                type="button"
+                                                onClick={() => handleQuotationChange({
+                                                    target: { name: 'paymentTerms', value: '7' }
+                                                }, 'quotation')}
+                                            >
+                                                Net 7 Days
+                                            </DropdownOption>
+                                        </DropdownItem>
+                                        <DropdownItem>
+                                            <DropdownOption
+                                                type="button"
+                                                onClick={() => handleQuotationChange({
+                                                    target: { name: 'paymentTerms', value: '14' }
+                                                }, 'quotation')}
+                                            >
+                                                Net 14 Days
+                                            </DropdownOption>
+                                        </DropdownItem>
+                                        <DropdownItem>
+                                            <DropdownOption
+                                                type="button"
+                                                onClick={() => handleQuotationChange({
+                                                    target: { name: 'paymentTerms', value: '30' }
+                                                }, 'quotation')}
+                                            >
+                                                Net 30 Days
+                                            </DropdownOption>
+                                        </DropdownItem>
+                                    </DropdownList>
+                                )}
+                            </SelectWrapper>
+                        </InputWrapper>
+                    </InputsGroup>
+                </Fieldset>
+                
+                {/* Terms and Conditions Section */}
+                <Fieldset>
+                    <Legend>Terms and Conditions</Legend>
+                    <InputWrapper>
+                        <Label
+                            htmlFor="termsAndConditions"
+                            $error={errors?.termsAndConditions}
+                        >
+                            Terms and Conditions
+                            {errors?.termsAndConditions && (
+                                <Error>can't be empty</Error>
+                            )}
+                        </Label>
+                        <TextArea
+                            id="terms-and-conditions"
+                            name="termsAndConditions"
+                            placeholder="Enter terms and conditions"
+                            value={quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS}
+                            $error={errors?.termsAndConditions}
+                            onChange={(event) => handleQuotationChange(event, 'quotation')}
+                            required
+                        />
+                    </InputWrapper>
                 </Fieldset>
                 
                 {/* Error Messages */}
