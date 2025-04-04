@@ -109,7 +109,7 @@ const Quotations = () => {
                             {isLoading 
                                 ? "Loading quotations..."
                                 : quotationsLengthMessage(
-                                    filteredQuotations.length,
+                                    filteredQuotations,
                                     filterType,
                                     windowWidth
                                 )

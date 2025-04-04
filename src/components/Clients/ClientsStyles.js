@@ -1,6 +1,9 @@
 import styled from 'styled-components';
 
 export const StyledClients = styled.main`
+    width: 100%;
+    max-width: 1020px;
+    margin: 0 auto;
     padding: 32px 24px;
     background-color: #1E2139;
     min-height: 100vh;
@@ -10,9 +13,8 @@ export const StyledClients = styled.main`
     }
     
     @media (min-width: 1024px) {
-        padding: 32px 48px;
-        margin-left: 103px;
-        width: calc(100% - 103px);
+        padding: 72px 48px;
+        max-width: 1100px;
     }
 `;
 

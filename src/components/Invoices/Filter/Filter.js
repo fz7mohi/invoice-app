@@ -4,9 +4,10 @@ import { useTheme } from 'styled-components';
 import { useGlobalContext } from '../../App/context';
 import { StyledFilter, Button, List, Item, StatusFilter } from './FilterStyles';
 
-const Filter = ({ isDesktop }) => {
+const Filter = ({ filterType, setFilterType }) => {
     const { colors } = useTheme();
-    const { filterType, changeFilterType } = useGlobalContext();
+    const { windowWidth } = useGlobalContext();
+    const isDesktop = windowWidth >= 768;
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const ref = useRef();
 
@@ -29,9 +30,15 @@ const Filter = ({ isDesktop }) => {
         };
     }, [isFilterOpen]);
 
-    /* Function that toggle filter list.  */
+    /* Function that toggle filter list. */
     const toggleFilterList = () => {
         setIsFilterOpen(!isFilterOpen);
+    };
+
+    /* Function to handle filter changes */
+    const handleFilterChange = (type) => {
+        setFilterType(type);
+        setIsFilterOpen(false);
     };
 
     return (
@@ -44,6 +51,7 @@ const Filter = ({ isDesktop }) => {
                     color={colors.purple}
                     customStyle={{
                         transition: 'transform 350ms ease-in-out',
+                        transform: isFilterOpen ? 'rotate(180deg)' : 'none',
                     }}
                 />
             </Button>
@@ -51,8 +59,7 @@ const Filter = ({ isDesktop }) => {
                 <List ref={ref}>
                     <Item>
                         <StatusFilter
-                            onClick={(event) => changeFilterType(event)}
-                            value="draft"
+                            onClick={() => handleFilterChange('draft')}
                             $isActive={filterType === 'draft'}
                         >
                             Draft
@@ -60,8 +67,7 @@ const Filter = ({ isDesktop }) => {
                     </Item>
                     <Item>
                         <StatusFilter
-                            onClick={(event) => changeFilterType(event)}
-                            value="pending"
+                            onClick={() => handleFilterChange('pending')}
                             $isActive={filterType === 'pending'}
                         >
                             Pending
@@ -69,11 +75,18 @@ const Filter = ({ isDesktop }) => {
                     </Item>
                     <Item>
                         <StatusFilter
-                            onClick={(event) => changeFilterType(event)}
-                            value="paid"
+                            onClick={() => handleFilterChange('paid')}
                             $isActive={filterType === 'paid'}
                         >
                             Paid
+                        </StatusFilter>
+                    </Item>
+                    <Item>
+                        <StatusFilter
+                            onClick={() => handleFilterChange('all')}
+                            $isActive={filterType === 'all'}
+                        >
+                            All
                         </StatusFilter>
                     </Item>
                 </List>

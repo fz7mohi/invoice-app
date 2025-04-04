@@ -1,29 +1,30 @@
 /**
- * Function to generate message about invoices amount.
- * @param {array} invoicesArr Array with items
- * @param {string} filterType Type of current filter
- * @param {number} windowWidth Number with window width
- * @return {string} Formatted string.
+ * Function to handle displaying info message below Invoices header.
+ * Its responsive to windowWidth.
+ * @param    {array} filteredInvoices    Array with filteredInvoices
+ * @param    {string} filterType    String with selected filter
+ * @param    {number} windowWidth    Number with width of window
+ * @return   {string}    String with message
  */
-const invoicesLengthMessage = (invoicesArr, filterType, windowWidth) => {
-    const invoicesLength = invoicesArr.length;
-    const isMobile = windowWidth <= 768;
-    const type = filterType === 'all' ? 'total' : filterType;
-
-    if (invoicesLength === 0) {
-        return `No Invoices`;
-    } else if (invoicesLength === 1) {
-        if (isMobile) {
-            return `1 ${type} invoice`;
+const invoicesLengthMessage = (filteredInvoices, filterType, windowWidth) => {
+    const isDesktop = windowWidth >= 768;
+    
+    if (filteredInvoices?.length === 0) {
+        if (filterType !== 'all') {
+            return `No ${filterType} invoices`;
         } else {
-            return `There is 1 ${type} invoice`;
+            return 'No invoices';
         }
-    } else if (invoicesLength > 1) {
-        if (isMobile) {
-            return `${invoicesLength} ${type} invoices`;
-        } else {
-            return `There are ${invoicesLength} ${type} invoices`;
-        }
+    } else {
+        return isDesktop
+            ? `There ${
+                  filteredInvoices?.length === 1 ? 'is' : 'are'
+              } ${filteredInvoices?.length} ${
+                  filteredInvoices?.length === 1 ? 'invoice' : 'invoices'
+              }${filterType === 'all' ? '' : ` ${filterType}`}`
+            : `${filteredInvoices?.length} ${
+                  filteredInvoices?.length === 1 ? 'invoice' : 'invoices'
+              }`;
     }
 };
 

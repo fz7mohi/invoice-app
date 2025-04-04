@@ -2,7 +2,6 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import { useState } from 'react';
 import Icon from '../../shared/Icon/Icon';
-import Status from '../../shared/Status/Status';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import { formatDate, formatPrice } from '../../../utilities/helpers';
 import { useGlobalContext } from '../../App/context';
@@ -11,7 +10,6 @@ import { db } from '../../../firebase/firebase';
 import {
     StyledList,
     Item,
-    Link,
     Uid,
     Hashtag,
     PaymentDue,
@@ -29,32 +27,51 @@ const ListHeader = styled.div`
     
     @media (min-width: 768px) {
         display: grid;
-        grid-template-areas: 'date project id client price status icon';
-        grid-template-columns: 110px 140px 100px 1fr 140px 100px 20px;
-        padding: 0 24px 16px 24px;
-        font-weight: 500;
-        font-size: 12px;
+        grid-template-areas: 'date client project id price status icon';
+        grid-template-columns: 100px 130px 130px 90px 130px 90px 20px;
+        padding: 0 32px 12px 32px;
+        font-weight: 600;
+        font-size: 11px;
         color: ${({ theme }) => theme.colors.textSecondary};
-        margin-bottom: 8px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid rgba(223, 227, 250, 0.1);
+        letter-spacing: 0.5px;
     }
     
     @media (min-width: 1024px) {
-        grid-template-columns: 120px 180px 120px 1fr 160px 140px 20px;
-        padding: 0 32px 16px 32px;
+        grid-template-columns: 110px 160px 160px 100px 150px 120px 20px;
+        padding: 0 32px 12px 32px;
     }
     
     @media (min-width: 1440px) {
-        grid-template-columns: 140px 200px 140px 1fr 180px 160px 20px;
+        grid-template-columns: 120px 180px 180px 120px 160px 140px 20px;
     }
 `;
 
 const HeaderItem = styled.div`
-    &.date { grid-area: date; }
-    &.project { grid-area: project; }
-    &.id { grid-area: id; }
-    &.client { grid-area: client; }
-    &.price { grid-area: price; text-align: right; }
-    &.status { grid-area: status; text-align: center; }
+    &.date { 
+        grid-area: date;
+        padding-left: 0;
+    }
+    &.project { 
+        grid-area: project;
+    }
+    &.id { 
+        grid-area: id;
+    }
+    &.client { 
+        grid-area: client;
+    }
+    &.price { 
+        grid-area: price; 
+        text-align: right;
+        padding-right: 24px;
+    }
+    &.status { 
+        grid-area: status; 
+        text-align: center;
+        padding-right: 20px;
+    }
 `;
 
 // Add LoadingContainer styled component
@@ -185,21 +202,38 @@ const List = ({ quotations, isLoading, variant }) => {
             </ListHeader>
             <StyledList>
                 {dataToDisplay.map((quotation, index) => (
-                    <RouterLink 
-                        to={`/quotation/${quotation.id}`} 
+                    <Item
                         key={quotation.id}
-                        style={{ textDecoration: 'none' }}
+                        variants={variant('list', index)}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
                     >
-                        <Item
-                            variants={variant('list', index)}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
+                        <RouterLink 
+                            to={`/quotation/${quotation.id}`}
+                            style={{ 
+                                textDecoration: 'none',
+                                display: 'flex',
+                                width: '100%',
+                                justifyContent: 'space-between'
+                            }}
                         >
-                            <Link>
+                            <div style={{ 
+                                display: 'grid',
+                                gridTemplateAreas: '"date client project id price status arrow"',
+                                gridTemplateColumns: isDesktop 
+                                    ? '100px 130px 130px 90px 130px 90px 20px'
+                                    : '1fr',
+                                alignItems: 'center',
+                                gap: '16px',
+                                width: '100%'
+                            }}>
                                 <PaymentDue>
                                     {formatDate(quotation.createdAt)}
                                 </PaymentDue>
+                                <ClientName>
+                                    {quotation.clientName}
+                                </ClientName>
                                 <Description>
                                     {quotation.description || 'No description'}
                                 </Description>
@@ -207,22 +241,17 @@ const List = ({ quotations, isLoading, variant }) => {
                                     <Hashtag>#</Hashtag>
                                     {quotation.customId || quotation.id}
                                 </Uid>
-                                <ClientName>
-                                    {quotation.clientName}
-                                </ClientName>
-                            </Link>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: windowWidth <= 768 ? '8px' : '0' }}>
+                                <TotalPrice>
+                                    {formatPrice(quotation.total, quotation.currency)}
+                                </TotalPrice>
                                 <StatusBadge status={quotation.status}>
                                     <StatusDot status={quotation.status} />
                                     {formatStatus(quotation.status)}
                                 </StatusBadge>
-                                <TotalPrice>
-                                    {formatPrice(quotation.total, quotation.currency)}
-                                    <Icon name="arrow-right" size={12} color="#7C5DFA" />
-                                </TotalPrice>
+                                <Icon name="arrow-right" size={12} color="#7C5DFA" />
                             </div>
-                        </Item>
-                    </RouterLink>
+                        </RouterLink>
+                    </Item>
                 ))}
             </StyledList>
         </>

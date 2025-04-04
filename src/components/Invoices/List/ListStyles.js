@@ -48,25 +48,27 @@ export const Link = styled(RouterLink)`
             "project project"
             "client client"
             "date price";
+        grid-template-columns: 1fr auto;
         gap: 12px;
         padding: 20px;
     }
 
     @media (min-width: 768px) {
-        grid-template-columns: 110px 140px 100px 1fr 140px 100px 20px;
-        grid-template-areas: "date project id client price status arrow";
+        display: grid;
+        grid-template-areas: "date client project id price status arrow";
+        grid-template-columns: 100px 130px 130px 90px 130px 90px 20px;
         align-items: center;
-        padding: 20px 24px;
+        padding: 20px 32px;
         gap: 16px;
     }
 
     @media (min-width: 1024px) {
-        grid-template-columns: 120px 180px 120px 1fr 160px 140px 20px;
+        grid-template-columns: 110px 160px 160px 100px 150px 120px 20px;
         padding: 20px 32px;
     }
 
     @media (min-width: 1440px) {
-        grid-template-columns: 140px 200px 140px 1fr 180px 160px 20px;
+        grid-template-columns: 120px 180px 180px 120px 160px 140px 20px;
     }
 
     &:focus {
@@ -99,19 +101,22 @@ export const Link = styled(RouterLink)`
 export const PaymentDue = styled.p`
     grid-area: date;
     color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 14px;
+    font-size: 13px;
     transition: color 200ms ease-in-out;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     @media (max-width: 767px) {
-        font-size: 13px;
+        font-size: 12px;
     }
 `;
 
 export const Description = styled.p`
     grid-area: project;
     color: ${({ theme }) => theme.colors.textTertiary};
-    font-size: 14px;
+    font-size: 13px;
     transition: color 200ms ease-in-out;
     white-space: nowrap;
     overflow: hidden;
@@ -119,23 +124,26 @@ export const Description = styled.p`
     font-weight: 500;
 
     @media (max-width: 767px) {
-        font-size: 13px;
+        font-size: 12px;
         white-space: normal;
-        line-height: 1.4;
+        line-height: 1.3;
     }
 `;
 
 export const Uid = styled.p`
     ${headingExtraSmall}
     grid-area: id;
-    font-size: 14px;
+    font-size: 13px;
     display: flex;
     align-items: center;
     font-weight: 600;
     letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     @media (max-width: 767px) {
-        font-size: 13px;
+        font-size: 12px;
     }
 `;
 
@@ -148,7 +156,7 @@ export const Hashtag = styled.span`
 export const ClientName = styled.p`
     grid-area: client;
     color: ${({ theme }) => theme.colors.textTertiary};
-    font-size: 14px;
+    font-size: 13px;
     transition: color 200ms ease-in-out;
     white-space: nowrap;
     overflow: hidden;
@@ -156,7 +164,7 @@ export const ClientName = styled.p`
     font-weight: 500;
 
     @media (max-width: 767px) {
-        font-size: 13px;
+        font-size: 12px;
         white-space: normal;
     }
 `;
@@ -164,14 +172,16 @@ export const ClientName = styled.p`
 export const TotalPrice = styled.p`
     ${headingMedium}
     grid-area: price;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     justify-self: end;
     white-space: nowrap;
     letter-spacing: 0.5px;
+    padding-right: 24px;
 
     @media (max-width: 767px) {
-        font-size: 15px;
+        font-size: 13px;
+        padding-right: 0;
     }
 `;
 
@@ -179,14 +189,15 @@ export const StatusBadge = styled.div`
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 16px;
+    padding: 6px 12px;
     border-radius: 24px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.2px;
     transition: all 0.3s ease;
-    min-width: 104px;
+    min-width: 90px;
     text-transform: capitalize;
+    margin-right: 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     background-color: ${({ currStatus, theme }) => {
         switch (currStatus) {
@@ -238,10 +249,10 @@ export const StatusBadge = styled.div`
 `;
 
 export const StatusDot = styled.div`
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    margin-right: 8px;
+    margin-right: 6px;
     flex-shrink: 0;
     transition: all 0.3s ease;
     background-color: ${({ currStatus }) => {

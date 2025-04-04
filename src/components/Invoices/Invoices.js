@@ -104,7 +104,7 @@ const Invoices = () => {
                             {isLoading 
                                 ? "Loading invoices..."
                                 : invoicesLengthMessage(
-                                    filteredInvoices.length,
+                                    filteredInvoices,
                                     filterType,
                                     windowWidth
                                 )
