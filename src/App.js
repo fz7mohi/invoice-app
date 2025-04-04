@@ -21,6 +21,7 @@ import NewClient from './components/Clients/NewClient/NewClient';
 import ClientStatementView from './components/ClientStatement/ClientStatementView';
 import Settings from './components/Settings/Settings';
 import NotFound from './components/NotFound/NotFound';
+import ApiKeyTest from './components/shared/ApiKeyTest';
 
 function App() {
   return (
@@ -31,21 +32,21 @@ function App() {
           <Layout>
             <Switch>
               <Route exact path="/" component={Dashboard} />
-              <Route exact path="/dashboard" component={Dashboard} />
               <Route exact path="/invoices" component={Invoices} />
-              <Route exact path="/invoice/:id" component={InvoiceView} />
-              <Route exact path="/new-invoice" component={NewInvoice} />
+              <Route exact path="/invoices/new" component={NewInvoice} />
+              <Route exact path="/invoices/:id" component={InvoiceView} />
               <Route exact path="/quotations" component={Quotations} />
-              <Route exact path="/quotation/:id" component={QuotationView} />
-              <Route exact path="/new-quotation" component={NewQuotation} />
+              <Route exact path="/quotations/new" component={NewQuotation} />
+              <Route exact path="/quotations/:id" component={QuotationView} />
               <Route exact path="/delivery-orders" component={DeliveryOrders} />
-              <Route exact path="/delivery-order/:id" component={DeliveryOrderView} />
-              <Route exact path="/new-delivery-order" component={NewDeliveryOrder} />
+              <Route exact path="/delivery-orders/new" component={NewDeliveryOrder} />
+              <Route exact path="/delivery-orders/:id" component={DeliveryOrderView} />
               <Route exact path="/clients" component={Clients} />
-              <Route exact path="/client/:id" component={ClientView} />
-              <Route exact path="/new-client" component={NewClient} />
+              <Route exact path="/clients/new" component={NewClient} />
+              <Route exact path="/clients/:id" component={ClientView} />
               <Route exact path="/client-statement/:id" component={ClientStatementView} />
               <Route exact path="/settings" component={Settings} />
+              <Route exact path="/api-test" component={ApiKeyTest} />
               <Route path="*" component={NotFound} />
             </Switch>
           </Layout>

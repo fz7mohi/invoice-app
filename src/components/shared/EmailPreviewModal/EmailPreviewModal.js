@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import Icon from '../Icon/Icon';
 import Button from '../Button/Button';
-import { sendEmailWithPdf } from '../../../services/emailService';
+import { sendEmailWithAttachment } from '../../../services/emailService';
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -189,15 +189,13 @@ const EmailPreviewModal = ({
         pdfBase64Length: pdfBase64 ? pdfBase64.length : 0
       });
       
-      await sendEmailWithPdf({
-        to: clientEmail,
-        subject: emailData.subject,
-        htmlContent: emailData.content,
+      await sendEmailWithAttachment(
+        clientEmail,
+        emailData.subject,
+        emailData.content,
         pdfBase64,
-        pdfName,
-        documentType,
-        documentId
-      });
+        pdfName
+      );
       
       // Only update state if component is still mounted
       if (isMounted.current) {

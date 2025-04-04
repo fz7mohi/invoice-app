@@ -1,10 +1,17 @@
 import axios from 'axios';
 
 // API configuration from environment variables
-const BREVO_API_KEY = process.env.REACT_APP_BREVO_API_KEY;
+// Use a fallback value for development/testing
+const BREVO_API_KEY = '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';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const SENDER_EMAIL = 'sales@fortunegiftz.com';
 const SENDER_NAME = 'Fortune Giftz';
+
+// Debug: Log the API key (first 10 characters only for security)
+console.log('API Key loaded:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
+console.log('Environment variables available:', Object.keys(process.env));
+console.log('REACT_APP_BREVO_API_KEY exists:', !!process.env.REACT_APP_BREVO_API_KEY);
+console.log('API Key length:', BREVO_API_KEY ? BREVO_API_KEY.length : 0);
 
 /**
  * Sends an email with a PDF attachment using Brevo API
@@ -17,34 +24,53 @@ const SENDER_NAME = 'Fortune Giftz';
  */
 export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase64, pdfFileName) => {
   try {
-    const response = await axios.post(
-      BREVO_API_URL,
-      {
-        sender: {
-          email: SENDER_EMAIL,
-          name: SENDER_NAME,
-        },
-        to: [{ email: to }],
-        subject: subject,
-        htmlContent: htmlContent,
-        attachment: [
-          {
-            content: pdfBase64,
-            name: pdfFileName,
-          },
-        ],
+    // Debug: Log the request details (without sensitive data)
+    console.log('Sending email to:', to);
+    console.log('Subject:', subject);
+    console.log('Using API key:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
+    
+    // Create the email payload
+    const emailData = {
+      sender: {
+        email: SENDER_EMAIL,
+        name: SENDER_NAME,
       },
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'api-key': BREVO_API_KEY,
+      to: [{ email: to }],
+      subject: subject,
+      htmlContent: htmlContent,
+    };
+    
+    // Add attachment if provided
+    if (pdfBase64 && pdfFileName) {
+      emailData.attachment = [
+        {
+          content: pdfBase64,
+          name: pdfFileName,
         },
-      }
-    );
+      ];
+    }
+    
+    // Send the email
+    const response = await axios({
+      method: 'post',
+      url: BREVO_API_URL,
+      data: emailData,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': BREVO_API_KEY,
+      },
+    });
+    
+    console.log('Email sent successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error sending email:', error);
+    // Log more detailed error information
+    if (error.response) {
+      console.error('Error response data:', error.response.data);
+      console.error('Error response status:', error.response.status);
+    }
     throw error;
   }
 };
@@ -66,39 +92,53 @@ export const sendTestEmail = async (to) => {
   `;
 
   try {
-    const response = await axios.post(
-      BREVO_API_URL,
-      {
-        sender: {
-          email: SENDER_EMAIL,
-          name: SENDER_NAME,
-        },
-        to: [{ email: to }],
-        subject: subject,
-        htmlContent: htmlContent,
+    // Debug: Log the request details (without sensitive data)
+    console.log('Sending test email to:', to);
+    console.log('Using API key:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
+    
+    // Create the email payload
+    const emailData = {
+      sender: {
+        email: SENDER_EMAIL,
+        name: SENDER_NAME,
       },
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'api-key': BREVO_API_KEY,
-        },
-      }
-    );
+      to: [{ email: to }],
+      subject: subject,
+      htmlContent: htmlContent,
+    };
+    
+    // Send the email
+    const response = await axios({
+      method: 'post',
+      url: BREVO_API_URL,
+      data: emailData,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': BREVO_API_KEY,
+      },
+    });
+    
+    console.log('Test email sent successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error sending test email:', error);
+    // Log more detailed error information
+    if (error.response) {
+      console.error('Error response data:', error.response.data);
+      console.error('Error response status:', error.response.status);
+    }
     throw error;
   }
 };
 
 /**
- * Generates a default HTML email template for invoices and quotations
+ * Generates an HTML email template for invoices and quotations
  * @param {Object} params - Template parameters
- * @param {string} params.clientName - Name of the client
+ * @param {string} params.clientName - Client name
  * @param {string} params.documentType - Type of document (invoice/quotation)
- * @param {string} params.documentId - ID of the document
- * @param {number} params.amount - Total amount
+ * @param {string} params.documentId - Document ID
+ * @param {number} params.amount - Document amount
  * @param {string} params.currency - Currency code
  * @param {string} params.dueDate - Due date
  * @returns {string} - HTML content for the email
@@ -142,4 +182,35 @@ export const generateEmailTemplate = ({
       </div>
     </div>
   `;
+};
+
+/**
+ * Tests if the Brevo API key is valid
+ * @returns {Promise<boolean>} - Promise that resolves to true if the API key is valid
+ */
+export const testApiKey = async () => {
+  try {
+    console.log('Testing API key:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
+    console.log('API Key length in test function:', BREVO_API_KEY ? BREVO_API_KEY.length : 0);
+    
+    // Try a different endpoint that might be more reliable for testing
+    const response = await axios({
+      method: 'get',
+      url: 'https://api.brevo.com/v3/senders',
+      headers: {
+        'Accept': 'application/json',
+        'api-key': BREVO_API_KEY,
+      },
+    });
+    
+    console.log('API key is valid:', response.data);
+    return true;
+  } catch (error) {
+    console.error('API key test failed:', error);
+    if (error.response) {
+      console.error('Error response data:', error.response.data);
+      console.error('Error response status:', error.response.status);
+    }
+    return false;
+  }
 }; 

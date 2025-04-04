@@ -1,5 +1,17 @@
 let mix = require("laravel-mix");
 const webpack = require('webpack');
+const dotenv = require('dotenv');
+
+// Load environment variables from .env file
+const env = dotenv.config().parsed || {};
+
+// Create a new object with only the REACT_APP_ variables
+const envKeys = Object.keys(env).reduce((prev, next) => {
+  if (next.startsWith('REACT_APP_')) {
+    prev[`process.env.${next}`] = JSON.stringify(env[next]);
+  }
+  return prev;
+}, {});
 
 // Compile modern JavaScript and copy index.html / assets
 mix.js("src/index.js", "index.js").react().setPublicPath("dist");
@@ -28,18 +40,10 @@ mix.webpackConfig({
             "stream": require.resolve("stream-browserify"),
             "zlib": require.resolve("browserify-zlib"),
             "util": require.resolve("util"),
-            "buffer": require.resolve("buffer"),
-            "assert": require.resolve("assert")
-        },
-        alias: {
-            "process/browser": require.resolve("process/browser")
         }
     },
     plugins: [
-        new webpack.ProvidePlugin({
-            process: 'process/browser',
-            Buffer: ['buffer', 'Buffer']
-        })
+        new webpack.DefinePlugin(envKeys)
     ]
 });
 
