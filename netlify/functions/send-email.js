@@ -1,70 +1,133 @@
 const axios = require('axios');
-
-// Load environment variables
 require('dotenv').config();
 
-exports.handler = async function(event, context) {
+// Security headers
+const securityHeaders = {
+  'Content-Security-Policy': "default-src 'self'",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+};
+
+// Rate limiting setup
+const rateLimit = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 10; // 10 requests per minute
+
+const isRateLimited = (ip) => {
+  const now = Date.now();
+  const userRequests = rateLimit.get(ip) || [];
+  const recentRequests = userRequests.filter(time => now - time < RATE_LIMIT_WINDOW);
+  
+  if (recentRequests.length >= MAX_REQUESTS) {
+    return true;
+  }
+  
+  recentRequests.push(now);
+  rateLimit.set(ip, recentRequests);
+  return false;
+};
+
+exports.handler = async (event, context) => {
+  // Add security headers to all responses
+  const headers = {
+    ...securityHeaders,
+    'Content-Type': 'application/json'
+  };
+
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' })
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  // Rate limiting
+  const clientIP = event.headers['client-ip'] || event.headers['x-forwarded-for'] || 'unknown';
+  if (isRateLimited(clientIP)) {
+    return {
+      statusCode: 429,
+      headers,
+      body: JSON.stringify({ error: 'Too many requests. Please try again later.' })
     };
   }
 
   try {
-    // Parse the request body
     const { to, subject, htmlContent, pdfBase64, pdfFileName } = JSON.parse(event.body);
-    
+
     // Validate required fields
     if (!to || !subject || !htmlContent) {
       return {
         statusCode: 400,
+        headers,
         body: JSON.stringify({ error: 'Missing required fields' })
       };
     }
 
-    // Create email payload
-    const emailData = {
-      sender: {
-        email: 'sales@fortunegiftz.com',
-        name: 'Fortune Giftz',
-      },
-      to: [{ email: to }],
-      subject: subject,
-      htmlContent: htmlContent,
-    };
-
-    // Add attachment if provided
-    if (pdfBase64 && pdfFileName) {
-      emailData.attachment = [{
-        content: pdfBase64,
-        name: pdfFileName,
-      }];
+    // Get API key from environment variables
+    const apiKey = process.env.BREVO_API_KEY;
+    if (!apiKey) {
+      console.error('BREVO_API_KEY is not set in environment variables');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Server configuration error' })
+      };
     }
 
+    // Construct email payload
+    const emailData = {
+      sender: {
+        email: process.env.SENDER_EMAIL || 'your-verified-sender@example.com',
+        name: process.env.SENDER_NAME || 'Your Company Name'
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent,
+      ...(pdfBase64 && pdfFileName && {
+        attachment: [{
+          content: pdfBase64,
+          name: pdfFileName
+        }]
+      })
+    };
+
     // Send email using Brevo API
-    const response = await axios({
-      method: 'post',
-      url: 'https://api.brevo.com/v3/smtp/email',
-      data: emailData,
+    const response = await axios.post('https://api.brevo.com/v3/smtp/email', emailData, {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'api-key': process.env.BREVO_API_KEY,
-      },
+        'api-key': apiKey
+      }
     });
+
+    // Log success (without sensitive data)
+    console.log('Email sent successfully to:', to);
 
     return {
       statusCode: 200,
-      body: JSON.stringify(response.data)
+      headers,
+      body: JSON.stringify({ message: 'Email sent successfully' })
     };
+
   } catch (error) {
-    console.error('Error sending email:', error.response?.data || error.message);
+    // Log error details (without sensitive data)
+    console.error('Error sending email:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    });
+
+    // Return appropriate error response
     return {
       statusCode: error.response?.status || 500,
+      headers,
       body: JSON.stringify({
-        error: error.response?.data?.message || 'Failed to send email'
+        error: 'Failed to send email',
+        details: error.response?.data?.message || error.message
       })
     };
   }

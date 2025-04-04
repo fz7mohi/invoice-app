@@ -1,9 +1,11 @@
 import axios from 'axios';
 
-// Use the correct API URL based on environment
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api/send-email'  // This will be redirected to /.netlify/functions/send-email
-  : 'http://localhost:3001/api/send-email';
+// Use the Netlify function URL in both environments
+const API_URL = '/api/send-email';  // This will be redirected to /.netlify/functions/send-email
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
 
 /**
  * Sends an email with a PDF attachment using our backend API
@@ -15,50 +17,73 @@ const API_URL = process.env.NODE_ENV === 'production'
  * @returns {Promise} - Promise that resolves when email is sent
  */
 export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase64, pdfFileName) => {
-  try {
-    // Debug: Log the request details (without sensitive data)
-    console.log('Sending email to:', to);
-    console.log('Subject:', subject);
-    console.log('Using API URL:', API_URL);
-    
-    // Create the email payload
-    const emailData = {
-      to,
-      subject,
-      htmlContent,
-      pdfBase64,
-      pdfFileName
-    };
-    
-    // Send the email through our backend
-    const response = await axios.post(API_URL, emailData, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Add timeout and retry logic
-      timeout: 30000,
-      validateStatus: function (status) {
-        return status >= 200 && status < 500; // Handle all responses
+  let retries = 0;
+  
+  while (retries < MAX_RETRIES) {
+    try {
+      // Debug: Log the request details (without sensitive data)
+      console.log('Sending email to:', to);
+      console.log('Subject:', subject);
+      console.log('Using API URL:', API_URL);
+      console.log('Retry attempt:', retries + 1);
+      
+      // Create the email payload
+      const emailData = {
+        to,
+        subject,
+        htmlContent,
+        pdfBase64,
+        pdfFileName
+      };
+      
+      // Send the email through our backend
+      const response = await axios.post(API_URL, emailData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000, // 30 second timeout
+      });
+      
+      console.log('Email sent successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error sending email:', error);
+      
+      // Handle rate limiting
+      if (error.response?.status === 429) {
+        const retryAfter = error.response.headers['retry-after'] || RETRY_DELAY;
+        console.log(`Rate limited. Waiting ${retryAfter}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter));
+        retries++;
+        continue;
       }
-    });
-    
-    console.log('Email sent successfully:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error sending email:', error);
-    // Log more detailed error information
-    if (error.response) {
-      console.error('Error response data:', error.response.data);
-      console.error('Error response status:', error.response.status);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('No response received from server:', error.request);
-    } else {
-      // Something happened in setting up the request
-      console.error('Error setting up request:', error.message);
+      
+      // Handle server errors (5xx)
+      if (error.response?.status >= 500) {
+        retries++;
+        if (retries < MAX_RETRIES) {
+          console.log(`Server error. Retrying in ${RETRY_DELAY}ms...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          continue;
+        }
+      }
+      
+      // Log detailed error information
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        throw new Error(error.response.data.details || error.response.data.error || 'Failed to send email');
+      } else if (error.request) {
+        console.error('No response received from server:', error.request);
+        throw new Error('No response from server. Please check your connection.');
+      } else {
+        console.error('Error setting up request:', error.message);
+        throw new Error('Failed to set up email request.');
+      }
     }
-    throw error;
   }
+  
+  throw new Error('Maximum retry attempts reached. Please try again later.');
 };
 
 /**

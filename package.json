@@ -8,7 +8,8 @@
         "mix-watch": "npx mix watch",
         "dev": "NODE_OPTIONS=\"--openssl-legacy-provider\" npx mix && serve -s dist",
         "server": "node server.js",
-        "start": "NODE_ENV=production node server.js"
+        "start": "NODE_ENV=production node server.js",
+        "netlify-dev": "netlify dev"
     },
     "repository": {
         "type": "git",
@@ -27,6 +28,7 @@
         "buffer": "^6.0.3",
         "dotenv": "^16.4.7",
         "laravel-mix": "^6.0.25",
+        "netlify-cli": "^17.19.4",
         "prettier": "2.3.2",
         "process": "^0.11.10",
         "react-app-rewired": "^2.2.1",
