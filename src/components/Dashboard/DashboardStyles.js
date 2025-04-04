@@ -82,7 +82,7 @@ export const StatCard = styled.div`
     align-items: center;
     gap: 16px;
     box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid ${({ theme }) => `${theme.colors.purple}15`};
+    border: 1px solid ${({ theme }) => `${theme.colors.purple}35`};
     height: 100%;
     min-height: 90px;
     transition: all 0.2s ease-in-out;
@@ -95,7 +95,7 @@ export const StatCard = styled.div`
     &:hover {
         transform: translateY(-2px);
         box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
-        border-color: ${({ theme }) => `${theme.colors.purple}30`};
+        border-color: ${({ theme }) => `${theme.colors.purple}60`};
     }
 `;
 
@@ -251,7 +251,7 @@ export const ClientsStatement = styled.div`
     border-radius: 16px;
     padding: 24px;
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
-    border: 1px solid ${({ theme }) => `${theme.colors.purple}15`};
+    border: 1px solid ${({ theme }) => `${theme.colors.purple}35`};
     margin-bottom: 32px;
     overflow: hidden;
 
