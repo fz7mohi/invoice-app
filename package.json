@@ -8,7 +8,8 @@
         "mix-watch": "npx mix watch",
         "dev": "NODE_OPTIONS=\"--openssl-legacy-provider\" npx mix && serve -s dist",
         "server": "node server.js",
-        "verify-images": "node verify-images.js"
+        "verify-images": "node verify-images.js",
+        "prepare-deploy": "node deploy-server.js"
     },
     "repository": {
         "type": "git",

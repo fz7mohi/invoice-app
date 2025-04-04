@@ -1,8 +1,9 @@
 import axios from 'axios';
 
+// Determine the API URL based on the environment
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api/send-email'  // In production, use relative path
-  : 'http://localhost:3000/api/send-email';  // In development, use full URL
+  ? '/.netlify/functions/send-email'  // In production, use Netlify Functions
+  : 'http://localhost:3000/api/send-email';  // In development, use localhost
 
 const SENDER_EMAIL = 'sales@fortunegiftz.com';
 const SENDER_NAME = 'Fortune Giftz';
