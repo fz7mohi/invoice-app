@@ -30,6 +30,9 @@ const Quotations = () => {
     const rawQuotations = quotationState?.quotations || [];
     const isDesktop = windowWidth >= 768;
 
+    // Define searchable fields
+    const searchableFields = ['customId', 'id', 'clientName', 'description'];
+
     // Force a refresh of quotations data on component mount, only once
     useEffect(() => {
         refreshQuotations();

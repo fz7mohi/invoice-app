@@ -71,6 +71,9 @@ const Receipts = () => {
         fetchReceipts();
     }, []);
 
+    // Define searchable fields
+    const searchableFields = ['customId', 'id', 'clientName', 'description'];
+
     // Filter receipts based on status and search query
     const filteredReceipts = useMemo(() => {
         let filtered = rawReceipts.filter(receipt => {

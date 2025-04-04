@@ -32,10 +32,12 @@ const ListHeader = styled.div`
         grid-template-areas: 'date project id client price status icon';
         grid-template-columns: 110px 140px 100px 1fr 140px 100px 20px;
         padding: 0 24px 16px 24px;
-        font-weight: 500;
+        font-weight: 600;
         font-size: 12px;
         color: ${({ theme }) => theme.colors.textSecondary};
-        margin-bottom: 8px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid rgba(223, 227, 250, 0.1);
+        letter-spacing: 0.5px;
     }
     
     @media (min-width: 1024px) {
@@ -73,9 +75,38 @@ const LoadingContainer = styled.div`
     font-size: 14px;
     text-align: center;
     width: 100%;
+    background-color: ${({ theme }) => theme.colors.bgInvoiceItem};
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     
     @media (max-width: 767px) {
         padding: 32px 16px;
+    }
+`;
+
+const EmptyContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+    background-color: ${({ theme }) => theme.colors.bgInvoiceItem};
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    
+    h3 {
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: ${({ theme }) => theme.colors.textPrimary};
+    }
+    
+    p {
+        margin: 0;
+        font-size: 14px;
+        color: ${({ theme }) => theme.colors.textSecondary};
+        max-width: 400px;
     }
 `;
 
@@ -144,6 +175,7 @@ const List = ({ invoices, isLoading, variant }) => {
                 exit="exit"
             >
                 <LoadingContainer>
+                    <Icon name="loading" size={24} color={colors.purple} style={{ marginRight: '12px' }} />
                     Loading invoices...
                 </LoadingContainer>
             </StyledList>
@@ -152,7 +184,10 @@ const List = ({ invoices, isLoading, variant }) => {
 
     if (isEmpty) {
         return (
-            <ErrorMessage variant={variant} />
+            <EmptyContainer>
+                <h3>No Invoices Found</h3>
+                <p>There are no invoices to display at this time. Create a new invoice to get started.</p>
+            </EmptyContainer>
         );
     }
 
@@ -175,6 +210,13 @@ const List = ({ invoices, isLoading, variant }) => {
                         initial="hidden"
                         animate="visible"
                         exit="exit"
+                        whileHover={{ scale: 1.01 }}
+                        transition={{ 
+                            type: "spring", 
+                            stiffness: 300, 
+                            damping: 20,
+                            delay: index * 0.03
+                        }}
                     >
                         <Link to={`/invoice/${invoice.id}`}>
                             <PaymentDue>

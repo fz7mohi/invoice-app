@@ -12,16 +12,22 @@ export const StyledList = styled.ul`
     gap: 16px;
     width: 100%;
     max-width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
 `;
 
 export const Item = styled(motion.li)`
     background-color: ${({ theme }) => theme.colors.bgInvoiceItem};
-    border-radius: 8px;
-     border: 1px solid rgba(223, 227, 250, 0.1);
-    transition: transform 200ms ease-in-out;
+    border-radius: 12px;
+    border: 1px solid rgba(223, 227, 250, 0.1);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
     
     &:hover {
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
     }
 `;
 
@@ -31,9 +37,10 @@ export const Link = styled(RouterLink)`
     gap: 24px;
     padding: 24px;
     border: 1px solid transparent;
-    border-radius: 8px;
-    transition: border 200ms ease-in-out;
+    border-radius: 12px;
+    transition: all 0.3s ease;
     text-decoration: none;
+    position: relative;
 
     @media (max-width: 767px) {
         grid-template-areas:
@@ -41,19 +48,21 @@ export const Link = styled(RouterLink)`
             "project project"
             "client client"
             "date price";
-        gap: 8px;
+        gap: 12px;
+        padding: 20px;
     }
 
     @media (min-width: 768px) {
         grid-template-columns: 110px 140px 100px 1fr 140px 100px 20px;
         grid-template-areas: "date project id client price status arrow";
         align-items: center;
-        padding: 16px 24px;
+        padding: 20px 24px;
         gap: 16px;
     }
 
     @media (min-width: 1024px) {
         grid-template-columns: 120px 180px 120px 1fr 160px 140px 20px;
+        padding: 20px 32px;
     }
 
     @media (min-width: 1440px) {
@@ -66,10 +75,24 @@ export const Link = styled(RouterLink)`
 
     &:focus-visible {
         border: 1px solid ${({ theme }) => theme.colors.purple};
+        box-shadow: 0 0 0 3px rgba(124, 93, 250, 0.2);
     }
 
     &:hover {
         border: 1px solid ${({ theme }) => theme.colors.purple};
+    }
+    
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 5%;
+        width: 90%;
+        height: 1px;
+        background: linear-gradient(to right, 
+            transparent, 
+            rgba(223, 227, 250, 0.3), 
+            transparent);
     }
 `;
 
@@ -78,6 +101,7 @@ export const PaymentDue = styled.p`
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: 14px;
     transition: color 200ms ease-in-out;
+    font-weight: 500;
 
     @media (max-width: 767px) {
         font-size: 13px;
@@ -92,6 +116,7 @@ export const Description = styled.p`
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-weight: 500;
 
     @media (max-width: 767px) {
         font-size: 13px;
@@ -106,6 +131,8 @@ export const Uid = styled.p`
     font-size: 14px;
     display: flex;
     align-items: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 
     @media (max-width: 767px) {
         font-size: 13px;
@@ -115,6 +142,7 @@ export const Uid = styled.p`
 export const Hashtag = styled.span`
     color: ${({ theme }) => theme.colors.blueGrayish};
     margin-right: 4px;
+    opacity: 0.7;
 `;
 
 export const ClientName = styled.p`
@@ -125,6 +153,7 @@ export const ClientName = styled.p`
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-weight: 500;
 
     @media (max-width: 767px) {
         font-size: 13px;
@@ -139,6 +168,7 @@ export const TotalPrice = styled.p`
     font-weight: 700;
     justify-self: end;
     white-space: nowrap;
+    letter-spacing: 0.5px;
 
     @media (max-width: 767px) {
         font-size: 15px;
@@ -150,13 +180,14 @@ export const StatusBadge = styled.div`
     align-items: center;
     justify-content: center;
     padding: 8px 16px;
-    border-radius: 20px;
+    border-radius: 24px;
     font-size: 13px;
     font-weight: 600;
     letter-spacing: 0.2px;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     min-width: 104px;
     text-transform: capitalize;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     background-color: ${({ currStatus, theme }) => {
         switch (currStatus) {
             case 'paid':
@@ -199,6 +230,11 @@ export const StatusBadge = styled.div`
                 return 'rgba(223, 227, 250, 0.3)';
         }
     }};
+    
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    }
 `;
 
 export const StatusDot = styled.div`
@@ -207,7 +243,33 @@ export const StatusDot = styled.div`
     border-radius: 50%;
     margin-right: 8px;
     flex-shrink: 0;
-    transition: all 0.2s ease;
-    background-color: #DFE3FA;
-    box-shadow: 0 0 0 2px rgba(223, 227, 250, 0.2);
+    transition: all 0.3s ease;
+    background-color: ${({ currStatus }) => {
+        switch (currStatus) {
+            case 'paid':
+                return '#33D69F';
+            case 'partially_paid':
+                return '#4961FF';
+            case 'pending':
+                return '#FF8F00';
+            case 'void':
+                return '#EC5757';
+            default:
+                return '#DFE3FA';
+        }
+    }};
+    box-shadow: 0 0 0 2px ${({ currStatus }) => {
+        switch (currStatus) {
+            case 'paid':
+                return 'rgba(51, 214, 159, 0.3)';
+            case 'partially_paid':
+                return 'rgba(73, 97, 255, 0.3)';
+            case 'pending':
+                return 'rgba(255, 143, 0, 0.3)';
+            case 'void':
+                return 'rgba(236, 87, 87, 0.3)';
+            default:
+                return 'rgba(223, 227, 250, 0.3)';
+        }
+    }};
 `;

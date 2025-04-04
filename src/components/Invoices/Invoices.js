@@ -30,6 +30,9 @@ const Invoices = () => {
     const rawInvoices = invoiceState?.invoices || [];
     const isDesktop = windowWidth >= 768;
 
+    // Define searchable fields
+    const searchableFields = ['customId', 'id', 'clientName', 'description'];
+
     // Filter invoices based on status and search query
     const filteredInvoices = useMemo(() => {
         let filtered = rawInvoices.filter(invoice => {
