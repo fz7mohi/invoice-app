@@ -17,6 +17,7 @@ export const lightTheme = {
   mode: 'light',
   colors: {
     primary: brandColors.primary,
+    dark: '#10273a',
     secondary: '#7e88c3',
     accent: brandColors.accent,
     primaryLight: brandColors.primaryLight,
@@ -53,6 +54,7 @@ export const darkTheme = {
   colors: {
     primary: '#ffffff',
     secondary: brandColors.secondary,
+    dark: '#10273a',
     accent: brandColors.accent,
     primaryLight: brandColors.primaryLight,
     accentLight: brandColors.accentLight,

@@ -19,20 +19,28 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: ${({ theme }) => theme.colors.backgroundItem};
+  background-color: ${({ theme }) => theme.colors.dark};
   border-radius: 16px;
   width: 90%;
   max-width: 600px;
-  max-height: 90vh;
+  max-height: 120vh;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid ${({ theme }) => theme.colors.border};
   animation: modalSlideIn 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+
+  @media (max-width: 768px) {
+    width: 95%;
+    max-width: 90%;
+  }
 
   @keyframes modalSlideIn {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(-20px);
     }
     to {
       opacity: 1;
@@ -75,7 +83,7 @@ const EmailPreview = styled.div`
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
-  background-color: ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.white};
   max-height: 300px;
   overflow-y: auto;
 `;
@@ -83,11 +91,11 @@ const EmailPreview = styled.div`
 const EmailSubject = styled.div`
   font-weight: 600;
   margin-bottom: 10px;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.backgroundItem};
 `;
 
 const EmailContent = styled.div`
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.backgroundItem};
   line-height: 1.5;
 `;
 
@@ -221,7 +229,7 @@ const EmailPreviewModal = ({
   };
 
   return (
-    <ModalOverlay>
+    <ModalOverlay role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <ModalContent>
         {isSending && (
           <LoadingOverlay>
@@ -233,7 +241,7 @@ const EmailPreviewModal = ({
           <ModalIconWrapper>
             <Icon name="mail" size={20} color="#7C5DFA" />
           </ModalIconWrapper>
-          <ModalTitle>Send {documentType === 'invoice' ? 'Invoice' : 'Quotation'}</ModalTitle>
+          <ModalTitle id="modalTitle">Send {documentType === 'invoice' ? 'Invoice' : 'Quotation'}</ModalTitle>
         </ModalHeader>
         
         <ModalBody>
@@ -249,7 +257,7 @@ const EmailPreviewModal = ({
           </EmailPreview>
           
           {error && (
-            <div style={{ color: 'red', marginBottom: '10px' }}>
+            <div style={{ color: 'red', marginBottom: '10px' }} role="alert">
               {error}
             </div>
           )}
