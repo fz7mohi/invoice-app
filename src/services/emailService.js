@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // API configuration from environment variables
-// For client-side React apps, we need to access env vars differently
-const BREVO_API_KEY = window._env_?.REACT_APP_BREVO_API_KEY || process.env.REACT_APP_BREVO_API_KEY;
+// For Laravel Mix applications, we can use a global variable
+const BREVO_API_KEY = window.BREVO_API_KEY || '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';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const SENDER_EMAIL = 'sales@fortunegiftz.com';
 const SENDER_NAME = 'Fortune Giftz';
