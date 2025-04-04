@@ -19,7 +19,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.backgroundItem};
   border-radius: 16px;
   width: 90%;
   max-width: 600px;
@@ -75,7 +75,7 @@ const EmailPreview = styled.div`
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
-  background-color: white;
+  background-color: ${({ theme }) => theme.colors.background};
   max-height: 300px;
   overflow-y: auto;
 `;
@@ -83,11 +83,11 @@ const EmailPreview = styled.div`
 const EmailSubject = styled.div`
   font-weight: 600;
   margin-bottom: 10px;
-  color: ${({ theme }) => theme.colors.text};
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const EmailContent = styled.div`
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${({ theme }) => theme.colors.textPrimary};
   line-height: 1.5;
 `;
 
@@ -98,6 +98,7 @@ const AttachmentPreview = styled.div`
   background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background};
   border-radius: 8px;
   margin-top: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const AttachmentIcon = styled.div`
@@ -107,7 +108,7 @@ const AttachmentIcon = styled.div`
 
 const AttachmentName = styled.div`
   font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.text};
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const ModalFooter = styled.div`

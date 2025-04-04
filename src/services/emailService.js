@@ -179,12 +179,20 @@ export const generateEmailTemplate = ({
       <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
         Please find attached your ${documentType.toLowerCase()} ${documentId} for ${amount} ${currency}.
       </p>
-      <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
-        ${documentTypeCapitalized} Details:
-        <br>- Document ID: ${documentId}
-        <br>- Amount: ${amount} ${currency}
-        <br>- Due Date: ${dueDate}
-      </p>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">Document ID:</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${documentId}</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">Amount:</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${amount} ${currency}</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">Due Date:</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${dueDate}</td>
+        </tr>
+      </table>
       <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
         If you have any questions or concerns, please don't hesitate to contact us.
       </p>
