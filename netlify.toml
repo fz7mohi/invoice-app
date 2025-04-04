@@ -15,8 +15,8 @@
 
 # Redirect API requests to Netlify Functions
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/send-email"
+  to = "/.netlify/functions/send-email"
   status = 200
   force = true
 

@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-// Use the Netlify function URL in production
-const API_URL = '/api/send-email';  // This will be redirected to /.netlify/functions/send-email
+// Determine the API URL based on the environment
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? '/.netlify/functions/send-email'  // Production: Direct access to Netlify function
+  : '/api/send-email';  // Development: This will be redirected to /.netlify/functions/send-email
 
 // Retry configuration
 const MAX_RETRIES = 3;
@@ -25,6 +27,7 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
       console.log('Sending email to:', to);
       console.log('Subject:', subject);
       console.log('Using API URL:', API_URL);
+      console.log('Environment:', process.env.NODE_ENV);
       console.log('Retry attempt:', retries + 1);
       
       // Create the email payload
