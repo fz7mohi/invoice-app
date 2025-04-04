@@ -9,7 +9,7 @@
         "dev": "NODE_OPTIONS=\"--openssl-legacy-provider\" npx mix && serve -s dist",
         "server": "node server.js",
         "verify-images": "node verify-images.js",
-        "prepare-deploy": "node deploy-server.js"
+        "test-email": "node test-email.js"
     },
     "repository": {
         "type": "git",

@@ -1,9 +1,8 @@
 import axios from 'axios';
 
-// Determine the API URL based on the environment
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/.netlify/functions/send-email'  // In production, use Netlify Functions
-  : 'http://localhost:3000/api/send-email';  // In development, use localhost
+  ? 'https://fodox.netlify.app/api/send-email'  // Replace with your actual backend URL
+  : 'http://localhost:3000/api/send-email';  // In development, use full URL
 
 const SENDER_EMAIL = 'sales@fortunegiftz.com';
 const SENDER_NAME = 'Fortune Giftz';

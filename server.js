@@ -13,9 +13,9 @@ const app = express();
 const corsOptions = {
   origin: [
     'http://localhost:3000',
-    'http://localhost:8080',
+    'http://localhost:5000',
     'https://fordox.netlify.app',
-    process.env.ALLOWED_ORIGIN || '*'
+    // Add any other domains that need access
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
