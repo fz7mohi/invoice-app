@@ -140,7 +140,7 @@ const Info = styled.div`
 const Title = styled.h1`
   ${headingTitle}
   margin-bottom: 4px;
-  color: ${({ theme }) => theme?.text?.primary || '#004359'};
+  color: ${({ theme }) => theme?.text?.primary || '#ffffff'};
 `;
 
 const Text = styled.p`
@@ -163,7 +163,7 @@ const Tab = styled.div`
   cursor: pointer;
   font-weight: ${props => props.active ? '700' : '500'};
   color: ${props => props.active ? 
-    props.theme?.text?.primary || '#004359' : 
+    props.theme?.text?.primary || '#ffffff' : 
     props.theme?.text?.secondary || '#7e88c3'};
   border-bottom: 2px solid ${props => props.active ? 
     props.theme?.colors?.purple || '#7c5dfa' : 
@@ -171,7 +171,7 @@ const Tab = styled.div`
   transition: all 0.2s ease;
   
   &:hover {
-    color: ${props => !props.active && (props.theme?.text?.primary || '#004359')};
+    color: ${props => !props.active && (props.theme?.text?.primary || '#ffffff')};
   }
 `;
 

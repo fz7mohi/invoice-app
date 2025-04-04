@@ -14,14 +14,18 @@ export const StyledHeader = styled.header`
     align-items: center;
 
     @media (min-width: 1024px) {
-        position: sticky;
+        position: fixed;
         top: 0;
+        left: 0;
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr auto auto;
         height: 100vh;
         width: 103px;
         border-radius: 0 20px 20px 0;
         overflow-y: auto;
+        padding: 0;
+        margin: 0;
+        box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
     }
 `;
 

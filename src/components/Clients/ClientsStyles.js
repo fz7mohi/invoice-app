@@ -10,8 +10,9 @@ export const StyledClients = styled.main`
     }
     
     @media (min-width: 1024px) {
-        padding: 72px;
-        padding-left: 175px;
+        padding: 32px 48px;
+        margin-left: 103px;
+        width: calc(100% - 103px);
     }
 `;
 

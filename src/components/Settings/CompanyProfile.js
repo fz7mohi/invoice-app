@@ -512,7 +512,7 @@ const ProfileHeader = styled.div`
   h2 {
     font-size: 24px;
     font-weight: 700;
-    color: ${({ theme }) => theme?.text?.primary || '#004359'};
+    color: ${({ theme }) => theme?.text?.primary || '#ffffff'};
     margin-bottom: 8px;
   }
 
@@ -552,13 +552,13 @@ const CompanyList = styled.div`
 `;
 
 const CompanyCard = styled(motion.div)`
-  background-color: ${({ theme }) => theme?.backgrounds?.card || '#ffffff'};
+  background-color: ${({ theme }) => theme?.colors?.backgroundAlt || '#ffffff'};
   border-radius: 8px;
   padding: 24px;
   display: flex;
   justify-content: space-between;
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.08);
-  border: 2px solid ${({ theme }) => 
+  border: 2px solid 7c5dfa;
     theme?.mode === 'dark' 
       ? '#252945' // Darker border for dark mode
       : '#dfe3fa' // Light border for light mode
