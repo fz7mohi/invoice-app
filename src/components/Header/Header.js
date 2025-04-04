@@ -3,14 +3,16 @@ import Icon from '../shared/Icon/Icon';
 import { useTheme } from 'styled-components';
 import { 
     StyledHeader, 
-    Logo, 
     Profile, 
     MobileMenuButton,
     MobileNavOverlay,
-    MobileNavPanel
+    MobileNavPanel,
+    LogoContainer
 } from './HeaderStyles';
 import { useGlobalContext } from '../App/context';
 import Navigation from '../Navigation/Navigation';
+import doxLogo from '../../assets/images/dox-logo.svg';
+import { Link } from 'react-router-dom';
 
 const Header = () => {
     const { colors } = useTheme();
@@ -22,7 +24,6 @@ const Header = () => {
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth < 1024);
-            // Close mobile nav when resizing to desktop
             if (window.innerWidth >= 1024) {
                 setMobileNavOpen(false);
             }
@@ -32,8 +33,6 @@ const Header = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Function to prevent too fast clicking on Logo since it was causing a bug
-    // with Framer Motion where two fast clicks cause that component Invoices doesn't render.
     const handleClick = (event) => {
         if (!isClickable.current) {
             event.preventDefault();
@@ -55,21 +54,30 @@ const Header = () => {
     return (
         <>
             <StyledHeader>
-                <Logo aria-label="Home Page" to="/" onClick={handleClick} />
-                <Navigation onNavigate={closeMobileNav} />
-                {isMobile ? (
-                    <MobileMenuButton 
-                        aria-label="Toggle mobile menu" 
-                        onClick={toggleMobileNav}
-                    >
-                        <Icon 
-                            name="menu" 
-                            size={24} 
-                            color="#FFFFFF"
-                        />
-                    </MobileMenuButton>
-                ) : (
-                    <Profile />
+                {isMobile && (
+                    <>
+                        <LogoContainer>
+                            <Link to="/dashboard">
+                                <img src={doxLogo} alt="Dox Logo" />
+                            </Link>
+                        </LogoContainer>
+                        <MobileMenuButton 
+                            aria-label="Toggle mobile menu" 
+                            onClick={toggleMobileNav}
+                        >
+                            <Icon 
+                                name="menu" 
+                                size={24} 
+                                color={colors.textSecondary}
+                            />
+                        </MobileMenuButton>
+                    </>
+                )}
+                {!isMobile && (
+                    <>
+                        <Navigation onNavigate={closeMobileNav} />
+                        <Profile />
+                    </>
                 )}
             </StyledHeader>
 

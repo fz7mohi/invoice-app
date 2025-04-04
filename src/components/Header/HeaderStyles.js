@@ -1,15 +1,17 @@
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import logo from '../../assets/images/logo.svg';
+import doxLogo from '../../assets/images/dox-logo.svg';
 import avatar from '../../assets/images/image-avatar.png';
 
 export const StyledHeader = styled.header`
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto 1fr;
     background-color: ${({ theme }) => theme?.backgrounds?.card || (theme?.mode === 'dark' ? '#1E2139' : '#ffffff')};
     height: clamp(72px, 10.5vw, 80px);
     transition: background-color 400ms ease-in-out;
     z-index: 100;
+    align-items: center;
 
     @media (min-width: 1024px) {
         position: sticky;
@@ -20,6 +22,23 @@ export const StyledHeader = styled.header`
         width: 103px;
         border-radius: 0 20px 20px 0;
         overflow-y: auto;
+    }
+`;
+
+export const LogoContainer = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    grid-column: 2;
+
+    img {
+        height: 32px;
+        width: auto;
+    }
+
+    @media (min-width: 1024px) {
+        display: none;
     }
 `;
 
@@ -157,9 +176,15 @@ export const Profile = styled.div`
 export const MobileMenuButton = styled.button`
     background-color: transparent;
     border: none;
-    padding: 0 clamp(24px, 4.5vw, 32px);
+    padding: 0 24px;
     cursor: pointer;
     border-left: 1px solid ${({ theme }) => theme?.borders || '#dfe3fa'};
+    height: 100%;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    grid-column: 3;
+    justify-self: end;
     
     &:focus {
         outline: none;
@@ -168,6 +193,10 @@ export const MobileMenuButton = styled.button`
     &:focus-visible {
         outline: 2px dashed ${({ theme }) => theme?.colors?.purple || '#7c5dfa'};
         outline-offset: -4px;
+    }
+
+    @media (min-width: 1024px) {
+        display: none;
     }
 `;
 

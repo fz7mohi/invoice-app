@@ -2,14 +2,27 @@ import { BiHomeAlt, BiFile, BiUser, BiListOl, BiCog, BiTruck } from 'react-icons
 import { Link, NavLink } from 'react-router-dom';
 import styled from 'styled-components';
 import logo from '../../assets/logo.svg';
+import doxLogo from '../../assets/images/dox-logo.svg';
 import { useGlobalContext } from '../App/context';
+import { useState, useEffect } from 'react';
 
 const Sidebar = () => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
         <StyledSidebar>
             <LogoContainer>
                 <Link to="/dashboard">
-                    <img src={logo} alt="Logo" />
+                    <img src={isMobile ? doxLogo : logo} alt="Logo" />
                 </Link>
             </LogoContainer>
             <Menu>
@@ -93,11 +106,17 @@ const LogoContainer = styled.div`
     img {
         width: 40px;
         height: 40px;
+        object-fit: contain;
     }
     
     @media (max-width: 768px) {
         width: 80px;
         height: 100%;
+        
+        img {
+            width: 60px;
+            height: 24px;
+        }
     }
 `;
 

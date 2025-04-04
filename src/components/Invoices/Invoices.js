@@ -113,15 +113,6 @@ const Invoices = () => {
                         filterType={filterType} 
                         setFilterType={setFilterType} 
                     />
-                    
-                    <Button 
-                        type="button" 
-                        $primary 
-                        onClick={createInvoice}
-                        disabled={isLoading}
-                    >
-                        New {isDesktop && 'Invoice'}
-                    </Button>
                 </HeaderTop>
 
                 <SearchBar>
