@@ -962,10 +962,12 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
                         <div>${companyProfile.address}</div>
                         <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
                     </div>
                 </div>
+                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
                 <div style="text-align: center; margin-top: 25px;">
-                    <h1 style="font-size: 32px; color: #004359; margin-bottom: 15px; letter-spacing: 1px;">INVOICE</h1>
+                    <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">INVOICE</h1>
                 </div>
             `;
 
@@ -1710,10 +1712,12 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
                         <div>${companyProfile.address}</div>
                         <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
                     </div>
                 </div>
+                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
                 <div style="text-align: center; margin-top: 25px;">
-                    <h1 style="font-size: 32px; color: #004359; margin-bottom: 15px; letter-spacing: 1px;">INVOICE</h1>
+                    <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">INVOICE</h1>
                 </div>
             `;
 
