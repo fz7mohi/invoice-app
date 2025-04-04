@@ -4,7 +4,7 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "build": "NODE_OPTIONS='--openssl-legacy-provider --legacy-peer-deps' npm install --legacy-peer-deps && npx mix",
+        "build": "NODE_OPTIONS='--openssl-legacy-provider' npm install --force && npx mix",
         "mix-watch": "npx mix watch",
         "dev": "NODE_OPTIONS=\"--openssl-legacy-provider\" npx mix && serve -s dist",
         "server": "node server.js"
