@@ -5,7 +5,7 @@ import { useReducedMotion } from 'framer-motion';
 import Icon from '../shared/Icon/Icon';
 import Status from '../shared/Status/Status';
 import Button from '../shared/Button/Button';
-import { formatDate, formatPrice } from '../../utilities/helpers';
+import { formatDate, formatPrice, formatCurrency } from '../../utilities/helpers';
 import { useGlobalContext } from '../App/context';
 import './QuotationView.css';
 import { jsPDF } from 'jspdf';
@@ -65,6 +65,10 @@ import {
 } from './QuotationViewStyles';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
+import { generateEmailTemplate } from '../../services/emailService';
+import EmailPreviewModal from '../shared/EmailPreviewModal/EmailPreviewModal';
+import { format } from 'date-fns';
+import { message } from 'antd';
 
 // Use same variants as invoices for consistent animations
 const quotationViewVariants = {
@@ -113,6 +117,9 @@ const QuotationView = () => {
     const isDesktop = windowWidth >= 768;
     const shouldReduceMotion = useReducedMotion();
     const history = useHistory();
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    const [emailData, setEmailData] = useState(null);
+    const [pdfData, setPdfData] = useState(null);
     
     // Variant selector for animations
     const variant = (element) => {
@@ -394,8 +401,8 @@ const QuotationView = () => {
         }
     }, [id, quotation, isLoading, isDirectlyFetching]);
 
-    // Download quotation as PDF
-    const handleDownloadPDF = async () => {
+    // Add this new function before handleDownloadPDF
+    const generatePDF = async () => {
         try {
             // Get the client's country from the quotation or client data
             const clientCountry = quotation?.clientAddress?.country || 
@@ -486,8 +493,6 @@ const QuotationView = () => {
             `;
             pdfContainer.appendChild(clientSection);
 
-           
-
             // Add items table
             const itemsTable = document.createElement('table');
             itemsTable.style.cssText = `
@@ -557,20 +562,17 @@ const QuotationView = () => {
                 
                 // Format the terms and conditions text
                 const formattedTerms = quotation.termsAndConditions
-                    .split('\n') // Split by newlines
-                    .map(line => line.trim()) // Trim whitespace
-                    .filter(line => line.length > 0) // Remove empty lines
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0)
                     .map(line => {
-                        // Check if line starts with a number (for numbered lists)
                         if (/^\d+\./.test(line)) {
                             return `<div style="margin-bottom: 8px; color: black; font-size: 16px;">${line}</div>`;
                         }
-                        // Check if line is a heading (all caps or starts with common heading words)
                         else if (line.toUpperCase() === line || 
                                 /^(Terms|Conditions|Payment|Delivery|Warranty|Cancellation|Force Majeure|Governing Law)/i.test(line)) {
                             return `<div style="margin-top: 16px; margin-bottom: 8px; color: #004359; font-weight: bold; font-size: 18px;">${line}</div>`;
                         }
-                        // Regular paragraph
                         else {
                             return `<div style="margin-bottom: 8px; color: black; font-size: 16px;">${line}</div>`;
                         }
@@ -643,10 +645,19 @@ const QuotationView = () => {
             const imgData = canvas.toDataURL('image/png');
             pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
 
-            // Save the PDF
+            return pdf;
+        } catch (error) {
+            throw new Error('Error generating PDF: ' + error.message);
+        }
+    };
+
+    // Update handleDownloadPDF to use generatePDF
+    const handleDownloadPDF = async () => {
+        try {
+            const pdf = await generatePDF();
             pdf.save(`Quotation_${quotation.customId || id}.pdf`);
         } catch (error) {
-            alert('There was an error generating the PDF. Please try again.');
+            message.error('There was an error generating the PDF. Please try again.');
         }
     };
 
@@ -1040,6 +1051,73 @@ const QuotationView = () => {
         }
     };
 
+    // Update handleSendEmail to use generatePDF
+    const handleSendEmail = async () => {
+        try {
+            const pdf = await generatePDF();
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
+
+            // Get the client's country for company profile
+            const clientCountry = quotation?.clientAddress?.country || 
+                                clientData?.country || 
+                                'qatar';
+            
+            // Get company profile for email
+            let companyProfile;
+            try {
+                if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
+                    companyProfile = await getCompanyProfile('uae');
+                } else {
+                    companyProfile = await getCompanyProfile('qatar');
+                }
+            } catch (profileError) {
+                companyProfile = {
+                    name: 'Fortune Gifts',
+                    address: 'Doha, Qatar',
+                    phone: '+974 1234 5678',
+                    vatNumber: 'VAT123456789',
+                    crNumber: 'CR123456789'
+                };
+            }
+
+            // Generate email content
+            const emailContent = generateEmailTemplate({
+                clientName: quotation.clientName,
+                documentType: 'Quotation',
+                documentId: quotation.customId,
+                amount: quotation.total,
+                currency: quotation.currency,
+                dueDate: quotation.validUntil ? format(new Date(quotation.validUntil), 'dd/MM/yyyy') : 'N/A'
+            });
+
+            // Set email data and open modal
+            setEmailData({
+                to: quotation.clientEmail,
+                subject: `Quotation ${quotation.customId} from ${companyProfile.name}`,
+                content: emailContent
+            });
+            setPdfData({
+                content: pdfBase64,
+                name: `Quotation_${quotation.customId}.pdf`
+            });
+            setIsEmailModalOpen(true);
+        } catch (error) {
+            console.error('Error preparing email:', error);
+            message.error('Failed to prepare email. Please try again.');
+        }
+    };
+
+    const handleEmailSent = () => {
+        // Handle post-email actions (e.g., show success message, update status)
+        console.log('Email sent successfully');
+        message.success('Email sent successfully');
+        
+        // Close the email modal if it's still open
+        if (isEmailModalOpen) {
+            setIsEmailModalOpen(false);
+        }
+    };
+
     // Show loading state
     if (isLoading || !quotation) {
         return (
@@ -1351,7 +1429,7 @@ const QuotationView = () => {
                             border: `1px solid ${colors.border}`,
                             borderRadius: '8px',
                             padding: '16px',
-                            backgroundColor: colors.backgroundItem || colors.background,
+                            backgroundColor: colors.background,
                             marginBottom: '32px',
                             display: 'flex',
                             justifyContent: 'space-between',
@@ -1368,6 +1446,7 @@ const QuotationView = () => {
                             </div>
                             <Button
                                 $secondary
+                                onClick={handleSendEmail}
                                 style={{
                                     padding: '8px 16px',
                                     borderRadius: '8px',
@@ -1712,6 +1791,24 @@ const QuotationView = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {isEmailModalOpen && emailData && pdfData && (
+                <EmailPreviewModal
+                    isOpen={isEmailModalOpen}
+                    onClose={() => setIsEmailModalOpen(false)}
+                    onSend={handleEmailSent}
+                    emailData={emailData}
+                    documentType="quotation"
+                    documentId={quotation.id}
+                    clientName={quotation.clientName}
+                    clientEmail={quotation.clientEmail}
+                    amount={quotation.total}
+                    currency={quotation.currency}
+                    dueDate={quotation.paymentDue}
+                    pdfBase64={pdfData.content}
+                    pdfName={pdfData.name}
+                />
             )}
         </StyledQuotationView>
     );

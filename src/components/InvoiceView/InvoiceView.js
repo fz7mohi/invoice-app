@@ -88,6 +88,10 @@ import {
     FormTextArea,
     PlusIcon
 } from './InvoiceViewStyles';
+import { generateEmailTemplate } from '../../services/emailService';
+import EmailPreviewModal from '../shared/EmailPreviewModal/EmailPreviewModal';
+import { format } from 'date-fns';
+import { message } from 'antd';
 
 // Add ModalOverlay styled component
 const ModalOverlay = styled.div`
@@ -262,6 +266,9 @@ const InvoiceView = () => {
     });
     const [receipts, setReceipts] = useState([]);
     const [isCreatingReceipt, setIsCreatingReceipt] = useState(false);
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    const [emailData, setEmailData] = useState(null);
+    const [pdfData, setPdfData] = useState(null);
     
     // Add default terms and conditions
     const defaultTermsAndConditions = `50% advance payment along with the issuance of the LPO (Local Purchase Order), and the remaining 50% to be settled before the delivery of the order.
@@ -955,10 +962,8 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
                         <div>${companyProfile.address}</div>
                         <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
-                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
                     </div>
                 </div>
-                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
                 <div style="text-align: center; margin-top: 25px;">
                     <h1 style="font-size: 32px; color: #004359; margin-bottom: 15px; letter-spacing: 1px;">INVOICE</h1>
                 </div>
@@ -1656,6 +1661,342 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         );
     };
 
+    const handleSendEmail = async () => {
+        try {
+            // Get the client's country from the invoice or client data
+            const clientCountry = invoice?.clientAddress?.country || 
+                                clientData?.country || 
+                                'qatar';
+            
+            // Determine which company profile to use
+            let companyProfile;
+            try {
+                if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
+                    companyProfile = await getCompanyProfile('uae');
+                } else {
+                    companyProfile = await getCompanyProfile('qatar');
+                }
+            } catch (profileError) {
+                companyProfile = {
+                    name: 'Fortune Gifts',
+                    address: 'Doha, Qatar',
+                    phone: '+974 1234 5678',
+                    vatNumber: 'VAT123456789',
+                    crNumber: 'CR123456789'
+                };
+            }
+
+            // Create a new container for PDF content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                width: 297mm;
+                min-height: 420mm;
+                padding: 5mm 20mm 20mm 20mm;
+                margin: 0;
+                background-color: white;
+                box-sizing: border-box;
+                position: relative;
+                font-family: Arial, sans-serif;
+                overflow: visible;
+            `;
+
+            // Add header
+            pdfContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                    </div>
+                    <div style="text-align: right; font-size: 19px; color: #000000;">
+                        <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
+                        <div>${companyProfile.address}</div>
+                        <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 25px;">
+                    <h1 style="font-size: 32px; color: #004359; margin-bottom: 15px; letter-spacing: 1px;">INVOICE</h1>
+                </div>
+            `;
+
+            // Add client section
+            const clientSection = document.createElement('div');
+            clientSection.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                padding: 20px;
+                background-color: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+            `;
+            clientSection.innerHTML = `
+                <div style="flex: 1;">
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
+                    <div style="color: black; font-size: 16px;">
+                        <strong>${invoice.clientName}</strong><br />
+                        ${clientData?.address || invoice.clientAddress?.street || ''}
+                        ${invoice.clientAddress?.city ? `, ${invoice.clientAddress.city}` : ''}
+                        ${invoice.clientAddress?.postCode ? `, ${invoice.clientAddress.postCode}` : ''}
+                        ${clientData?.country || invoice.clientAddress?.country ? `, ${clientData?.country || invoice.clientAddress?.country}` : ''}
+                        ${clientData?.phone ? `<br />${clientData.phone}` : ''}
+                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && clientData?.trn ? 
+                            `<br /><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 40px;">
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Invoice #</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${invoice.customId || id}</div>
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
+                        <div style="color: black; font-size: 16px;">${formatDate(invoice.paymentDue)}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Created Date</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${formatDate(invoice.createdAt)}</div>
+                        ${invoice.lpoNumber ? `
+                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">LPO Number</div>
+                            <div style="color: black; font-size: 16px;">${invoice.lpoNumber}</div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            pdfContainer.appendChild(clientSection);
+
+            // Add items table
+            const itemsTable = document.createElement('table');
+            itemsTable.style.cssText = `
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                background-color: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+                page-break-inside: auto;
+            `;
+            itemsTable.innerHTML = `
+                <thead style="background-color: #004359; color: white;">
+                    <tr>
+                        <th style="padding: 15px; text-align: left; font-size: 18px;">Item Name</th>
+                        <th style="padding: 15px; text-align: center; font-size: 18px;">QTY.</th>
+                        <th style="padding: 15px; text-align: right; font-size: 18px;">Price</th>
+                        ${clientHasVAT ? '<th style="padding: 15px; text-align: right; font-size: 18px;">VAT (5%)</th>' : ''}
+                        <th style="padding: 15px; text-align: right; font-size: 18px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${invoice.items.map(item => {
+                        const itemVAT = item.vat || 0;
+                        return `
+                            <tr style="border-bottom: 1px solid #e0e0e0;">
+                                <td style="padding: 15px; color: black; font-size: 16px;">
+                                    ${item.name}
+                                    ${item.description ? `<div style="font-size: 14px; color: #666;">${item.description}</div>` : ''}
+                                </td>
+                                <td style="padding: 15px; text-align: center; color: black; font-size: 16px;">${item.quantity || 0}</td>
+                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.price || 0, invoice.currency)}</td>
+                                ${clientHasVAT ? `<td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(itemVAT, invoice.currency)}</td>` : ''}
+                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.total || 0, invoice.currency)}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            `;
+            pdfContainer.appendChild(itemsTable);
+
+            // Add total section
+            const totalSection = document.createElement('div');
+            totalSection.style.cssText = `
+                background-color: #004359;
+                color: white;
+                padding: 15px;
+                text-align: right;
+                border-radius: 0 0 4px 4px;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
+            `;
+            totalSection.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
+                        <span style="font-size: 14px;">Subtotal:</span>
+                        <span style="font-size: 14px;">${formatPrice(invoice.subtotal || 0, invoice.currency)}</span>
+                    </div>
+                    ${clientHasVAT ? `
+                        <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
+                            <span style="font-size: 14px;">VAT (5%):</span>
+                            <span style="font-size: 14px;">${formatPrice(invoice.totalVat || 0, invoice.currency)}</span>
+                        </div>
+                    ` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <span style="font-size: 16px;">Total:</span>
+                        <span style="font-size: 20px; font-weight: bold;">${formatPrice(invoice.total || 0, invoice.currency)}</span>
+                    </div>
+                </div>
+            `;
+            pdfContainer.appendChild(totalSection);
+
+            // Add spacer for signature section
+            const spacer = document.createElement('div');
+            spacer.style.height = '50px';
+            pdfContainer.appendChild(spacer);
+
+            // Add Terms and Conditions and Bank Details in a two-column layout
+            const infoSectionsGrid = document.createElement('div');
+            infoSectionsGrid.style.cssText = `
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+                margin-bottom: 100px;
+                page-break-inside: avoid;
+            `;
+
+            // Terms and Conditions section
+            const termsSection = document.createElement('div');
+            termsSection.style.cssText = `
+                padding: 24px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            termsSection.innerHTML = `
+                <h3 style="font-size: 16px; font-weight: 600; color: #004359; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 4px; height: 16px; background-color: #004359; border-radius: 2px;"></span>
+                    Terms and Conditions
+                </h3>
+                <div style="font-size: 14px; line-height: 1.6; color: #666;">
+                    ${invoice.termsAndConditions || defaultTermsAndConditions}
+                </div>
+            `;
+            infoSectionsGrid.appendChild(termsSection);
+
+            // Bank Details section
+            const bankSection = document.createElement('div');
+            bankSection.style.cssText = `
+                padding: 24px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            bankSection.innerHTML = `
+                <h3 style="font-size: 16px; font-weight: 600; color: #004359; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 4px; height: 16px; background-color: #004359; border-radius: 2px;"></span>
+                    Bank Transfer Details
+                </h3>
+                <div style="font-size: 14px; line-height: 1.6; color: #666;">
+                    ${companyProfile?.bankDetails ? `
+                        <div style="margin-bottom: 8px;"><strong>Bank Name:</strong> ${companyProfile.bankDetails.bankName}</div>
+                        <div style="margin-bottom: 8px;"><strong>Account Name:</strong> ${companyProfile.bankDetails.accountName}</div>
+                        <div style="margin-bottom: 8px;"><strong>Account Number:</strong> ${companyProfile.bankDetails.accountNumber}</div>
+                        <div style="margin-bottom: 8px;"><strong>IBAN:</strong> ${companyProfile.bankDetails.iban}</div>
+                        <div style="margin-bottom: 8px;"><strong>SWIFT Code:</strong> ${companyProfile.bankDetails.swift}</div>
+                    ` : 'No bank details available'}
+                </div>
+            `;
+            infoSectionsGrid.appendChild(bankSection);
+
+            pdfContainer.appendChild(infoSectionsGrid);
+
+            // Add signature section
+            const signatureSection = document.createElement('div');
+            signatureSection.style.cssText = `
+                position: absolute;
+                bottom: 30mm;
+                left: 20mm;
+                right: 20mm;
+                display: flex;
+                flex-direction: column;
+                background-color: white;
+                padding: 20px;
+                border-top: 1px solid #e0e0e0;
+                z-index: 1000;
+                page-break-inside: avoid;
+            `;
+            signatureSection.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                        <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
+                    </div>
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                        <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
+                    </div>
+                </div>
+                <div style="text-align: center; color: #666; font-size: 12px; font-style: italic; margin-top: 10px;">
+                    This is a computer-generated document and does not require a physical signature.
+                </div>
+            `;
+            pdfContainer.appendChild(signatureSection);
+
+            // Temporarily add to document to render
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            document.body.appendChild(pdfContainer);
+
+            // Create PDF with A3 size
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a3',
+                compress: true
+            });
+
+            // Convert to canvas with A3 dimensions
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                width: 1122.5, // 297mm in pixels at 96 DPI
+                height: 1587.4 // 420mm in pixels at 96 DPI
+            });
+
+            // Remove temporary elements
+            document.body.removeChild(pdfContainer);
+
+            // Add the image to fit A3 page
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
+
+            // Convert to base64
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
+
+            // Generate email content
+            const emailContent = generateEmailTemplate({
+                clientName: invoice.clientName,
+                documentType: 'Invoice',
+                documentId: invoice.customId,
+                amount: invoice.total,
+                currency: invoice.currency,
+                dueDate: invoice.paymentDue ? format(new Date(invoice.paymentDue), 'dd/MM/yyyy') : 'N/A'
+            });
+
+            // Set email data and open modal
+            setEmailData({
+                to: invoice.clientEmail,
+                subject: `Invoice ${invoice.customId} from ${companyProfile.name}`,
+                content: emailContent
+            });
+            setPdfData({
+                content: pdfBase64,
+                name: `Invoice_${invoice.customId}.pdf`
+            });
+            setIsEmailModalOpen(true);
+        } catch (error) {
+            console.error('Error preparing email:', error);
+            message.error('Failed to prepare email. Please try again.');
+        }
+    };
+
+    const handleEmailSent = () => {
+        // Handle post-email actions (e.g., show success message, update status)
+        console.log('Email sent successfully');
+        message.success('Email sent successfully');
+        
+        // Close the email modal if it's still open
+        if (isEmailModalOpen) {
+            setIsEmailModalOpen(false);
+        }
+    };
+
     // Show loading state
     if (isLoading || !invoice) {
         return (
@@ -2107,6 +2448,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                             </div>
                             <Button
                                 $secondary
+                                onClick={handleSendEmail}
                                 style={{
                                     padding: '8px 16px',
                                     borderRadius: '8px',
@@ -2327,6 +2669,24 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
             )}
 
             {renderPaymentModal()}
+
+            {isEmailModalOpen && emailData && pdfData && (
+                <EmailPreviewModal
+                    isOpen={isEmailModalOpen}
+                    onClose={() => setIsEmailModalOpen(false)}
+                    onSend={handleEmailSent}
+                    emailData={emailData}
+                    documentType="invoice"
+                    documentId={invoice.id}
+                    clientName={invoice.clientName}
+                    clientEmail={invoice.clientEmail}
+                    amount={invoice.total}
+                    currency={invoice.currency}
+                    dueDate={invoice.dueDate}
+                    pdfBase64={pdfData.content}
+                    pdfName={pdfData.name}
+                />
+            )}
         </StyledInvoiceView>
     );
 };

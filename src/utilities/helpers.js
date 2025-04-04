@@ -86,3 +86,36 @@ export const receiptsLengthMessage = (length, type, windowWidth) => {
 
     return `${length} ${receiptsText} ${filterText}`;
 };
+
+/**
+ * Format currency with currency symbol
+ * @param {number} amount - Amount to format
+ * @param {string} currency - Currency code (ISO 4217)
+ * @returns {string} Formatted currency string
+ */
+export const formatCurrency = (amount, currency = 'USD') => {
+    // Handle invalid or empty currency - ensure it's a valid 3-letter code
+    if (!currency || typeof currency !== 'string' || currency.length !== 3) {
+        currency = 'USD';
+    }
+    
+    // Normalize currency to uppercase
+    currency = currency.toUpperCase();
+    
+    try {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount || 0);
+    } catch (error) {
+        // Fallback format if there's an error
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount || 0);
+    }
+};
