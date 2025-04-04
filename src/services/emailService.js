@@ -3,7 +3,7 @@ import axios from 'axios';
 // API configuration from environment variables
 // Use a fallback value for development/testing
 // IMPORTANT: This API key must have SMTP/Transactional Email permissions in your Brevo account
-const BREVO_API_KEY = 'YOUR_BREVO_API_KEY'; // Replace with your actual API key
+const BREVO_API_KEY = process.env.REACT_APP_BREVO_API_KEY;
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const SENDER_EMAIL = 'sales@fortunegiftz.com';
 const SENDER_NAME = 'Fortune Giftz';
