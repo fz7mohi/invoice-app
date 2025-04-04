@@ -13,9 +13,6 @@ const envKeys = Object.keys(env).reduce((prev, next) => {
   return prev;
 }, {});
 
-// Add BREVO_API_KEY to the environment variables
-envKeys['window.BREVO_API_KEY'] = JSON.stringify(env.REACT_APP_BREVO_API_KEY || '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');
-
 // Compile modern JavaScript and copy index.html / assets
 mix.js("src/index.js", "index.js").react().setPublicPath("dist");
 mix.copy("src/index.html", "dist/index.html");

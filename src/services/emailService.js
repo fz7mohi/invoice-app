@@ -1,18 +1,14 @@
 import axios from 'axios';
 
-// API configuration from environment variables
-// For Laravel Mix applications, we can use a global variable
-const BREVO_API_KEY = window.BREVO_API_KEY || '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';
-const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? '/api/send-email'  // In production, use relative path
+  : 'http://localhost:3000/api/send-email';  // In development, use full URL
+
 const SENDER_EMAIL = 'sales@fortunegiftz.com';
 const SENDER_NAME = 'Fortune Giftz';
 
-// Debug: Log the API key (first 10 characters only for security)
-console.log('API Key loaded:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
-console.log('API Key length:', BREVO_API_KEY ? BREVO_API_KEY.length : 0);
-
 /**
- * Sends an email with a PDF attachment using Brevo API
+ * Sends an email with a PDF attachment using our backend API
  * @param {string} to - Recipient email address
  * @param {string} subject - Email subject
  * @param {string} htmlContent - HTML content of the email
@@ -25,45 +21,18 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
     // Debug: Log the request details (without sensitive data)
     console.log('Sending email to:', to);
     console.log('Subject:', subject);
-    console.log('Using API key:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
-    console.log('API Key length in send function:', BREVO_API_KEY ? BREVO_API_KEY.length : 0);
-    
-    if (!BREVO_API_KEY) {
-      throw new Error('Brevo API key is not configured. Please check your environment variables.');
-    }
     
     // Create the email payload
     const emailData = {
-      sender: {
-        email: SENDER_EMAIL,
-        name: SENDER_NAME,
-      },
-      to: [{ email: to }],
-      subject: subject,
-      htmlContent: htmlContent,
+      to,
+      subject,
+      htmlContent,
+      pdfBase64,
+      pdfFileName
     };
     
-    // Add attachment if provided
-    if (pdfBase64 && pdfFileName) {
-      emailData.attachment = [
-        {
-          content: pdfBase64,
-          name: pdfFileName,
-        },
-      ];
-    }
-    
-    // Send the email
-    const response = await axios({
-      method: 'post',
-      url: BREVO_API_URL,
-      data: emailData,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'api-key': BREVO_API_KEY,
-      },
-    });
+    // Send the email through our backend
+    const response = await axios.post(API_URL, emailData);
     
     console.log('Email sent successfully:', response.data);
     return response.data;
@@ -73,24 +42,13 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
     if (error.response) {
       console.error('Error response data:', error.response.data);
       console.error('Error response status:', error.response.status);
-      
-      // Provide more specific error messages based on the response
-      if (error.response.status === 401) {
-        if (error.response.data.message === 'API Key is not enabled') {
-          console.error('API Key is valid but does not have the necessary permissions. Please check your Brevo account settings and ensure the API key has SMTP/Transactional Email permissions.');
-        } else if (error.response.data.message === 'Key not found') {
-          console.error('API Key is invalid or has been revoked. Please check your API key and update it if necessary.');
-        } else if (error.response.data.message === 'authentication not found in headers') {
-          console.error('API Key is not being properly passed in the request headers. Please check your environment variable configuration.');
-        }
-      }
     }
     throw error;
   }
 };
 
 /**
- * Sends a test email using Brevo API
+ * Sends a test email using our backend API
  * @param {string} to - Recipient email address
  * @returns {Promise} - Promise that resolves when email is sent
  */
@@ -108,30 +66,16 @@ export const sendTestEmail = async (to) => {
   try {
     // Debug: Log the request details (without sensitive data)
     console.log('Sending test email to:', to);
-    console.log('Using API key:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
     
     // Create the email payload
     const emailData = {
-      sender: {
-        email: SENDER_EMAIL,
-        name: SENDER_NAME,
-      },
-      to: [{ email: to }],
-      subject: subject,
-      htmlContent: htmlContent,
+      to,
+      subject,
+      htmlContent
     };
     
-    // Send the email
-    const response = await axios({
-      method: 'post',
-      url: BREVO_API_URL,
-      data: emailData,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'api-key': BREVO_API_KEY,
-      },
-    });
+    // Send the email through our backend
+    const response = await axios.post(API_URL, emailData);
     
     console.log('Test email sent successfully:', response.data);
     return response.data;
