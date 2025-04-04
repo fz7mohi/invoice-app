@@ -10,6 +10,7 @@ const SENDER_NAME = 'Fortune Giftz';
 
 // Debug: Log the API key (first 10 characters only for security)
 console.log('API Key loaded:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
+console.log('API Key length:', BREVO_API_KEY ? BREVO_API_KEY.length : 0);
 
 /**
  * Sends an email with a PDF attachment using Brevo API
@@ -26,6 +27,11 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
     console.log('Sending email to:', to);
     console.log('Subject:', subject);
     console.log('Using API key:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
+    console.log('API Key length in send function:', BREVO_API_KEY ? BREVO_API_KEY.length : 0);
+    
+    if (!BREVO_API_KEY) {
+      throw new Error('Brevo API key is not configured. Please check your environment variables.');
+    }
     
     // Create the email payload
     const emailData = {
@@ -75,6 +81,8 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
           console.error('API Key is valid but does not have the necessary permissions. Please check your Brevo account settings and ensure the API key has SMTP/Transactional Email permissions.');
         } else if (error.response.data.message === 'Key not found') {
           console.error('API Key is invalid or has been revoked. Please check your API key and update it if necessary.');
+        } else if (error.response.data.message === 'authentication not found in headers') {
+          console.error('API Key is not being properly passed in the request headers. Please check your environment variable configuration.');
         }
       }
     }
