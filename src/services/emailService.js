@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Use the Netlify function URL in both environments
+// Use the Netlify function URL in production
 const API_URL = '/api/send-email';  // This will be redirected to /.netlify/functions/send-email
 
 // Retry configuration
@@ -66,6 +66,12 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
           await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
           continue;
         }
+      }
+      
+      // Handle 404 errors specifically
+      if (error.response?.status === 404) {
+        console.error('API endpoint not found. Please check your Netlify function deployment.');
+        throw new Error('Email service is currently unavailable. Please try again later or contact support.');
       }
       
       // Log detailed error information

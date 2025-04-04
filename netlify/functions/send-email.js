@@ -7,7 +7,10 @@ const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'X-XSS-Protection': '1; mode=block',
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Access-Control-Allow-Origin': '*', // Allow CORS for all origins
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type'
 };
 
 // Rate limiting setup
@@ -36,6 +39,14 @@ exports.handler = async (event, context) => {
     'Content-Type': 'application/json'
   };
 
+  // Handle OPTIONS requests for CORS
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers
+    };
+  }
+
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
@@ -50,12 +61,23 @@ exports.handler = async (event, context) => {
   if (isRateLimited(clientIP)) {
     return {
       statusCode: 429,
-      headers,
+      headers: {
+        ...headers,
+        'Retry-After': '60'
+      },
       body: JSON.stringify({ error: 'Too many requests. Please try again later.' })
     };
   }
 
   try {
+    // Log request details for debugging
+    console.log('Received email request:', {
+      method: event.httpMethod,
+      path: event.path,
+      headers: event.headers,
+      body: event.body ? JSON.parse(event.body) : null
+    });
+
     const { to, subject, htmlContent, pdfBase64, pdfFileName } = JSON.parse(event.body);
 
     // Validate required fields
