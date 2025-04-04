@@ -3,7 +3,7 @@ import axios from 'axios';
 // Use the correct API URL based on environment
 const API_URL = process.env.NODE_ENV === 'production' 
   ? 'https://fordox.netlify.app/api/send-email'  // Use the correct domain
-  : 'http://localhost:3001/api/send-email';
+  : 'https://fordox.netlify.app/api/send-email';
 
 /**
  * Sends an email with a PDF attachment using our backend API
