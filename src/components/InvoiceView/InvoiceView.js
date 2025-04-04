@@ -2086,14 +2086,41 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                     </InfoAddresses>
                     
                     {invoice.clientEmail && (
-                        <AddressGroup>
-                            <AddressTitle>Sent to</AddressTitle>
-                            <AddressText>
-                                <span style={{ display: 'flex', alignItems: 'center' }}>
-                                    <Icon name="mail" size={13} style={{ marginRight: '6px', color: colors.purple }} />
-                                    {invoice.clientEmail}
-                                </span>
-                            </AddressText>
+                        <AddressGroup style={{
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: '8px',
+                            padding: '16px',
+                            backgroundColor: colors.backgroundItem || colors.background,
+                            marginBottom: '32px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <div>
+                                <AddressTitle>Sent to</AddressTitle>
+                                <AddressText>
+                                    <span style={{ display: 'flex', alignItems: 'center' }}>
+                                        <Icon name="mail" size={13} style={{ marginRight: '6px', color: colors.purple }} />
+                                        {invoice.clientEmail}
+                                    </span>
+                                </AddressText>
+                            </div>
+                            <Button
+                                $secondary
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    border: `1px solid ${colors.border}`,
+                                    backgroundColor: 'transparent',
+                                    color: colors.text,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                <Icon name="mail" size={13} style={{ marginRight: '6px' }} />
+                                Send
+                            </Button>
                         </AddressGroup>
                     )}
                     
