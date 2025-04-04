@@ -1,32 +1,34 @@
-import { IconBaseProps } from 'react-icons';
+import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-    IoArrowDown, 
-    IoArrowForward, 
-    IoCheckmark, 
-    IoAdd,
-    IoImage,
-    IoLogoGithub
-} from 'react-icons/io5';
+    faArrowDown, 
+    faArrowRight, 
+    faCheck, 
+    faPlus,
+    faImage,
+    faGithub
+} from '@fortawesome/free-solid-svg-icons';
 
 const iconMap = {
-    'arrow-down': IoArrowDown,
-    'arrow-right': IoArrowForward,
-    'check': IoCheckmark,
-    'plus': IoAdd,
-    'image': IoImage,
-    'logo': IoLogoGithub
+    'arrow-down': faArrowDown,
+    'arrow-right': faArrowRight,
+    'check': faCheck,
+    'plus': faPlus,
+    'image': faImage,
+    'logo': faGithub
 };
 
 const Icon = ({ name, size, color, customStyle, ...props }) => {
-    const IconComponent = iconMap[name];
+    const icon = iconMap[name];
     
-    if (!IconComponent) {
+    if (!icon) {
         console.warn(`Icon "${name}" not found`);
         return null;
     }
 
     return (
-        <IconComponent
+        <FontAwesomeIcon
+            icon={icon}
             size={size}
             color={color}
             style={customStyle}
