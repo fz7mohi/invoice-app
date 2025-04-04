@@ -645,7 +645,7 @@ export const ModalIconWrapper = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    background-color: ${({ theme }) => theme.colors.primary};
     display: flex;
     align-items: center;
     justify-content: center;

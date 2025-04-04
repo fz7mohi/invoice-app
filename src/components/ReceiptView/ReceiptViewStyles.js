@@ -11,10 +11,17 @@ export const StyledReceiptView = styled(motion.div)`
     @media (min-width: 768px) {
         padding: 48px 32px;
     }
+    
+    @media (min-width: 1024px) {
+        padding: 32px 48px;
+        margin-left: 103px;
+        width: calc(100% - 103px);
+    }
 `;
 
 export const Container = styled.div`
-    max-width: 1000px;
+    width: 100%;
+    max-width: 780px;
     margin: 0 auto;
 `;
 
@@ -55,29 +62,35 @@ export const HeaderTitle = styled.h1`
     margin: 0;
 `;
 
-export const Controller = styled.div`
+export const Controller = styled(motion.div)`
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 32px;
-    gap: 16px;
-    flex-wrap: wrap;
+    align-items: center;
+    padding: 20px;
+    width: 100%;
+    border-radius: 8px;
+    background-color: ${({ theme }) => theme.colors.backgroundAlt || '#1E2139'};
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
 
     @media (min-width: 768px) {
-        flex-wrap: nowrap;
+        padding: 20px 24px;
+        margin-bottom: 24px;
     }
 `;
 
 export const InfoCard = styled(motion.div)`
     background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
-    border-radius: 20px;
-    padding: 32px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
     transition: all 0.3s ease;
+    margin-bottom: 24px;
 
     @media (min-width: 768px) {
-        padding: 48px;
+        padding: 32px;
     }
 `;
 
@@ -114,12 +127,17 @@ export const InfoDesc = styled.div`
 
 export const InfoAddresses = styled.div`
     display: grid;
+    border: 1px solid ${({ theme }) => theme.colors.border || '#252945'};
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background || '#1E2139'};
+    padding: 24px;
+    border-radius: 8px;
     grid-template-columns: 1fr;
     gap: 32px;
     margin-bottom: 32px;
 
     @media (min-width: 768px) {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 40px;
     }
 `;
 
@@ -145,10 +163,11 @@ export const AddressText = styled.div`
 `;
 
 export const Details = styled.div`
-    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
-    border-radius: 12px;
+    margin-top: 32px;
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background || '#1E2139'};
+    border: 1px solid ${({ theme }) => theme.colors.secondary || '#252945'};
+    border-radius: 8px 8px 0 0;
     overflow: hidden;
-    margin-bottom: 32px;
 `;
 
 export const ItemsHeader = styled.div`
@@ -170,49 +189,25 @@ export const HeaderCell = styled.div`
 `;
 
 export const Items = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
     padding: 24px;
 `;
 
 export const Item = styled.div`
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr ${({ showVat }) => showVat ? '1fr' : ''} 1fr;
+    grid-template-columns: 1fr;
     gap: 16px;
-    align-items: center;
-    padding: 16px;
-    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    padding: 24px 0;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border || '#252945'};
 
-    &:hover {
-        background-color: ${({ theme }) => theme?.backgrounds?.hover || '#252945'};
+    &:last-child {
+        border-bottom: none;
     }
 
-    .item-details {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .item-mobile-details {
-        display: none;
-        font-size: 13px;
-        color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
-    }
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-        gap: 8px;
-
-        .item-mobile-details {
-            display: block;
-        }
-
-        > div:not(.item-details) {
-            display: none;
-        }
+    @media (min-width: 768px) {
+        grid-template-columns: 2.5fr 0.7fr 1fr ${props => props.showVat ? '1fr' : ''} 1.2fr;
+        gap: 24px;
+        align-items: center;
+        padding: 16px 0;
     }
 `;
 
@@ -253,12 +248,23 @@ export const ItemTotal = styled.div`
 `;
 
 export const Total = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    background-color: #004359;
     padding: 24px;
-    background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
-    border-top: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    border-radius: 0 0 8px 8px;
+    color: white;
+
+    > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
+
+        &.grand-total {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    }
 `;
 
 export const TotalText = styled.div`
@@ -274,8 +280,16 @@ export const TotalAmount = styled.div`
 
 export const MetaInfo = styled.div`
     display: flex;
-    gap: 24px;
+    flex-direction: column;
+    gap: 8px;
     margin-top: 8px;
+    margin-bottom: 16px;
+    
+    @media (min-width: 768px) {
+        flex-direction: row;
+        gap: 20px;
+        margin-bottom: 24px;
+    }
 `;
 
 export const MetaItem = styled.div`
@@ -347,6 +361,7 @@ export const InfoSectionsGrid = styled.div`
     display: grid;
     grid-template-columns: 1fr;
     gap: 24px;
+    margin-top: 32px;
 
     @media (min-width: 768px) {
         grid-template-columns: 1fr 1fr;
@@ -355,47 +370,81 @@ export const InfoSectionsGrid = styled.div`
 
 export const PaymentDetailsSection = styled.div`
     background-color: ${({ theme }) => theme?.backgrounds?.card || '#1E2139'};
-    border-radius: 12px;
-    padding: 24px;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
     border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 100%;
+    overflow: hidden;
+
+    @media (max-width: 767px) {
+        padding: 16px;
+        margin-bottom: 20px;
+    }
 `;
 
 export const PaymentDetailsHeader = styled.div`
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    @media (max-width: 767px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
 `;
 
-export const PaymentDetailsTitle = styled.h3`
+export const PaymentDetailsTitle = styled.h2`
     font-size: 16px;
     font-weight: 600;
     color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
     margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
 
-    &::before {
-        content: '';
-        display: inline-block;
-        width: 4px;
-        height: 16px;
-        background-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
-        border-radius: 2px;
+    @media (max-width: 767px) {
+        font-size: 14px;
     }
 `;
 
 export const PaymentDetailsGrid = styled.div`
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
+    width: 100%;
+
+    @media (max-width: 1024px) {
+        gap: 12px;
+    }
+
+    @media (max-width: 767px) {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
 `;
 
 export const PaymentDetailItem = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    padding: 12px;
+    background-color: ${({ theme }) => theme?.backgrounds?.input || '#1E2139'};
+    border-radius: 6px;
+    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
+    transition: all 0.2s ease;
+    min-width: 0;
+
+    &:hover {
+        background-color: ${({ theme }) => theme?.backgrounds?.hover || '#252945'};
+    }
+
+    @media (max-width: 767px) {
+        padding: 10px;
+    }
 `;
 
 export const PaymentDetailLabel = styled.div`
@@ -460,30 +509,38 @@ export const BankDetailValue = styled.div`
 
 export const TermsSection = styled.div`
     margin-top: 32px;
-    padding-top: 32px;
-    border-top: 1px solid ${({ theme }) => theme.colors.border};
+    padding: 24px;
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background || '#1E2139'};
+    border: 1px solid ${({ theme }) => theme.colors.border || '#252945'};
+    border-radius: 8px;
 `;
 
-export const TermsTitle = styled.h3`
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.25px;
-    margin: 0 0 8px;
+export const TermsHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
 `;
 
-export const TermsText = styled.p`
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 12px;
-    line-height: 1.25;
-    margin: 0;
-    white-space: pre-wrap;
+export const TermsText = styled.div`
+    font-size: 14px;
+    line-height: 1.6;
+    color: ${({ theme }) => theme.colors.textSecondary || '#DFE3FA'};
+    white-space: pre-line;
+    padding: 8px;
+    background-color: ${({ theme }) => theme.colors.backgroundAlt || '#1E2139'};
+    border-radius: 4px;
+    border: 1px solid ${({ theme }) => theme.colors.border || '#252945'};
 `;
 
 export const ActionButtons = styled.div`
     display: flex;
     gap: 8px;
+    margin-top: 32px;
+
+    @media (min-width: 768px) {
+        margin-top: 0;
+    }
 `;
 
 export const StatusDot = styled.div`

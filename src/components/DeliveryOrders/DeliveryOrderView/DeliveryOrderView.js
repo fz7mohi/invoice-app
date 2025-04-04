@@ -1133,7 +1133,7 @@ const DeliveryOrderView = () => {
                     <ActionButtons>
                         <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
                             <Icon name="download" size={13} />
-                            Download PDF
+                            Share
                         </DownloadButton>
                         <Button
                             onClick={() => setIsEditModalOpen(true)}
