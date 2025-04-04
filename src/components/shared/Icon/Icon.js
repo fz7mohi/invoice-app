@@ -1,8 +1,24 @@
 import { IconBaseProps } from 'react-icons';
-import * as Icons from 'react-icons/all';
+import { 
+    IoArrowDown, 
+    IoArrowForward, 
+    IoCheckmark, 
+    IoAdd,
+    IoImage,
+    IoLogoGithub
+} from 'react-icons/io5';
+
+const iconMap = {
+    'arrow-down': IoArrowDown,
+    'arrow-right': IoArrowForward,
+    'check': IoCheckmark,
+    'plus': IoAdd,
+    'image': IoImage,
+    'logo': IoLogoGithub
+};
 
 const Icon = ({ name, size, color, customStyle, ...props }) => {
-    const IconComponent = Icons[name];
+    const IconComponent = iconMap[name];
     
     if (!IconComponent) {
         console.warn(`Icon "${name}" not found`);
