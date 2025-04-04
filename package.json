@@ -7,7 +7,8 @@
         "build": "NODE_OPTIONS='--openssl-legacy-provider --max-old-space-size=4096' npm install --legacy-peer-deps && NODE_OPTIONS='--openssl-legacy-provider --max-old-space-size=4096' npx mix",
         "mix-watch": "npx mix watch",
         "dev": "NODE_OPTIONS=\"--openssl-legacy-provider\" npx mix && serve -s dist",
-        "server": "node server.js"
+        "server": "node server.js",
+        "verify-images": "node verify-images.js"
     },
     "repository": {
         "type": "git",

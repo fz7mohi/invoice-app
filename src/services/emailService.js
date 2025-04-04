@@ -114,7 +114,7 @@ export const generateEmailTemplate = ({
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <img src="${window.location.origin}/assets/images/black-logo.png" alt="Fortune Gifts" style="max-width: 200px; height: auto;">
+        <img src="${window.location.origin}/images/white-logo.png" alt="Fortune Gifts" style="max-width: 200px; height: auto;">
       </div>
       
       <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
