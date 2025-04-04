@@ -5,11 +5,12 @@
 // Common brand colors for Fortune Gifts
 const brandColors = {
   primary: '#004359',
-  secondary: '#000000',
+  secondary: '#10273a',
   accent: '#FF4806',
   primaryLight: '#005E7C',
   accentLight: '#FF6D3C',
-  purple: '#7c5dfa'
+  purple: '#7c5dfa',
+  border: '#9180f9'
 };
 
 export const lightTheme = {
@@ -51,14 +52,15 @@ export const darkTheme = {
   mode: 'dark',
   colors: {
     primary: '#ffffff',
-    secondary: '#DFE3FA',
+    secondary: brandColors.secondary,
     accent: brandColors.accent,
     primaryLight: brandColors.primaryLight,
     accentLight: brandColors.accentLight,
+    border: brandColors.border,
     purple: brandColors.purple,
     red: '#FF9797',
     white: '#ffffff',
-    background: '#141625',
+    background: brandColors.primary,
     backgroundItem: '#1e2139',
     backgroundAlt: '#252945',
     textPrimary: '#ffffff',

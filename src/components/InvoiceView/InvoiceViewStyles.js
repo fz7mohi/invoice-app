@@ -33,7 +33,7 @@ export const StyledInvoiceView = styled.main`
     width: 100%;
     min-height: 100%;
     margin-bottom: 180px;
-    background-color: ${({ theme }) => theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundItem};
     transition: background-color 0.3s ease;
 
     @media (min-width: 768px) {
@@ -94,7 +94,7 @@ export const Controller = styled(motion.div)`
     padding: 20px;
     width: 100%;
     border-radius: 8px;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     margin-bottom: 24px;
     transition: all 0.3s ease;
@@ -113,7 +113,7 @@ export const Text = styled.span`
 
 export const InfoCard = styled(motion.div)`
     padding: 24px;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     
@@ -156,6 +156,10 @@ export const InfoDesc = styled.p`
 
 export const InfoAddresses = styled.div`
     display: grid;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background};
+    padding: 24px;
+    border-radius: 8px;
     grid-template-columns: 1fr;
     gap: 32px;
     margin-bottom: 32px;
@@ -185,7 +189,8 @@ export const AddressText = styled.p`
 
 export const Details = styled.div`
     margin-top: 32px;
-    background-color: ${({ theme }) => theme.colors.backgroundAlt || theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background};
+    border: 1px solid ${({ theme }) => theme.colors.secondary};
     border-radius: 8px 8px 0 0;
     overflow: hidden;
 `;
@@ -535,7 +540,8 @@ export const StatusContainer = styled.div`
 export const TermsSection = styled.div`
     margin-top: 32px;
     padding: 24px;
-    background-color: ${({ theme }) => theme.colors.backgroundAlt || theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background};
+    border: 1px solid ${({ theme }) => theme.colors.border};
     border-radius: 8px;
 `;
 
@@ -571,7 +577,7 @@ export const TermsText = styled.div`
     color: ${({ theme }) => theme.colors.textSecondary};
     white-space: pre-line;
     padding: 8px;
-    background-color: ${({ theme }) => theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
     border-radius: 4px;
     border: 1px solid ${({ theme }) => theme.colors.border};
 `;
@@ -585,7 +591,7 @@ export const TermsTextArea = styled.textarea`
     font-size: 14px;
     line-height: 1.6;
     color: ${({ theme }) => theme.colors.textPrimary};
-    background-color: ${({ theme }) => theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
     resize: vertical;
     margin-bottom: 12px;
     font-family: inherit;
@@ -618,13 +624,13 @@ export const ModalOverlay = styled.div`
 `;
 
 export const ModalContent = styled.div`
-    background-color: #1E2139;
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
     padding: 2rem;
     border-radius: 16px;
     max-width: 460px;
     width: 90%;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-    border: 1px solid #252945;
+    border: 1px solid ${({ theme }) => theme.colors.border};
     animation: ${modalSlideIn} 0.3s ease-out;
 `;
 
@@ -639,11 +645,11 @@ export const ModalIconWrapper = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background-color: #2B2C37;
+    background-color: ${({ theme }) => theme.colors.backgroundItem};
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #FF4806;
+     border: 1px solid ${({ theme }) => `${theme.colors.purple}35`};
 `;
 
 export const ModalTitle = styled.h2`
@@ -748,7 +754,7 @@ export const DownloadButton = styled.button`
 export const BankDetailsSection = styled.div`
     margin-top: 32px;
     padding: 24px;
-    background-color: ${({ theme }) => theme.colors.backgroundAlt || theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background};
     border-radius: 8px;
     border: 1px solid ${({ theme }) => theme.colors.border};
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -785,7 +791,7 @@ export const BankDetailItem = styled.div`
     flex-direction: column;
     gap: 4px;
     padding: 8px;
-    background-color: ${({ theme }) => theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
     border-radius: 4px;
     border: 1px solid ${({ theme }) => theme.colors.border};
 `;

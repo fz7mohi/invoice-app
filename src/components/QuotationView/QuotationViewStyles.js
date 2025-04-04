@@ -7,7 +7,7 @@ export const StyledQuotationView = styled.main`
     width: 100%;
     min-height: 100%;
     margin-bottom: 180px;
-    background-color: ${({ theme }) => theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundItem};
     transition: background-color 0.3s ease;
 
     @media (min-width: 768px) {
@@ -18,6 +18,7 @@ export const StyledQuotationView = styled.main`
 
 export const Container = styled.div`
     width: 100%;
+    background-color: ${({ theme }) => theme.colors.backgroundItem};
     max-width: 780px;
     margin: 0 auto;
 `;
@@ -56,7 +57,7 @@ export const Controller = styled(motion.div)`
     padding: 20px;
     width: 100%;
     border-radius: 8px;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     margin-bottom: 24px;
     transition: all 0.3s ease;
@@ -82,7 +83,7 @@ export const ButtonWrapper = styled.div`
     bottom: 0;
     padding: 16px 20px;
     width: 100%;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
     z-index: 10;
     transition: all 0.3s ease;
@@ -102,7 +103,7 @@ export const ButtonWrapper = styled.div`
 export const InfoCard = styled(motion.div)`
     width: 100%;
     border-radius: 8px;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     padding: 28px 20px;
     transition: all 0.3s ease;
@@ -150,7 +151,8 @@ export const InfoAddresses = styled.div`
     grid-template-columns: repeat(1, 1fr);
     gap: 20px;
     margin-bottom: 32px;
-    background-color: ${({ theme }) => theme.colors.backgroundAlt || theme.colors.background};
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background};
     padding: 20px;
     border-radius: 8px;
     
@@ -192,7 +194,8 @@ export const AddressText = styled.p`
 
 export const Details = styled.div`
     margin-top: 32px;
-    background-color: ${({ theme }) => theme.colors.backgroundAlt || theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background};
+    border: 1px solid ${({ theme }) => theme.colors.secondary};
     border-radius: 8px 8px 0 0;
     overflow: hidden;
 `;
@@ -357,7 +360,7 @@ export const TotalAmount = styled.p`
 export const TermsSection = styled.div`
     margin-top: 28px;
     padding: 20px;
-    background-color: ${({ theme }) => theme.colors.backgroundAlt || theme.colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundItem || theme.colors.background};
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 
