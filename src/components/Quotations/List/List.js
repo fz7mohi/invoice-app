@@ -40,7 +40,6 @@ const ListHeader = styled.div`
     
     @media (min-width: 1024px) {
         grid-template-columns: 110px 160px 160px 100px 150px 120px 20px;
-        padding: 0 32px 12px 32px;
     }
     
     @media (min-width: 1440px) {
@@ -194,9 +193,9 @@ const List = ({ quotations, isLoading, variant }) => {
         <>
             <ListHeader>
                 <HeaderItem className="date">Due Date</HeaderItem>
+                <HeaderItem className="client">Client</HeaderItem>
                 <HeaderItem className="project">Project</HeaderItem>
                 <HeaderItem className="id">Quotation ID</HeaderItem>
-                <HeaderItem className="client">Client</HeaderItem>
                 <HeaderItem className="price">Amount</HeaderItem>
                 <HeaderItem className="status">Status</HeaderItem>
             </ListHeader>
@@ -220,27 +219,29 @@ const List = ({ quotations, isLoading, variant }) => {
                         >
                             <div style={{ 
                                 display: 'grid',
-                                gridTemplateAreas: '"date client project id price status arrow"',
+                                gridTemplateAreas: isDesktop 
+                                    ? '"date client project id price status arrow"'
+                                    : '"id status" "project project" "client client" "date price"',
                                 gridTemplateColumns: isDesktop 
                                     ? '100px 130px 130px 90px 130px 90px 20px'
-                                    : '1fr',
+                                    : '1fr auto',
                                 alignItems: 'center',
-                                gap: '16px',
+                                gap: isDesktop ? '16px' : '12px',
                                 width: '100%'
                             }}>
-                                <PaymentDue>
-                                    {formatDate(quotation.createdAt)}
-                                </PaymentDue>
-                                <ClientName>
-                                    {quotation.clientName}
-                                </ClientName>
-                                <Description>
-                                    {quotation.description || 'No description'}
-                                </Description>
                                 <Uid>
                                     <Hashtag>#</Hashtag>
                                     {quotation.customId || quotation.id}
                                 </Uid>
+                                <Description>
+                                    {quotation.description || 'No description'}
+                                </Description>
+                                <ClientName>
+                                    {quotation.clientName}
+                                </ClientName>
+                                <PaymentDue>
+                                    {formatDate(quotation.createdAt)}
+                                </PaymentDue>
                                 <TotalPrice>
                                     {formatPrice(quotation.total, quotation.currency)}
                                 </TotalPrice>
@@ -248,7 +249,9 @@ const List = ({ quotations, isLoading, variant }) => {
                                     <StatusDot status={quotation.status} />
                                     {formatStatus(quotation.status)}
                                 </StatusBadge>
-                                <Icon name="arrow-right" size={12} color="#7C5DFA" />
+                                {isDesktop && (
+                                    <Icon name="arrow-right" size={12} color="#7C5DFA" />
+                                )}
                             </div>
                         </RouterLink>
                     </Item>

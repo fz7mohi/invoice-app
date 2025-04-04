@@ -155,8 +155,8 @@ export const Hashtag = styled.span`
 
 export const ClientName = styled.p`
     grid-area: client;
-    color: ${({ theme }) => theme.colors.textTertiary};
     font-size: 13px;
+    font-weight: 700;
     transition: color 200ms ease-in-out;
     white-space: nowrap;
     overflow: hidden;

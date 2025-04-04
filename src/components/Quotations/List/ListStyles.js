@@ -43,12 +43,12 @@ export const Item = styled(motion.div)`
             gap: 16px;
 
             > div {
+                display: grid;
                 grid-template-areas:
                     "id status"
                     "project project"
                     "client client"
-                    "date price"
-                    "arrow arrow";
+                    "date price";
                 grid-template-columns: 1fr auto;
                 gap: 12px;
             }
@@ -111,8 +111,8 @@ export const Hashtag = styled.span`
 
 export const ClientName = styled.p`
     grid-area: client;
-    
     font-size: 13px;
+    font-weight: 700;
     transition: color 200ms ease-in-out;
     white-space: nowrap;
     overflow: hidden;
@@ -178,13 +178,20 @@ export const StatusBadge = styled.div`
                 return '#DFE3FA';
         }
     }};
+
+    @media (max-width: 767px) {
+        margin-right: 0;
+        padding: 4px 8px;
+        min-width: 80px;
+        font-size: 11px;
+    }
 `;
 
 export const StatusDot = styled.div`
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    margin-right: 6px;
+    margin-right: 8px;
     flex-shrink: 0;
     background-color: ${({ status }) => {
         switch (status) {
@@ -196,18 +203,6 @@ export const StatusDot = styled.div`
                 return '#DFE3FA';
             default:
                 return '#DFE3FA';
-        }
-    }};
-    box-shadow: 0 0 0 2px ${({ status }) => {
-        switch (status) {
-            case 'pending':
-                return 'rgba(255, 143, 0, 0.2)';
-            case 'invoiced':
-                return 'rgba(51, 214, 159, 0.2)';
-            case 'draft':
-                return 'rgba(223, 227, 250, 0.2)';
-            default:
-                return 'rgba(223, 227, 250, 0.2)';
         }
     }};
 `; 
