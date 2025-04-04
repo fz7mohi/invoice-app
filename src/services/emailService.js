@@ -1,11 +1,8 @@
 import axios from 'axios';
 
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api/send-email'  // In production, use relative path
-  : 'http://localhost:3000/api/send-email';  // In development, use full URL
-
-const SENDER_EMAIL = 'sales@fortunegiftz.com';
-const SENDER_NAME = 'Fortune Giftz';
+  ? '/api/send-email'
+  : 'http://localhost:3001/api/send-email';
 
 /**
  * Sends an email with a PDF attachment using our backend API
@@ -48,7 +45,7 @@ export const sendEmailWithAttachment = async (to, subject, htmlContent, pdfBase6
 };
 
 /**
- * Sends a test email using our backend API
+ * Sends a test email using Brevo API
  * @param {string} to - Recipient email address
  * @returns {Promise} - Promise that resolves when email is sent
  */
@@ -66,16 +63,30 @@ export const sendTestEmail = async (to) => {
   try {
     // Debug: Log the request details (without sensitive data)
     console.log('Sending test email to:', to);
+    console.log('Using API key:', BREVO_API_KEY ? `${BREVO_API_KEY.substring(0, 10)}...` : 'Not loaded');
     
     // Create the email payload
     const emailData = {
-      to,
-      subject,
-      htmlContent
+      sender: {
+        email: SENDER_EMAIL,
+        name: SENDER_NAME,
+      },
+      to: [{ email: to }],
+      subject: subject,
+      htmlContent: htmlContent,
     };
     
-    // Send the email through our backend
-    const response = await axios.post(API_URL, emailData);
+    // Send the email
+    const response = await axios({
+      method: 'post',
+      url: BREVO_API_URL,
+      data: emailData,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': BREVO_API_KEY,
+      },
+    });
     
     console.log('Test email sent successfully:', response.data);
     return response.data;
@@ -116,28 +127,23 @@ export const generateEmailTemplate = ({
       <div style="text-align: center; margin-bottom: 30px;">
         <img src="${window.location.origin}/assets/images/black-logo.png" alt="Fortune Gifts" style="max-width: 200px; height: auto;">
       </div>
-      
-      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-        <h2 style="color: #333; margin-bottom: 15px;">Dear ${clientName},</h2>
-        
-        <p style="color: #666; line-height: 1.6; margin-bottom: 15px;">
-          Thank you for choosing Fortune Gifts Trading W.L.L. for your corporate gifting needs. We are pleased to provide you with our ${documentType.toLowerCase()} for the services rendered.
-        </p>
-        
-        <p style="color: #666; line-height: 1.6; margin-bottom: 15px;">
-          About Fortune Gifts Trading W.L.L.:<br>
-          Fortune Gifts Trading W.L.L. is a leading provider of corporate and promotional gifting solutions, with a presence across UAE, Qatar, India, and China. Established in 2008, we specialize in delivering custom-branded merchandise that helps businesses enhance visibility, strengthen relationships, and leave a lasting impression. From creative consultation to on-time delivery, we turn everyday products into powerful brand experiences — making us a trusted partner for companies looking to stand out.
-        </p>
-        
-        <p style="color: #666; line-height: 1.6;">
-          We value our partnership and are committed to delivering exceptional service. Your ${documentType.toLowerCase()} is attached for your records. If you have any questions or require any clarification regarding the ${documentType.toLowerCase()}, please don't hesitate to contact us.
-        </p>
-      </div>
-      
-      <div style="text-align: center; color: #999; font-size: 12px; margin-top: 30px;">
-        <p>This is an automated message. Please do not reply to this email.</p>
-        <p>© ${new Date().getFullYear()} Fortune Giftz. All rights reserved.</p>
-      </div>
+      <h2 style="color: #004359; margin-bottom: 20px;">Dear ${clientName},</h2>
+      <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
+        Please find attached your ${documentType.toLowerCase()} ${documentId} for ${amount} ${currency}.
+      </p>
+      <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
+        ${documentTypeCapitalized} Details:
+        <br>- Document ID: ${documentId}
+        <br>- Amount: ${amount} ${currency}
+        <br>- Due Date: ${dueDate}
+      </p>
+      <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
+        If you have any questions or concerns, please don't hesitate to contact us.
+      </p>
+      <p style="color: #333; line-height: 1.6; margin-bottom: 20px;">
+        Best regards,<br>
+        Fortune Gifts Team
+      </p>
     </div>
   `;
 };
