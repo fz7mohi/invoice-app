@@ -21,7 +21,7 @@ const TabItemComponent = React.memo(({ item, isActive }) => {
                     <Icon 
                         name={item.icon} 
                         size={22} 
-                        color={isActive ? colors.purple : colors.textTertiary}
+                        color={isActive ? colors.accent : colors.textTertiary}
                     />
                 </TabIcon>
                 <TabLabel $isActive={isActive}>{item.name}</TabLabel>

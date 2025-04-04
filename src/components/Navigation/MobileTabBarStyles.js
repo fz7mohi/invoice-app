@@ -10,9 +10,8 @@ export const TabBarContainer = styled.nav`
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
     z-index: 100;
     display: none;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid ${({ theme }) => theme.colors.border};
+    background: aliceblue;
+    border-top: 1px solid ${({ theme }) => theme.colors.accent};
     will-change: transform;
     transform: translateZ(0);
     
@@ -58,7 +57,7 @@ export const TabItem = styled.li`
         left: 50%;
         width: ${({ $isActive }) => ($isActive ? '24px' : '0')};
         height: 3px;
-        background-color: ${({ theme }) => theme.colors.purple};
+        background-color: ${({ theme }) => theme.colors.accent};
         border-radius: 3px;
         transform: translateX(-50%);
         transition: width 0.2s ease;
@@ -91,7 +90,7 @@ export const TabLabel = styled.span`
     font-size: 10px;
     font-weight: ${({ $isActive }) => ($isActive ? '600' : '400')};
     color: ${({ theme, $isActive }) => 
-        $isActive ? theme.colors.purple : theme.colors.textTertiary};
+        $isActive ? theme.colors.accent : theme.colors.textTertiary};
     transition: color 0.2s ease, font-weight 0.2s ease;
     white-space: nowrap;
     overflow: hidden;

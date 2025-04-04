@@ -40,19 +40,19 @@ export const NavItem = styled.li`
             margin-top: ${({ $isMobile }) => ($isMobile ? '0' : '6px')};
             margin-left: ${({ $isMobile }) => ($isMobile ? '16px' : '0')};
             color: ${({ $isActive, theme }) => 
-                $isActive ? theme.colors.purple : theme.colors.btnTheme};
+                $isActive ? theme.colors.accent : theme.colors.btnTheme};
             transition: color 0.3s ease;
         }
         
         &:hover {
-            background-color: ${({ theme }) => theme.colors.grayLight}10;
+            background-color: ${({ theme }) => theme.colors.accent}10;
             
             span {
-                color: ${({ theme }) => theme.colors.purple};
+                color: ${({ theme }) => theme.colors.accent};
             }
             
             svg {
-                color: ${({ theme }) => theme.colors.purple};
+                color: ${({ theme }) => theme.colors.accent};
             }
         }
     }
@@ -60,7 +60,7 @@ export const NavItem = styled.li`
     ${({ $isActive, theme, $isMobile }) => 
         $isActive && `
             background-color: ${theme.colors.grayLight}20;
-            border-${$isMobile ? 'left' : 'left'}: 3px solid ${theme.colors.purple};
+            border-${$isMobile ? 'left' : 'left'}: 3px solid ${theme.colors.accent};
             
             a {
                 padding-left: ${$isMobile ? '21px' : '0'};

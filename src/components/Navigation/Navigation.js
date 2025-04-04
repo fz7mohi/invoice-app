@@ -36,7 +36,7 @@ const Navigation = ({ isMobile, onNavigate }) => {
                                 <Icon 
                                     name={item.icon} 
                                     size={isMobile ? 20 : 16} 
-                                    color={isActive ? colors.purple : colors.btnTheme}
+                                    color={isActive ? colors.accent : colors.btnTheme}
                                 />
                                 <span>{item.name}</span>
                             </Link>
