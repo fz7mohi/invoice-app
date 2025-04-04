@@ -225,4 +225,47 @@ export const testApiKey = async () => {
     }
     return false;
   }
+};
+
+// Function to generate a quotation email template
+export const generateQuotationEmailTemplate = ({ clientName }) => {
+  return `
+    <html>
+      <body>
+        <p>Hi ${clientName},</p>
+        <p>Hope you're doing well!</p>
+        <p>As discussed, I've attached the quotation for your requested products. It includes all branding and delivery charges — no hidden costs.</p>
+        <p>Take your time to review it. If you'd like to adjust anything or need a custom sample, just let me know!</p>
+        <p>Thanks again for considering Fortune Gifts.</p>
+        <p>Warm regards,<br>
+        Fayas<br>
+        Sales Head - GCC<br>
+        Fortune Gifts Trading W.L.L.<br>
+        Old Salata - Doha<br>
+        Qatar<br>
+        📞 +974 7001 3984</p>
+      </body>
+    </html>
+  `;
+};
+
+// Function to generate an invoice email template
+export const generateInvoiceEmailTemplate = ({ clientName }) => {
+  return `
+    <html>
+      <body>
+        <p>Hello ${clientName},</p>
+        <p>Thanks once again for your order!</p>
+        <p>Please find attached the invoice for your recent purchase. It contains all the payment details you'll need. Feel free to get in touch if anything needs clarification.</p>
+        <p>We truly appreciate your business and look forward to serving you again.</p>
+        <p>Warm regards,<br>
+        Fayas<br>
+        Sales Head - GCC<br>
+        Fortune Gifts Trading W.L.L.<br>
+        Old Salata - Doha<br>
+        Qatar<br>
+        📞 +974 7001 3984</p>
+      </body>
+    </html>
+  `;
 }; 

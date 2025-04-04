@@ -88,7 +88,7 @@ import {
     FormTextArea,
     PlusIcon
 } from './InvoiceViewStyles';
-import { generateEmailTemplate } from '../../services/emailService';
+import { generateEmailTemplate, generateInvoiceEmailTemplate } from '../../services/emailService';
 import EmailPreviewModal from '../shared/EmailPreviewModal/EmailPreviewModal';
 import { format } from 'date-fns';
 import { message } from 'antd';
@@ -1964,13 +1964,8 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
             const pdfBase64 = pdf.output('datauristring').split(',')[1];
 
             // Generate email content
-            const emailContent = generateEmailTemplate({
-                clientName: invoice.clientName,
-                documentType: 'Invoice',
-                documentId: invoice.customId,
-                amount: invoice.total,
-                currency: invoice.currency,
-                dueDate: invoice.paymentDue ? format(new Date(invoice.paymentDue), 'dd/MM/yyyy') : 'N/A'
+            const emailContent = generateInvoiceEmailTemplate({
+                clientName: invoice.clientName
             });
 
             // Set email data and open modal

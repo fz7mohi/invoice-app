@@ -65,7 +65,7 @@ import {
 } from './QuotationViewStyles';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
-import { generateEmailTemplate } from '../../services/emailService';
+import { generateEmailTemplate, generateQuotationEmailTemplate } from '../../services/emailService';
 import EmailPreviewModal from '../shared/EmailPreviewModal/EmailPreviewModal';
 import { format } from 'date-fns';
 import { message } from 'antd';
@@ -1081,13 +1081,8 @@ const QuotationView = () => {
             }
 
             // Generate email content
-            const emailContent = generateEmailTemplate({
-                clientName: quotation.clientName,
-                documentType: 'Quotation',
-                documentId: quotation.customId,
-                amount: quotation.total,
-                currency: quotation.currency,
-                dueDate: quotation.validUntil ? format(new Date(quotation.validUntil), 'dd/MM/yyyy') : 'N/A'
+            const emailContent = generateQuotationEmailTemplate({
+                clientName: quotation.clientName
             });
 
             // Set email data and open modal
