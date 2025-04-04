@@ -20,5 +20,12 @@
   status = 200
   force = true
 
+# Allow direct access to Netlify Functions
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
 [build.environment]
   NODE_VERSION = "18"

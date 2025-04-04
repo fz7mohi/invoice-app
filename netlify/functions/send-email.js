@@ -33,6 +33,12 @@ const isRateLimited = (ip) => {
 };
 
 exports.handler = async (event, context) => {
+  console.log('Function invoked with event:', {
+    httpMethod: event.httpMethod,
+    path: event.path,
+    headers: event.headers
+  });
+
   // Add security headers to all responses
   const headers = {
     ...securityHeaders,
