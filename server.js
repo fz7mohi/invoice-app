@@ -13,10 +13,11 @@ const port = process.env.PORT || 3001;
 const corsOptions = {
   origin: [
     'https://fodox.netlify.app',
+    'https://fordox.netlify.app',
     'http://localhost:3000',
     'http://localhost:5000'
   ],
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   maxAge: 86400 // 24 hours
@@ -26,6 +27,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Add OPTIONS handling for preflight requests
+app.options('*', cors(corsOptions));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
