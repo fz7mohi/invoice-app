@@ -147,31 +147,29 @@ const Dashboard = () => {
                 <Title>Dashboard</Title>
             </Header>
 
-            {statsError ? (
-                <ErrorMessage>Error loading statistics: {statsError}</ErrorMessage>
+            {statsLoading ? (
+                <LoadingSpinner />
+            ) : statsError ? (
+                <ErrorMessage>Error loading dashboard stats: {statsError}</ErrorMessage>
             ) : (
                 <StatsGrid>
-                    {statsLoading ? (
-                        <LoadingSpinner text="Loading statistics..." />
-                    ) : (
-                        statsData.map((stat, index) => (
-                            <StatCard
-                                key={stat.label}
-                                as={motion.div}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: index * 0.1 }}
-                            >
-                                <StatIcon style={{ backgroundColor: `${stat.color}15` }}>
-                                    <Icon name={stat.icon} size={24} color={stat.color} />
-                                </StatIcon>
-                                <StatContent>
-                                    <StatValue>{stat.value}</StatValue>
-                                    <StatLabel>{stat.label}</StatLabel>
-                                </StatContent>
-                            </StatCard>
-                        ))
-                    )}
+                    {statsData.map((stat, index) => (
+                        <StatCard
+                            key={index}
+                            as={motion.div}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.05 }}
+                        >
+                            <StatIcon>
+                                <Icon name={stat.icon} size={24} color={stat.color} />
+                            </StatIcon>
+                            <StatContent>
+                                <StatValue>{stat.value}</StatValue>
+                                <StatLabel>{stat.label}</StatLabel>
+                            </StatContent>
+                        </StatCard>
+                    ))}
                 </StatsGrid>
             )}
 
@@ -193,12 +191,12 @@ const Dashboard = () => {
 
                 {clientsError ? (
                     <ErrorMessage>Error loading clients: {clientsError}</ErrorMessage>
+                ) : clientsLoading ? (
+                    <LoadingSpinner />
                 ) : (
                     <>
                         <ClientsList>
-                            {clientsLoading ? (
-                                <LoadingSpinner text="Loading clients..." />
-                            ) : clients.length > 0 ? (
+                            {clients.length > 0 ? (
                                 clients.map((client, index) => (
                                     <ClientItem
                                         key={client.id}
@@ -207,7 +205,6 @@ const Dashboard = () => {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, delay: index * 0.05 }}
                                         onClick={() => handleClientClick(client.id)}
-                                        style={{ cursor: 'pointer' }}
                                     >
                                         <ClientInfo>
                                             <ClientName>{client.name}</ClientName>
@@ -219,8 +216,8 @@ const Dashboard = () => {
                                                 <ClientStatLabel>Invoices</ClientStatLabel>
                                             </StatItem>
                                             <StatItem>
-                                                <ClientStatValue>{formatCurrency(parseFloat(client.totalAmount))}</ClientStatValue>
-                                                <ClientStatLabel>Total Amount</ClientStatLabel>
+                                                <ClientStatValue>{formatCurrency(client.totalAmount)}</ClientStatValue>
+                                                <ClientStatLabel>Total</ClientStatLabel>
                                             </StatItem>
                                         </ClientStats>
                                     </ClientItem>

@@ -12,6 +12,7 @@ const useClientsData = (searchQuery = '', currentPage = 1, itemsPerPage = 5) => 
   const [error, setError] = useState(null);
   const [totalClients, setTotalClients] = useState(0);
   const [lastDoc, setLastDoc] = useState(null);
+  const [allClients, setAllClients] = useState([]);
 
   // Memoized function to get client summary from cache or Firestore
   const getClientSummary = useCallback(async (clientId) => {
@@ -69,14 +70,74 @@ const useClientsData = (searchQuery = '', currentPage = 1, itemsPerPage = 5) => 
 
       return summary;
     } catch (err) {
-      console.error('Error fetching client summary:', err);
+      console.error('Error getting client summary:', err);
       return null;
     }
   }, []);
 
-  // Fetch clients with pagination and search
+  // Fetch all clients for search
+  useEffect(() => {
+    const fetchAllClients = async () => {
+      try {
+        // Only fetch all clients if there's a search query
+        if (!searchQuery) {
+          setAllClients([]);
+          return;
+        }
+
+        setLoading(true);
+        
+        // Get all clients for search
+        const clientsQuery = query(
+          collection(db, 'clients'),
+          orderBy('companyName')
+        );
+        
+        const clientsSnapshot = await getDocs(clientsQuery);
+        
+        // Process clients in parallel
+        const clientPromises = clientsSnapshot.docs.map(doc => getClientSummary(doc.id));
+        const clientSummaries = await Promise.all(clientPromises);
+        
+        // Filter out any null results and sort by total invoices
+        const validClients = clientSummaries
+          .filter(Boolean)
+          .sort((a, b) => b.totalInvoices - a.totalInvoices);
+
+        // Apply search filter
+        const filteredClients = validClients.filter(client => 
+          client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          client.email.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        setAllClients(filteredClients);
+        setTotalClients(filteredClients.length);
+        
+        // Apply pagination to filtered results
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedClients = filteredClients.slice(startIndex, endIndex);
+        
+        setClients(paginatedClients);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching all clients for search:', err);
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    
+    fetchAllClients();
+  }, [searchQuery, currentPage, itemsPerPage, getClientSummary]);
+
+  // Fetch clients with pagination when no search query
   useEffect(() => {
     const fetchClients = async () => {
+      // Skip if there's a search query (handled by the other effect)
+      if (searchQuery) {
+        return;
+      }
+      
       try {
         setLoading(true);
         
@@ -108,15 +169,7 @@ const useClientsData = (searchQuery = '', currentPage = 1, itemsPerPage = 5) => 
           .filter(Boolean)
           .sort((a, b) => b.totalInvoices - a.totalInvoices);
 
-        // Apply search filter if needed
-        const filteredClients = searchQuery
-          ? validClients.filter(client => 
-              client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              client.email.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-          : validClients;
-
-        setClients(filteredClients);
+        setClients(validClients);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching clients data:', err);
