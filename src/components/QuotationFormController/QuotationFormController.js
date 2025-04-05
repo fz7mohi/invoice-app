@@ -7,8 +7,33 @@ import { FormControllerVariants } from '../../utilities/framerVariants';
 import Icon from '../shared/Icon/Icon';
 import { Backdrop, Link } from '../FormController/FormControllerStyles';
 import QuotationFormContent from './QuotationFormContent';
-import QuotationSubmitController from './QuotationSubmitController';
 import { StyledQuotationFormController } from './QuotationFormControllerStyles';
+import styled from 'styled-components';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Add loading overlay component
+const LoadingOverlay = styled(motion.div)`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(30, 33, 57, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+`;
+
+const LoadingSpinner = styled(motion.div)`
+    width: 48px;
+    height: 48px;
+    border: 3px solid #7C5DFA;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+`;
 
 const QuotationFormController = () => {
     const { quotationState, windowWidth, discardQuotationChanges } = useGlobalContext();
@@ -19,6 +44,7 @@ const QuotationFormController = () => {
     const backdropRef = useRef();
     const hasScroll = window.innerWidth > document.documentElement.clientWidth;
     const shouldReduceMotion = useReducedMotion();
+    const [isLoading, setIsLoading] = useState(false);
     
     const variant = (element) => {
         return shouldReduceMotion
@@ -42,6 +68,23 @@ const QuotationFormController = () => {
         };
     }, []);
 
+    // Add keyboard handling for mobile
+    useEffect(() => {
+        const handleResize = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+        handleResize();
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+        };
+    }, []);
+
     /**
      * Function to hide Form component after user click outside Form container.
      */
@@ -62,7 +105,7 @@ const QuotationFormController = () => {
         if (event.key !== 'Tab') return;
 
         const formElements =
-            formRef.current.querySelectorAll('button, a, input');
+            formRef.current.querySelectorAll('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])');
         const firstElement = formElements[0];
         const lastElement = formElements[formElements.length - 1];
 
@@ -109,9 +152,27 @@ const QuotationFormController = () => {
                         Go back
                     </Link>
                 )}
-                <QuotationFormContent isEdited={isFormEdited} />
-                <QuotationSubmitController />
+                <QuotationFormContent isEdited={isFormEdited} setIsLoading={setIsLoading} />
             </StyledQuotationFormController>
+
+            <AnimatePresence>
+                {isLoading && (
+                    <LoadingOverlay
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <LoadingSpinner
+                            animate={{ rotate: 360 }}
+                            transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                ease: "linear"
+                            }}
+                        />
+                    </LoadingOverlay>
+                )}
+            </AnimatePresence>
         </>
     );
 

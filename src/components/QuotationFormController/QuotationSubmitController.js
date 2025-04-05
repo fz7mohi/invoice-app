@@ -99,7 +99,7 @@ const QuotationSubmitController = () => {
                 onClick={() => handleSubmitWithLogging(isQuotationEdited ? 'change' : 'new')}
                 disabled={isSubmitting}
             >
-                {isSubmitting ? 'Saving...' : `Save ${!isQuotationEdited ? '& Send' : 'Changes'}`}
+                {isSubmitting ? 'Saving...' : `Save ${!isQuotationEdited ? '' : 'Changes'}`}
             </Button>
         </StyledSubmitController>
     );

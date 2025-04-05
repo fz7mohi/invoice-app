@@ -9,6 +9,8 @@ import Icon from '../shared/Icon/Icon';
 import Button from '../shared/Button/Button';
 import styled, { css } from 'styled-components';
 import { defaultInput } from '../FormController/Form/FormStyles';
+import { motion, AnimatePresence } from 'framer-motion';
+import QuotationSubmitController from './QuotationSubmitController';
 
 import {
     StyledForm,
@@ -276,16 +278,26 @@ const CardTitle = styled.h3`
     letter-spacing: 0.5px;
 `;
 
-const ClientInfo = styled.div`
+const ClientInfoGrid = styled.div`
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 12px;
+    
+    @media (min-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+    }
 `;
 
-const InfoItem = styled.div`
+const ClientInfoItem = styled.div`
     display: flex;
     align-items: center;
-    font-size: 12px;
+    gap: 12px;
+    color: #DFE3FA;
+    font-size: 13px;
+
+    @media (min-width: 768px) {
+        font-size: 14px;
+    }
 `;
 
 const InfoIcon = styled.span`
@@ -587,6 +599,232 @@ const scrollToNewItem = (index) => {
     }, 100);
 };
 
+// Add new styled components for better mobile experience
+const FormSection = styled.section`
+    margin-bottom: 24px;
+    
+    @media (min-width: 768px) {
+        margin-bottom: 32px;
+    }
+`;
+
+const ItemCard = styled.div`
+    background: rgba(37, 41, 69, 0.3);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid #252945;
+    position: relative;
+    transition: all 0.2s ease;
+
+    @media (min-width: 768px) {
+        padding: 24px;
+        margin-bottom: 24px;
+        
+        &:hover {
+            border-color: #7C5DFA;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    }
+`;
+
+const ItemHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #252945;
+
+    @media (min-width: 768px) {
+        padding-bottom: 0;
+        margin-bottom: 24px;
+        border-bottom: none;
+    }
+`;
+
+const ItemTitle = styled.h3`
+    color: #DFE3FA;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+
+    @media (min-width: 768px) {
+        font-size: 16px;
+    }
+`;
+
+const ItemGrid = styled.div`
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+    
+    @media (min-width: 768px) {
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+    }
+
+    @media (min-width: 1024px) {
+        grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr;
+    }
+`;
+
+const DeleteButton = styled.button`
+    background: none;
+    border: none;
+    padding: 8px;
+    color: #888EB0;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+
+    &:hover {
+        color: #EC5757;
+    }
+
+    &:focus-visible {
+        outline: 2px solid #7C5DFA;
+        outline-offset: 2px;
+    }
+`;
+
+const AddItemButton = styled.button`
+    width: 100%;
+    padding: 16px;
+    background: #252945;
+    border: none;
+    border-radius: 24px;
+    color: #DFE3FA;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    &:hover {
+        background: #1E2139;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+
+    &:focus-visible {
+        outline: 2px solid #7C5DFA;
+        outline-offset: 2px;
+    }
+
+    svg {
+        width: 16px;
+        height: 16px;
+        transition: transform 0.2s ease;
+    }
+
+    &:hover svg {
+        transform: rotate(90deg);
+    }
+
+    @media (min-width: 768px) {
+        padding: 18px;
+        font-size: 15px;
+        max-width: 400px;
+        margin: 12px auto;
+    }
+`;
+
+const ClientCard = styled.div`
+    background: ${({ $empty }) => ($empty ? 'transparent' : 'rgba(37, 41, 69, 0.3)')};
+    border: 1px solid #252945;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+
+    @media (min-width: 768px) {
+        padding: 24px;
+        margin-top: 24px;
+    }
+`;
+
+// Add this component to handle keyboard appearance on mobile
+const KeyboardSpacer = styled.div`
+    display: none;
+
+    @media (max-width: 767px) {
+        display: block;
+        height: env(keyboard-inset-height, 0px);
+    }
+`;
+
+// Add a new component for the items section header
+const ItemsHeader = styled.div`
+    display: none;
+    
+    @media (min-width: 768px) {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+        gap: 24px;
+        padding: 0 24px 12px 24px;
+        border-bottom: 1px solid #252945;
+        margin-bottom: 24px;
+        
+        span {
+            color: #DFE3FA;
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr;
+    }
+`;
+
+// Add a total summary section for desktop
+const ItemsSummary = styled.div`
+    display: none;
+    
+    @media (min-width: 768px) {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 32px;
+        padding: 24px;
+        background: #252945;
+        border-radius: 12px;
+        
+        .summary-content {
+            display: grid;
+            grid-template-columns: auto auto;
+            gap: 16px 32px;
+            align-items: center;
+            
+            .label {
+                color: #DFE3FA;
+                font-size: 13px;
+            }
+            
+            .value {
+                color: #FFFFFF;
+                font-size: 16px;
+                font-weight: 700;
+                text-align: right;
+                min-width: 120px;
+            }
+        }
+    }
+`;
+
 const QuotationFormContent = ({ isEdited }) => {
     const { colors } = useTheme();
     const {
@@ -850,30 +1088,39 @@ const QuotationFormContent = ({ isEdited }) => {
         };
     }, []); // Empty dependency array means this runs once when component mounts
 
+    // Add keyboard handling for mobile
+    useEffect(() => {
+        const handleResize = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+        handleResize();
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+        };
+    }, []);
+
     return (
         <FormContainer>
-            {!isEdited && <Title>New Quotation</Title>}
-            {isEdited && (
-                <Title>
-                    Edit <Hashtag>#</Hashtag>
-                    {quotation.id}
-                </Title>
-            )}
-            <QuotationForm
-                id="quotation-form"
-                noValidate
-            >
-                {/* Bill To Section */}
-                <Fieldset>
-                    <Legend>Bill to</Legend>
+            <Title>
+                {isEdited ? 'Edit Quotation' : 'New Quotation'}
+                <QuotationSubmitController />
+            </Title>
+
+            <StyledForm id="quotation-form" noValidate>
+                <FormSection>
+                    <Legend>Bill To</Legend>
                     <InputWrapper>
                         <Label htmlFor="clientSelect" $error={errors?.clientName}>
                             Client
-                            {errors?.clientName && (
-                                <Error>can't be empty</Error>
-                            )}
+                            {errors?.clientName && <Error>can't be empty</Error>}
                         </Label>
-                        <SelectWrapper>
+                        <SelectWrapper ref={clientSelectRef}>
                             <SelectButton
                                 type="button"
                                 aria-label="Select client"
@@ -881,96 +1128,91 @@ const QuotationFormContent = ({ isEdited }) => {
                                 aria-controls="client-select-list"
                                 onClick={toggleClientDropdown}
                             >
-                                {hasClientDetails() ? (
-                                    <>{quotation.clientName}</>
-                                ) : (
-                                    'Select a client'
-                                )}
-                                <Icon name={'arrow-down'} size={12} color={colors.purple} />
+                                {hasClientDetails() ? quotation.clientName : 'Select a client'}
+                                <Icon name="arrow-down" size={12} color="#7C5DFA" />
                             </SelectButton>
-                            {isClientDropdownExpanded && (
-                                <DropdownList id="client-select-list" ref={clientSelectRef}>
-                                    {clientState.clients.length === 0 ? (
-                                        <DropdownItem>
-                                            <DropdownOption disabled>No clients found</DropdownOption>
-                                        </DropdownItem>
-                                    ) : (
-                                        clientState.clients.map((client) => (
-                                            <DropdownItem key={client.id}>
-                                                <DropdownOption
-                                                    type="button"
-                                                    onClick={() => handleSelectClient(client)}
-                                                >
-                                                    {client.companyName}
-                                                </DropdownOption>
-                                            </DropdownItem>
-                                        ))
-                                    )}
-                                </DropdownList>
-                            )}
+                            <AnimatePresence>
+                                {isClientDropdownExpanded && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <DropdownList id="client-select-list">
+                                            {clientState.clients.map((client) => (
+                                                <DropdownItem key={client.id}>
+                                                    <DropdownOption
+                                                        type="button"
+                                                        onClick={() => handleSelectClient(client)}
+                                                    >
+                                                        {client.companyName}
+                                                    </DropdownOption>
+                                                </DropdownItem>
+                                            ))}
+                                        </DropdownList>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </SelectWrapper>
                     </InputWrapper>
-                    
-                    {/* Client Details Card */}
-                    {hasClientDetails() ? (
-                        <ClientDetailsCard>
-                            <CardTitle>Client Information</CardTitle>
-                            <ClientInfo>
+
+                    <ClientCard $empty={!hasClientDetails()}>
+                        {hasClientDetails() ? (
+                            <ClientInfoGrid>
                                 {quotation.clientEmail && (
-                                    <InfoItem>
+                                    <ClientInfoItem>
                                         <InfoIcon>
                                             <Icon name="invoice" size={12} color={colors.textSecondary} />
                                         </InfoIcon>
                                         <InfoValue>{quotation.clientEmail}</InfoValue>
-                                    </InfoItem>
+                                    </ClientInfoItem>
                                 )}
                                 
                                 {findSelectedClient()?.phone && (
-                                    <InfoItem>
+                                    <ClientInfoItem>
                                         <InfoIcon>
                                             <Icon name="settings" size={12} color={colors.textSecondary} />
                                         </InfoIcon>
                                         <InfoValue>{findSelectedClient().phone}</InfoValue>
-                                    </InfoItem>
+                                    </ClientInfoItem>
                                 )}
                                 
                                 {findSelectedClient()?.address && (
-                                    <InfoItem>
+                                    <ClientInfoItem>
                                         <InfoIcon>
                                             <Icon name="delivery" size={12} color={colors.textSecondary} />
                                         </InfoIcon>
                                         <InfoValue>{findSelectedClient().address}</InfoValue>
-                                    </InfoItem>
+                                    </ClientInfoItem>
                                 )}
                                 
                                 {findSelectedClient()?.country && (
-                                    <InfoItem>
+                                    <ClientInfoItem>
                                         <InfoIcon>
                                             <Icon name="map" size={12} color={colors.textSecondary} />
                                         </InfoIcon>
                                         <InfoValue>{findSelectedClient().country}</InfoValue>
-                                    </InfoItem>
+                                    </ClientInfoItem>
                                 )}
                                 
                                 {findSelectedClient()?.trnNumber && (
-                                    <InfoItem>
+                                    <ClientInfoItem>
                                         <InfoIcon>
                                             <Icon name="receipt" size={12} color={colors.textSecondary} />
                                         </InfoIcon>
                                         <InfoValue>TRN: {findSelectedClient().trnNumber}</InfoValue>
-                                    </InfoItem>
+                                    </ClientInfoItem>
                                 )}
-                            </ClientInfo>
-                        </ClientDetailsCard>
-                    ) : (
-                        <ClientDetailsCard $empty>
-                            Select a client to display their details
-                        </ClientDetailsCard>
-                    )}
-                </Fieldset>
-                
-                {/* Project Description Section */}
-                <Fieldset>
+                            </ClientInfoGrid>
+                        ) : (
+                            <p>Select a client to display their details</p>
+                        )}
+                    </ClientCard>
+                </FormSection>
+
+                <FormSection>
+                    <Legend>Project Details</Legend>
                     <InputWrapper>
                         <Label htmlFor="description" $error={errors?.description}>
                             Project Description
@@ -978,22 +1220,32 @@ const QuotationFormContent = ({ isEdited }) => {
                         </Label>
                         <Input
                             type="text"
+                            id="description"
                             name="description"
-                            placeholder="e.g. Graphic Design Service"
                             value={quotation.description || ''}
+                            onChange={(e) => handleQuotationChange(e, 'quotation')}
+                            placeholder="e.g. Website Redesign Service"
                             $error={errors?.description}
-                            onChange={(event) => handleQuotationChange(event, 'quotation')}
                         />
                     </InputWrapper>
-                </Fieldset>
-                
-                {/* Item List Section */}
-                <Fieldset>
-                    <Legend $lg>Item List</Legend>
-                    <Wrapper>
-                        {localItems.map((item, index) => (
-                            <ItemInputsGroup key={index} id={`item-${index}`}>
-                                <ItemName>
+                </FormSection>
+
+                <FormSection>
+                    <Legend>Item List</Legend>
+                    
+                    {/* Add items header for desktop */}
+                    <ItemsHeader>
+                        <span>Item Name</span>
+                        <span>Qty.</span>
+                        <span>Price</span>
+                        <span>VAT</span>
+                        <span>Total</span>
+                    </ItemsHeader>
+                    
+                    {localItems.map((item, index) => (
+                        <ItemCard key={index}>
+                            <ItemGrid>
+                                <div>
                                     <MinimalLabel
                                         htmlFor={`item-name-${index}`}
                                         $error={errors.items && errors.items[index]?.name}
@@ -1008,269 +1260,131 @@ const QuotationFormContent = ({ isEdited }) => {
                                         type="text"
                                         name="name"
                                         value={item.name || ''}
+                                        placeholder="Item name"
                                         $error={errors.items && errors.items[index]?.name}
-                                        onChange={(event) =>
-                                            handleItemChange(
-                                                event,
-                                                'items',
-                                                null,
-                                                index
-                                            )
-                                        }
+                                        onChange={(event) => handleItemChange(event, 'items', null, index)}
                                     />
-                                </ItemName>
-                                
-                                <ItemDescription>
+                                    
                                     <MinimalLabel
                                         htmlFor={`item-description-${index}`}
-                                        $error={errors.items && errors.items[index]?.description}
+                                        style={{ marginTop: '8px' }}
                                     >
-                                        Item Description
+                                        Description
                                     </MinimalLabel>
                                     <DescriptionInput
                                         id={`item-description-${index}`}
                                         name="description"
                                         value={item.description || ''}
-                                        placeholder="Description..."
-                                        $error={errors.items && errors.items[index]?.description}
-                                        onChange={(event) =>
-                                            handleItemChange(
-                                                event,
-                                                'items',
-                                                null,
-                                                index
-                                            )
-                                        }
+                                        placeholder="Item description..."
+                                        onChange={(event) => handleItemChange(event, 'items', null, index)}
                                     />
-                                </ItemDescription>
-                                
-                                <div className="qty-price-row">
-                                    <ItemQty>
-                                        <MinimalLabel
-                                            htmlFor={`item-quantity-${index}`}
-                                            $error={errors.items && errors.items[index]?.quantity}
-                                        >
-                                            Qty.
-                                        </MinimalLabel>
-                                        <MinimalInput
-                                            id={`item-quantity-${index}`}
-                                            type="text"
-                                            name="quantity"
-                                            value={item.quantity || ''}
-                                            $error={errors.items && errors.items[index]?.quantity}
-                                            onChange={(event) =>
-                                                handleItemChange(
-                                                    event,
-                                                    'items',
-                                                    null,
-                                                    index
-                                                )
-                                            }
-                                            $qty
-                                        />
-                                    </ItemQty>
-                                    
-                                    <ItemPrice>
-                                        <MinimalLabel
-                                            htmlFor={`item-price-${index}`}
-                                            $error={errors.items && errors.items[index]?.price}
-                                        >
-                                            Price ({quotation.currency || 'USD'})
-                                        </MinimalLabel>
-                                        <MinimalInput
-                                            id={`item-price-${index}`}
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            name="price"
-                                            value={item.price || ''}
-                                            $error={errors.items && errors.items[index]?.price}
-                                            onChange={(event) =>
-                                                handleItemChange(
-                                                    event,
-                                                    'items',
-                                                    null,
-                                                    index
-                                                )
-                                            }
-                                        />
-                                    </ItemPrice>
                                 </div>
                                 
-                                <div className="vat-total-row">
-                                    {isUAEClient && (
-                                        <ItemVat>
-                                            <MinimalLabel htmlFor={`item-vat-${index}`}>VAT (5%)</MinimalLabel>
-                                            <VatValue>
-                                                <span className="currency">{quotation.currency || 'USD'}</span>
-                                                {formatNumber(item.vat)}
-                                            </VatValue>
-                                        </ItemVat>
+                                <div>
+                                    <MinimalLabel htmlFor={`item-quantity-${index}`}>
+                                        Qty.
+                                    </MinimalLabel>
+                                    <MinimalInput
+                                        id={`item-quantity-${index}`}
+                                        type="text"
+                                        name="quantity"
+                                        value={item.quantity || ''}
+                                        onChange={(event) => handleItemChange(event, 'items', null, index)}
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <MinimalLabel htmlFor={`item-price-${index}`}>
+                                        Price ({quotation.currency || 'USD'})
+                                    </MinimalLabel>
+                                    <MinimalInput
+                                        id={`item-price-${index}`}
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        name="price"
+                                        value={item.price || ''}
+                                        onChange={(event) => handleItemChange(event, 'items', null, index)}
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <MinimalLabel>VAT (5%)</MinimalLabel>
+                                    <VatValue>
+                                        <span className="currency">{quotation.currency || 'USD'}</span>
+                                        {formatNumber(item.vat)}
+                                    </VatValue>
+                                </div>
+                                
+                                <div>
+                                    <MinimalLabel>Total</MinimalLabel>
+                                    <TotalValue>
+                                        <span className="currency">{quotation.currency || 'USD'}</span>
+                                        {formatNumber(item.total)}
+                                    </TotalValue>
+                                </div>
+                            </ItemGrid>
+                            
+                            <DeleteButton
+                                type="button"
+                                onClick={() => removeItemAtIndex(index)}
+                                aria-label={`Delete item ${index + 1}`}
+                                style={{ position: 'absolute', top: '24px', right: '24px' }}
+                            >
+                                <Icon name="delete" size={16} />
+                            </DeleteButton>
+                        </ItemCard>
+                    ))}
+
+                    <AddItemButton
+                        type="button"
+                        onClick={addNewItem}
+                    >
+                        <Icon name="plus" size={16} />
+                        Add New Item
+                    </AddItemButton>
+
+                    {/* Add summary section for desktop */}
+                    {localItems.length > 0 && (
+                        <ItemsSummary>
+                            <div className="summary-content">
+                                <span className="label">Subtotal:</span>
+                                <span className="value">
+                                    {quotation.currency || 'USD'} {formatNumber(
+                                        localItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
                                     )}
-                                    
-                                    <ItemTotal>
-                                        <MinimalLabel htmlFor={`item-total-${index}`}>Total</MinimalLabel>
-                                        <TotalValue>
-                                            <span className="currency">{quotation.currency || 'USD'}</span>
-                                            {formatNumber(item.total)}
-                                        </TotalValue>
-                                    </ItemTotal>
-                                </div>
-                                
-                                <ItemDelete
-                                    type="button"
-                                    onClick={() => {
-                                        setLocalItems(prevItems => 
-                                            prevItems.filter((_, i) => i !== index)
-                                        );
-                                    }}
-                                >
-                                    <Icon
-                                        name="delete"
-                                        size={14}
-                                        color={colors.btnTheme}
-                                    />
-                                </ItemDelete>
-                            </ItemInputsGroup>
-                        ))}
-                        <Button 
-                            type="button" 
-                            as={AddNewItemButton}
-                            onClick={() => {
-                                const newIndex = localItems.length;
-                                setLocalItems(prevItems => [
-                                    ...prevItems, 
-                                    { 
-                                        name: '', 
-                                        description: '',
-                                        quantity: 0, 
-                                        price: 0, 
-                                        vat: isUAEClient ? 0 : undefined,
-                                        total: 0 
-                                    }
-                                ]);
-                                // Add a small delay to ensure the new item is rendered
-                                setTimeout(() => {
-                                    const itemElement = document.getElementById(`item-${newIndex}`);
-                                    if (itemElement) {
-                                        itemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    }
-                                }, 100);
-                            }}
-                        >
-                            + Add New Item
-                        </Button>
-                    </Wrapper>
-                </Fieldset>
-                
-                {/* Quotation Date and Payment Terms Section */}
-                <Fieldset>
-                    <InputsGroup $fullWidthMobile>
-                        <InputWrapper>
-                            <Label>Quotation Date</Label>
-                            <ReactDatePicker
-                                selected={new Date(quotation.createdAt)}
-                                onChange={(date) => handleQuotationChange(false, 'date', date)}
-                                minDate={new Date()}
-                                customInput={<CustomInput isDisabled={isEdited} />}
-                            />
-                        </InputWrapper>
-                        <InputWrapper>
-                            <Label>Payment Terms</Label>
-                            <SelectWrapper>
-                                <SelectButton
-                                    type="button"
-                                    aria-label="Select payment terms"
-                                    aria-expanded={isDropdownExpanded}
-                                    aria-controls="select-list"
-                                    onClick={toggleDropdown}
-                                >
-                                    Net {quotation.paymentTerms} Days
-                                    <Icon name={'arrow-down'} size={12} color={colors.purple} />
-                                </SelectButton>
-                                {isDropdownExpanded && (
-                                    <DropdownList id="select-list" ref={selectRef}>
-                                        <DropdownItem>
-                                            <DropdownOption
-                                                type="button"
-                                                onClick={() => handleQuotationChange({
-                                                    target: { name: 'paymentTerms', value: '1' }
-                                                }, 'quotation')}
-                                            >
-                                                Net 1 Day
-                                            </DropdownOption>
-                                        </DropdownItem>
-                                        <DropdownItem>
-                                            <DropdownOption
-                                                type="button"
-                                                onClick={() => handleQuotationChange({
-                                                    target: { name: 'paymentTerms', value: '7' }
-                                                }, 'quotation')}
-                                            >
-                                                Net 7 Days
-                                            </DropdownOption>
-                                        </DropdownItem>
-                                        <DropdownItem>
-                                            <DropdownOption
-                                                type="button"
-                                                onClick={() => handleQuotationChange({
-                                                    target: { name: 'paymentTerms', value: '14' }
-                                                }, 'quotation')}
-                                            >
-                                                Net 14 Days
-                                            </DropdownOption>
-                                        </DropdownItem>
-                                        <DropdownItem>
-                                            <DropdownOption
-                                                type="button"
-                                                onClick={() => handleQuotationChange({
-                                                    target: { name: 'paymentTerms', value: '30' }
-                                                }, 'quotation')}
-                                            >
-                                                Net 30 Days
-                                            </DropdownOption>
-                                        </DropdownItem>
-                                    </DropdownList>
+                                </span>
+                                {isUAEClient && (
+                                    <>
+                                        <span className="label">VAT (5%):</span>
+                                        <span className="value">
+                                            {quotation.currency || 'USD'} {formatNumber(
+                                                localItems.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0)
+                                            )}
+                                        </span>
+                                    </>
                                 )}
-                            </SelectWrapper>
-                        </InputWrapper>
-                    </InputsGroup>
-                </Fieldset>
-                
-                {/* Terms and Conditions Section */}
-                <Fieldset>
-                    <Legend>Terms and Conditions</Legend>
-                    <InputWrapper>
-                        <Label
-                            htmlFor="termsAndConditions"
-                            $error={errors?.termsAndConditions}
-                        >
-                            Terms and Conditions
-                            {errors?.termsAndConditions && (
-                                <Error>can't be empty</Error>
-                            )}
-                        </Label>
-                        <TextArea
-                            id="terms-and-conditions"
-                            name="termsAndConditions"
-                            placeholder="Enter terms and conditions"
-                            value={quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS}
-                            $error={errors?.termsAndConditions}
-                            onChange={(event) => handleQuotationChange(event, 'quotation')}
-                            required
-                        />
-                    </InputWrapper>
-                </Fieldset>
-                
-                {/* Error Messages */}
-                {quotationState?.errors?.isError && errorMessages.length > 0 && (
+                                <span className="label">Total:</span>
+                                <span className="value">
+                                    {quotation.currency || 'USD'} {formatNumber(
+                                        localItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
+                                    )}
+                                </span>
+                            </div>
+                        </ItemsSummary>
+                    )}
+                </FormSection>
+
+                {errorMessages.length > 0 && (
                     <ErrorsWrapper>
-                        {errorMessages.map((message, index) => (
-                            <Error key={index}>{message}</Error>
+                        {errorMessages.map((error, index) => (
+                            <Error key={index}>{error}</Error>
                         ))}
                     </ErrorsWrapper>
                 )}
-            </QuotationForm>
+            </StyledForm>
+
+            <KeyboardSpacer />
         </FormContainer>
     );
 };

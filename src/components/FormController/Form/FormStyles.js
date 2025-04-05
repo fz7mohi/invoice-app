@@ -1,30 +1,45 @@
 import styled, { css } from 'styled-components';
 import { primaryFontStyles } from '../../../utilities/typographyStyles';
 
+// Common styles for interactive elements
+const interactiveElement = css`
+    transition: all 0.2s ease;
+    cursor: pointer;
+    
+    @media (hover: hover) {
+        &:hover {
+            border-color: #7C5DFA;
+        }
+    }
+
+    &:focus-visible {
+        outline: 2px solid #7C5DFA;
+        outline-offset: 2px;
+        border-color: #7C5DFA;
+    }
+`;
+
 export const defaultInput = css`
     width: 100%;
-    padding: 12px 16px;
-    border-radius: 6px;
+    padding: 14px 16px;
+    border-radius: 8px;
     border: 1px solid #252945;
     background-color: #1E2139;
     color: #FFFFFF;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
-    transition: all 0.2s ease;
+    min-height: 48px;
+    ${interactiveElement}
 
     &::placeholder {
         color: #DFE3FA;
         opacity: 0.7;
     }
 
-    &:hover {
-        border-color: #7C5DFA;
-    }
-
-    &:focus {
-        border-color: #7C5DFA;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
+    @media (min-width: 768px) {
+        font-size: 15px;
+        padding: 12px 16px;
+        min-height: 44px;
     }
 `;
 
@@ -32,37 +47,56 @@ export const FormContainer = styled.div`
     position: relative;
     width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
+    overflow: hidden;
+    padding-top: calc(24px + env(safe-area-inset-top));
+    
+    @media (min-width: 768px) {
+        padding: 32px;
+        padding-top: 32px;
+    }
+    
+    @media (min-width: 1024px) {
+        padding: 40px;
+        padding-top: 40px;
+    }
 `;
 
 export const StyledForm = styled.form`
     width: 100%;
-    display: flex;
-    flex-flow: column;
-    gap: 32px;
+    height: 100%;
     padding: 24px;
-    background-color: #1E2139;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom) + 80px);
+    background: #141625;
     border-radius: 12px;
-    flex: 1;
-    overflow-y: auto;
     position: relative;
-    padding-bottom: 120px;
-
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    @media (min-width: 768px) {
+        padding: 32px;
+        padding-bottom: 32px;
+        border-radius: 12px;
+    }
+    
+    @media (min-width: 1024px) {
+        padding: 40px;
+        padding-bottom: 40px;
+    }
+    
     /* Custom scrollbar styles */
     &::-webkit-scrollbar {
         width: 8px;
     }
-
+    
     &::-webkit-scrollbar-track {
-        background: #1E2139;
+        background: #141625;
     }
-
+    
     &::-webkit-scrollbar-thumb {
         background: #252945;
         border-radius: 4px;
     }
-
+    
     &::-webkit-scrollbar-thumb:hover {
         background: #7C5DFA;
     }
@@ -73,31 +107,62 @@ export const FloatingButtons = styled.div`
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: #1E2139;
-    padding: 16px 24px;
+    background-color: rgba(30, 33, 57, 0.95);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 16px;
     display: flex;
     justify-content: flex-end;
     gap: 8px;
     border-top: 1px solid #252945;
     z-index: 100;
-    
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+
     @media (min-width: 768px) {
         left: 80px;
-        padding: 16px 32px;
+        padding: 24px 32px;
+        gap: 12px;
     }
 `;
 
 export const Title = styled.h1`
-    ${primaryFontStyles}
-    color: #FFFFFF;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
-    margin-bottom: 8px;
+    color: #FFFFFF;
     position: sticky;
     top: 0;
-    background-color: #1E2139;
-    padding-bottom: 16px;
+    background: #141625;
     z-index: 10;
+    margin: -24px -24px 24px -24px;
+    padding: 20px 24px 20px 32px;
+    border-bottom: 1px solid #252945;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    
+    /* Add a subtle gradient background for better visual hierarchy */
+    background: linear-gradient(to bottom, #1E2139, #141625);
+    
+    /* Add a subtle bottom shadow for depth */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    @media (min-width: 768px) {
+        font-size: 28px;
+        margin: -32px -32px 32px -32px;
+        padding: 24px 32px;
+        border-radius: 12px 12px 0 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    @media (min-width: 1024px) {
+        font-size: 32px;
+        margin: -40px -40px 40px -40px;
+        padding: 28px 40px;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
 `;
 
 export const Hashtag = styled.span`
@@ -110,17 +175,25 @@ export const Fieldset = styled.fieldset`
     margin: 0;
     display: flex;
     flex-flow: column;
-    gap: 24px;
+    gap: 16px;
+
+    @media (min-width: 768px) {
+        gap: 24px;
+    }
 `;
 
 export const Legend = styled.legend`
     ${primaryFontStyles}
     color: #7C5DFA;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     margin-bottom: 16px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+
+    @media (min-width: 768px) {
+        font-size: 14px;
+    }
 `;
 
 export const InputWrapper = styled.div`
@@ -135,6 +208,9 @@ export const Label = styled.label`
     color: #DFE3FA;
     font-size: 13px;
     font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 `;
 
 export const ErrorsWrapper = styled.div`
@@ -142,6 +218,9 @@ export const ErrorsWrapper = styled.div`
     flex-flow: column;
     gap: 4px;
     margin-top: 4px;
+    padding: 12px;
+    background-color: rgba(236, 87, 87, 0.1);
+    border-radius: 8px;
 `;
 
 export const Error = styled.span`
@@ -174,8 +253,9 @@ export const Input = styled.input`
 
 export const InputsGroup = styled.div`
     display: grid;
-    gap: 24px;
+    gap: 16px;
     margin-bottom: 24px;
+    grid-template-columns: 1fr;
     
     ${({ $fullWidthMobile }) =>
         $fullWidthMobile &&
@@ -186,6 +266,7 @@ export const InputsGroup = styled.div`
         `}
 
     @media (min-width: 768px) {
+        gap: 24px;
         grid-template-columns: ${({ $columns }) =>
             $columns ? $columns : 'repeat(3, 1fr)'};
     }
