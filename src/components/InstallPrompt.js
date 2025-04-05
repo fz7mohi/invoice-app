@@ -116,14 +116,17 @@ const InstallPrompt = () => {
     // Listen for service worker ready event
     const handleServiceWorkerReady = (event) => {
       console.log('Service worker ready event received:', event.detail);
-      setIsInstalled(event.detail.isInstalled);
+      // Only set isInstalled to true if the event explicitly says so
+      if (event.detail && event.detail.isInstalled) {
+        setIsInstalled(true);
+      }
       updateDebugInfo();
     };
 
     // Listen for can install event
     const handleCanInstall = (event) => {
       console.log('Can install event received:', event.detail);
-      setCanInstall(event.detail.canInstall);
+      setCanInstall(true);
       setShowPrompt(true);
       updateDebugInfo();
     };
@@ -133,8 +136,10 @@ const InstallPrompt = () => {
 
     // Check if we should show the prompt
     const shouldShowPrompt = () => {
+      // If the app is already installed, don't show the prompt
       if (isInstalled) {
         console.log('App is already installed, not showing prompt');
+        setShowPrompt(false);
         return;
       }
 

@@ -80,6 +80,7 @@
             window.triggerInstallPrompt = () => {
                 if (deferredPrompt) {
                     console.log('Triggering install prompt');
+                    // Show the prompt
                     deferredPrompt.prompt();
                     
                     // Wait for the user to respond to the prompt
