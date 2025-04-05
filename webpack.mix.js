@@ -27,6 +27,10 @@ mix.copy("public/service-worker.js", "dist/service-worker.js");
 mix.copy("public/logo192.png", "dist/logo192.png");
 mix.copy("public/logo512.png", "dist/logo512.png");
 mix.copy("public/favicon.ico", "dist/favicon.ico");
+mix.copy("public/icon-16.png", "dist/icon-16.png");
+mix.copy("public/icon-24.png", "dist/icon-24.png");
+mix.copy("public/icon-64.png", "dist/icon-64.png");
+mix.copy("public/screenshots", "dist/screenshots");
 
 // Add support for client-side routing (handles page refreshes) and polyfills
 mix.webpackConfig({
