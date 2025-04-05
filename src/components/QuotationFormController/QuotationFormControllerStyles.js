@@ -12,8 +12,8 @@ export const StyledQuotationFormController = styled(motion.div)`
     z-index: 99;
     width: 100%;
     height: 100%;
-    overscroll-behavior: contain;
-    overflow-y: auto;
+    overscroll-behavior: ;
+    overflow-y: hidden;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
 
