@@ -24,9 +24,6 @@ iconFiles.forEach(file => {
   
   if (fs.existsSync(srcPath)) {
     fs.copyFileSync(srcPath, destPath);
-    console.log(`Copied ${file} successfully!`);
-  } else {
-    console.warn(`Warning: Source file ${file} not found in ${srcPwaDir}`);
   }
 });
 
@@ -42,10 +39,5 @@ screenshots.forEach(({ src, dest }) => {
   
   if (fs.existsSync(srcPath)) {
     fs.copyFileSync(srcPath, destPath);
-    console.log(`Copied screenshot ${src} successfully!`);
-  } else {
-    console.warn(`Warning: Screenshot ${src} not found in ${srcPwaDir}`);
   }
-});
-
-console.log('PWA assets copied successfully!'); 
+}); 

@@ -111,19 +111,9 @@ const InstallPrompt = () => {
     handleDismiss
   } = useInstallPrompt();
 
-  // Get the actual values from the utility functions
   const actualIsIOS = isIOS();
   const actualIsSafari = isSafari();
   const actualIsChrome = isChrome();
-
-  // Log the current state for debugging
-  console.log('InstallPrompt render:', {
-    showPrompt,
-    canInstall,
-    actualIsIOS,
-    actualIsSafari,
-    actualIsChrome
-  });
 
   if (!showPrompt) {
     return null;
@@ -152,24 +142,6 @@ const InstallPrompt = () => {
           ) : (
             'Install ForDox for a better experience with offline access and quick launch.'
           )}
-        </Description>
-        <Button onClick={handleInstallClick}>
-          Install ForDox
-        </Button>
-        <DismissButton onClick={handleDismiss}>
-          Don't show again
-        </DismissButton>
-      </PromptContainer>
-    );
-  }
-
-  if (actualIsChrome) {
-    return (
-      <PromptContainer>
-        <CloseButton onClick={handleClose} aria-label="Close">&times;</CloseButton>
-        <Title>Install ForDox</Title>
-        <Description>
-          Install ForDox on your device for quick and easy access when you're on the go.
         </Description>
         <Button onClick={handleInstallClick}>
           Install ForDox
