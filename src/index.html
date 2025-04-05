@@ -31,6 +31,9 @@
         <div id="root"></div>
         <script src="/index.js"></script>
         <script>
+            // Global variable to store the deferred prompt
+            let deferredPrompt;
+            
             // Register service worker
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', async () => {
@@ -58,14 +61,37 @@
             }
             
             // Listen for the beforeinstallprompt event
-            let deferredPrompt;
             window.addEventListener('beforeinstallprompt', (e) => {
                 console.log('beforeinstallprompt event fired');
-                e.preventDefault();
+                
+                // Store the event for later use
                 deferredPrompt = e;
+                
                 // Dispatch a custom event to notify the app
-                window.dispatchEvent(new CustomEvent('canInstall', { detail: { deferredPrompt } }));
+                window.dispatchEvent(new CustomEvent('canInstall', { 
+                    detail: { 
+                        deferredPrompt: e,
+                        canInstall: true
+                    } 
+                }));
             });
+            
+            // Function to trigger the install prompt
+            window.triggerInstallPrompt = () => {
+                if (deferredPrompt) {
+                    console.log('Triggering install prompt');
+                    deferredPrompt.prompt();
+                    
+                    // Wait for the user to respond to the prompt
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        console.log(`User response to install prompt: ${choiceResult.outcome}`);
+                        // Clear the deferred prompt
+                        deferredPrompt = null;
+                    });
+                } else {
+                    console.log('No deferred prompt available');
+                }
+            };
         </script>
     </body>
 </html>

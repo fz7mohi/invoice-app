@@ -76,7 +76,7 @@ const DebugInfo = styled.div`
 const InstallPrompt = () => {
   const [showPrompt, setShowPrompt] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [canInstall, setCanInstall] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
   const [isSafariBrowser, setIsSafariBrowser] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -98,7 +98,8 @@ const InstallPrompt = () => {
         themeColor: !!document.querySelector('meta[name="theme-color"]'),
         appleCapable: !!document.querySelector('meta[name="apple-mobile-web-app-capable"]'),
         mobileCapable: !!document.querySelector('meta[name="mobile-web-app-capable"]'),
-        isInstalled
+        isInstalled,
+        canInstall
       };
       
       console.log('Debug Info:', info);
@@ -122,7 +123,7 @@ const InstallPrompt = () => {
     // Listen for can install event
     const handleCanInstall = (event) => {
       console.log('Can install event received:', event.detail);
-      setDeferredPrompt(event.detail.deferredPrompt);
+      setCanInstall(event.detail.canInstall);
       setShowPrompt(true);
       updateDebugInfo();
     };
@@ -137,7 +138,6 @@ const InstallPrompt = () => {
         return;
       }
 
-      const canInstall = canInstallPWA();
       const isMobile = isMobileDevice();
       const isIOSDevice = isIOS();
       const isSafariBrowser = isSafari();
@@ -191,18 +191,14 @@ const InstallPrompt = () => {
       window.removeEventListener('canInstall', handleCanInstall);
       clearTimeout(timeoutId);
     };
-  }, [isInstalled]);
+  }, [isInstalled, canInstall]);
 
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      console.log('Triggering install prompt');
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to install prompt: ${outcome}`);
-      setDeferredPrompt(null);
-      setShowPrompt(false);
+  const handleInstallClick = () => {
+    console.log('Install button clicked');
+    if (window.triggerInstallPrompt) {
+      window.triggerInstallPrompt();
     } else {
-      console.log('No deferred prompt available');
+      console.log('triggerInstallPrompt function not available');
     }
   };
 
