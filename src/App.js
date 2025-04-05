@@ -22,6 +22,7 @@ import ClientStatementView from './components/ClientStatement/ClientStatementVie
 import Settings from './components/Settings/Settings';
 import NotFound from './components/NotFound/NotFound';
 import ApiKeyTest from './components/shared/ApiKeyTest';
+import InstallPrompt from './components/InstallPrompt';
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
               <Route path="*" component={NotFound} />
             </Switch>
           </Layout>
+          <InstallPrompt />
         </GlobalContextProvider>
       </ThemeProvider>
     </Router>
