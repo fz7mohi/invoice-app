@@ -127,7 +127,6 @@ const InstallPrompt = () => {
     const handleCanInstall = (event) => {
       console.log('Can install event received:', event.detail);
       setCanInstall(true);
-      setShowPrompt(true);
       updateDebugInfo();
     };
 
@@ -197,6 +196,18 @@ const InstallPrompt = () => {
       clearTimeout(timeoutId);
     };
   }, [isInstalled, canInstall]);
+
+  // Force show the prompt after a delay if it's not showing
+  useEffect(() => {
+    const forceShowPrompt = setTimeout(() => {
+      if (!showPrompt) {
+        console.log('Force showing prompt after delay');
+        setShowPrompt(true);
+      }
+    }, 3000);
+
+    return () => clearTimeout(forceShowPrompt);
+  }, []);
 
   const handleInstallClick = () => {
     console.log('Install button clicked');

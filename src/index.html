@@ -43,12 +43,20 @@
                         });
                         console.log('ServiceWorker registration successful with scope:', registration.scope);
                         
-                        // Check if the app is already installed
-                        const isInstalled = window.matchMedia('(display-mode: standalone)').matches || 
-                                          window.matchMedia('(display-mode: fullscreen)').matches ||
-                                          window.navigator.standalone === true;
+                        // Check if the app is already installed - more accurate detection
+                        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+                        const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+                        const isIOSStandalone = window.navigator.standalone === true;
                         
-                        console.log('Is app installed:', isInstalled);
+                        // Only consider it installed if it's in standalone mode
+                        const isInstalled = isStandalone || isFullscreen || isIOSStandalone;
+                        
+                        console.log('Installation status:', {
+                            isStandalone,
+                            isFullscreen,
+                            isIOSStandalone,
+                            isInstalled
+                        });
                         
                         // Dispatch a custom event to notify the app about service worker status
                         window.dispatchEvent(new CustomEvent('serviceWorkerReady', {
