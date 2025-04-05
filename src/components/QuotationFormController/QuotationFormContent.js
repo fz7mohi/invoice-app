@@ -877,6 +877,70 @@ const ItemsSummary = styled.div`
     }
 `;
 
+const ClientField = styled.div`
+    position: relative;
+    width: 100%;
+`;
+
+const ClearButton = styled.button`
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7C5DFA;
+    padding: 4px;
+    border-radius: 50%;
+    z-index: 10;
+    width: 24px;
+    height: 24px;
+    background-color: rgba(124, 93, 250, 0.1);
+    
+    &:hover {
+        background-color: rgba(124, 93, 250, 0.2);
+    }
+`;
+
+const ClientDropdown = styled.ul`
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    background-color: #1E2139;
+    border-radius: 6px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+    z-index: 100;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #252945;
+`;
+
+const ClientOption = styled.li`
+    &:not(:last-child) {
+        border-bottom: 1px solid #252945;
+    }
+`;
+
+const LabelWithClear = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+`;
+
+const LabelText = styled.span`
+    display: flex;
+    align-items: center;
+`;
+
 const QuotationFormContent = ({ isEdited }) => {
     const { colors } = useTheme();
     const {
@@ -1197,21 +1261,70 @@ const QuotationFormContent = ({ isEdited }) => {
                     <Legend>Bill To</Legend>
                     <InputWrapper>
                         <Label htmlFor="clientSelect" $error={errors?.clientName}>
-                            Client
-                            {errors?.clientName && <Error>can't be empty</Error>}
+                            <LabelWithClear>
+                                <LabelText>
+                                    Client
+                                    {errors?.clientName && <Error>can't be empty</Error>}
+                                </LabelText>
+                            </LabelWithClear>
                         </Label>
                         <SelectWrapper ref={clientSelectRef}>
                             {hasClientDetails() ? (
-                                <SelectButton
-                                    type="button"
-                                    aria-label="Select client"
-                                    aria-expanded={isClientDropdownExpanded}
-                                    aria-controls="client-select-list"
-                                    onClick={toggleClientDropdown}
-                                >
-                                    {quotation.clientName}
-                                    <Icon name="arrow-down" size={12} color="#7C5DFA" />
-                                </SelectButton>
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                    <SelectButton
+                                        type="button"
+                                        aria-label="Select client"
+                                        aria-expanded={isClientDropdownExpanded}
+                                        aria-controls="client-select-list"
+                                        onClick={toggleClientDropdown}
+                                    >
+                                        {quotation.clientName}
+                                    </SelectButton>
+                                    <ClearButton 
+                                        type="button" 
+                                        onClick={() => {
+                                            // Reset client name
+                                            handleQuotationChange({
+                                                target: {
+                                                    name: 'clientName',
+                                                    value: ''
+                                                }
+                                            }, 'quotation');
+                                            
+                                            // Reset client email
+                                            handleQuotationChange({
+                                                target: {
+                                                    name: 'clientEmail',
+                                                    value: ''
+                                                }
+                                            }, 'quotation');
+                                            
+                                            // Reset client address
+                                            handleQuotationChange({
+                                                target: { 
+                                                    name: 'clientAddress', 
+                                                    value: {
+                                                        street: '',
+                                                        city: '',
+                                                        postCode: '',
+                                                        country: ''
+                                                    }
+                                                }
+                                            }, 'quotation');
+                                            
+                                            // Reset currency
+                                            handleQuotationChange({
+                                                target: { name: 'currency', value: '$' }
+                                            }, 'quotation');
+                                            
+                                            // Reset UAE client flag
+                                            setIsUAEClient(false);
+                                        }}
+                                        aria-label="Clear client selection"
+                                    >
+                                        <Icon name="close" size={12} color="#7C5DFA" />
+                                    </ClearButton>
+                                </div>
                             ) : (
                                 <AutocompleteInput
                                     type="text"

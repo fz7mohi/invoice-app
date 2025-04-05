@@ -15,7 +15,8 @@ import {
     faCog,
     faSearch,
     faFileAlt,
-    faCalendar
+    faCalendar,
+    faTimes
 } from '@fortawesome/free-solid-svg-icons';
 
 const iconMap = {
@@ -34,7 +35,8 @@ const iconMap = {
     'settings': faCog,
     'search': faSearch,
     'statement': faFileAlt,
-    'calendar': faCalendar
+    'calendar': faCalendar,
+    'close': faTimes
 };
 
 const getFontAwesomeSize = (size) => {
