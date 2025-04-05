@@ -21,6 +21,13 @@ mix.js("src/index.js", "index.js").react().setPublicPath("dist");
 mix.copy("src/index.html", "dist/index.html");
 mix.copy("src/assets/images", "dist/images");
 
+// Copy PWA assets
+mix.copy("public/manifest.json", "dist/manifest.json");
+mix.copy("public/service-worker.js", "dist/service-worker.js");
+mix.copy("public/logo192.png", "dist/logo192.png");
+mix.copy("public/logo512.png", "dist/logo512.png");
+mix.copy("public/favicon.ico", "dist/favicon.ico");
+
 // Add support for client-side routing (handles page refreshes) and polyfills
 mix.webpackConfig({
     devServer: {

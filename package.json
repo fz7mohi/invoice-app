@@ -9,7 +9,9 @@
         "dev": "NODE_OPTIONS=\"--openssl-legacy-provider\" npx mix && serve -s dist",
         "server": "node server.js",
         "start": "NODE_ENV=production node server.js",
-        "netlify-dev": "netlify dev"
+        "netlify-dev": "netlify dev",
+        "generate-pwa-icons": "node scripts/generate-pwa-icons.js",
+        "prebuild": "npm run generate-pwa-icons"
     },
     "repository": {
         "type": "git",
@@ -33,6 +35,7 @@
         "process": "^0.11.10",
         "react-app-rewired": "^2.2.1",
         "serve": "^14.2.1",
+        "sharp": "^0.33.2",
         "stream-browserify": "^3.0.0",
         "util": "^0.12.5"
     },

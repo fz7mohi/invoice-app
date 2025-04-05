@@ -16,10 +16,32 @@
             sizes="32x32"
             href="/images/favicon.png"
         />
+        <!-- PWA Meta Tags -->
+        <meta name="theme-color" content="#000000" />
+        <meta name="description" content="Invoice Management Application" />
+        <link rel="apple-touch-icon" href="/logo192.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-title" content="Invoice App" />
         <title>Invoices</title>
     </head>
     <body>
         <div id="root"></div>
         <script src="/index.js"></script>
+        <script>
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('ServiceWorker registration successful');
+                        })
+                        .catch(err => {
+                            console.log('ServiceWorker registration failed: ', err);
+                        });
+                });
+            }
+        </script>
     </body>
 </html>
