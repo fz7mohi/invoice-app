@@ -211,6 +211,16 @@ const InstallPrompt = () => {
     return () => clearTimeout(forceShowPrompt);
   }, []);
 
+  // Always show the prompt after a longer delay, regardless of other conditions
+  useEffect(() => {
+    const alwaysShowPrompt = setTimeout(() => {
+      console.log('Always showing prompt after longer delay');
+      setShowPrompt(true);
+    }, 5000);
+
+    return () => clearTimeout(alwaysShowPrompt);
+  }, []);
+
   const handleInstallClick = () => {
     console.log('Install button clicked');
     if (window.triggerInstallPrompt) {
