@@ -5,7 +5,7 @@ export const TabBarContainer = styled.nav`
     bottom: 0;
     left: 0;
     right: 0;
-    height: 75px;
+    height: 72px;
     background-color: ${({ theme }) => theme.colors.cardBg};
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
     z-index: 1000;
@@ -25,7 +25,7 @@ export const TabBarContainer = styled.nav`
     }
 
     @media (max-width: 480px) {
-        height: 55px;
+        height: 64px;
     }
 `;
 
@@ -34,7 +34,6 @@ export const TabList = styled.ul`
     justify-content: space-around;
     align-items: center;
     height: 100%;
-    margin-bottom: 14px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -43,20 +42,19 @@ export const TabList = styled.ul`
 export const TabItem = styled.li`
     flex: 1;
     height: 100%;
-    
     position: relative;
     
     a {
         display: flex;
         flex-direction: column;
-        
         align-items: center;
         justify-content: center;
         height: 100%;
         text-decoration: none;
         position: relative;
         transition: all 0.2s ease;
-        padding: 4px 0;
+        padding: 8px 0;
+        min-height: 44px; /* Minimum touch target size per iOS guidelines */
         
         &:active {
             transform: scale(0.95);
@@ -68,7 +66,7 @@ export const TabItem = styled.li`
         position: absolute;
         bottom: 0;
         left: 50%;
-        width: ${({ $isActive }) => ($isActive ? '24px' : '0')};
+        width: ${({ $isActive }) => ($isActive ? '32px' : '0')};
         height: 3px;
         background-color: ${({ theme }) => theme.colors.accent};
         border-radius: 3px;
@@ -82,7 +80,7 @@ export const TabIcon = styled.span`
     display: flex;
     align-items: center;
     justify-content: center;
-    
+    margin-bottom: 8px;
     position: relative;
     transition: transform 0.2s ease;
     
@@ -99,12 +97,12 @@ export const TabIcon = styled.span`
     `}
 
     @media (max-width: 480px) {
-        margin-bottom: 2px;
+        margin-bottom: 6px;
     }
 `;
 
 export const TabLabel = styled.span`
-    font-size: 10px;
+    font-size: 12px;
     font-weight: ${({ $isActive }) => ($isActive ? '600' : '400')};
     color: ${({ theme, $isActive }) => 
         $isActive ? theme.colors.accent : theme.colors.textTertiary};
@@ -116,6 +114,6 @@ export const TabLabel = styled.span`
     text-align: center;
 
     @media (max-width: 480px) {
-        font-size: 9px;
+        font-size: 11px;
     }
 `; 
