@@ -65,12 +65,12 @@ export const TabItem = styled.li`
     &::after {
         content: '';
         position: absolute;
-        bottom: 0;
+        top: 0;
         left: 50%;
         width: ${({ $isActive }) => ($isActive ? '36px' : '0')};
         height: 3px;
         background-color: ${({ theme }) => theme.colors.accent};
-        border-radius: 3px;
+        border-radius: 0 0 3px 3px;
         transform: translateX(-50%);
         transition: width 0.2s ease;
         opacity: ${({ $isActive }) => ($isActive ? 1 : 0)};
