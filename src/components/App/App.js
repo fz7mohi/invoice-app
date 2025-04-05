@@ -25,6 +25,7 @@ import ClientStatementView from '../ClientStatement/ClientStatementView';
 import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '../../utilities/themes';
 import MobileTabBar from '../Navigation/MobileTabBar';
+import InstallPrompt from '../InstallPrompt';
 
 // Create spinner animation keyframes
 const spinnerStyle = document.createElement('style');
@@ -128,6 +129,7 @@ const App = () => {
                     </Switch>
                 </AnimatePresence>
                 <MobileTabBar />
+                <InstallPrompt />
             </Wrapper>
         </ThemeProvider>
     );
