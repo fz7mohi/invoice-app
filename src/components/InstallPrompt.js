@@ -127,6 +127,8 @@ const InstallPrompt = () => {
     const handleCanInstall = (event) => {
       console.log('Can install event received:', event.detail);
       setCanInstall(true);
+      // Always show the prompt when we can install
+      setShowPrompt(true);
       updateDebugInfo();
     };
 

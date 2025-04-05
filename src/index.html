@@ -48,8 +48,9 @@
                         const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
                         const isIOSStandalone = window.navigator.standalone === true;
                         
-                        // Only consider it installed if it's in standalone mode
-                        const isInstalled = isStandalone || isFullscreen || isIOSStandalone;
+                        // Only consider it installed if it's in standalone mode or iOS standalone
+                        // We're ignoring isFullscreen because it can be true even when not installed
+                        const isInstalled = isStandalone || isIOSStandalone;
                         
                         console.log('Installation status:', {
                             isStandalone,
