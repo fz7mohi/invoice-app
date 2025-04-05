@@ -5,9 +5,8 @@ import { useReducedMotion } from 'framer-motion';
 import { useGlobalContext } from '../App/context';
 import { FormControllerVariants } from '../../utilities/framerVariants';
 import Icon from '../shared/Icon/Icon';
-import { Backdrop, Link } from '../FormController/FormControllerStyles';
+import { Backdrop } from '../FormController/FormControllerStyles';
 import ClientFormContent from './ClientFormContent';
-import ClientSubmitController from './ClientSubmitController';
 import { StyledClientFormController } from './ClientFormControllerStyles';
 
 const ClientFormController = () => {
@@ -104,21 +103,7 @@ const ClientFormController = () => {
                 animate="visible"
                 exit="exit"
             >
-                {!isTablet && (
-                    <Link to="/clients" onClick={(e) => {
-                        e.preventDefault();
-                        toggleForm();
-                    }}>
-                        <Icon
-                            name={'arrow-left'}
-                            size={10}
-                            color={colors.purple}
-                        />
-                        Go back
-                    </Link>
-                )}
                 <ClientFormContent isEdited={isFormEdited} />
-                <ClientSubmitController />
             </StyledClientFormController>
         </>
     );

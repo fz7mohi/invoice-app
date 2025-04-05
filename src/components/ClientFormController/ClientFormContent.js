@@ -14,7 +14,8 @@ import {
     RequiredIndicator,
     Tooltip,
     InputWrapperWithTooltip,
-    AutoFillButton
+    AutoFillButton,
+    ActionButtons
 } from './ClientFormControllerStyles';
 import { useEffect, useRef, useState } from 'react';
 import Icon from '../shared/Icon/Icon';
@@ -40,7 +41,7 @@ const middleEasternCountries = [
 ];
 
 const ClientFormContent = ({ isEdited }) => {
-    const { clientState, client, handleClientChange } = useGlobalContext();
+    const { clientState, client, handleClientChange, handleClientSubmit, toggleForm } = useGlobalContext();
     const { colors } = useTheme();
     const errors = clientState.errors.err;
     const messages = clientState.errors.msg;
@@ -219,18 +220,36 @@ const ClientFormContent = ({ isEdited }) => {
 
     return (
         <>
-            {!isEdited && (
-                <FormTitle>
-                    <Icon name="user" size={20} color={colors.purple} />
-                    New Client
-                </FormTitle>
-            )}
-            {isEdited && (
-                <FormTitle>
-                    <Icon name="edit" size={20} color={colors.purple} />
-                    Edit Client #{clientId}
-                </FormTitle>
-            )}
+            <FormTitle>
+                <div className="title-content">
+                    {!isEdited ? (
+                        <>
+                            <Icon name="user" size={20} color={colors.purple} />
+                            New Client
+                        </>
+                    ) : (
+                        <>
+                            <Icon name="edit" size={20} color={colors.purple} />
+                            Edit Client #{clientId}
+                        </>
+                    )}
+                </div>
+                <ActionButtons>
+                    <button 
+                        type="button" 
+                        className="discard-button"
+                        onClick={toggleForm}
+                    >
+                        Discard
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={(e) => handleClientSubmit(e, isEdited ? 'edit' : 'add')}
+                    >
+                        {isEdited ? 'Save Changes' : 'Save Client'}
+                    </button>
+                </ActionButtons>
+            </FormTitle>
 
             <FormSection>
                 <SectionTitle>
