@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from '../shared/Icon/Icon';
 import { useTheme } from 'styled-components';
+import { useGlobalContext } from '../App/context';
 import { 
     TabBarContainer, 
     TabList, 
@@ -11,12 +12,12 @@ import {
 } from './MobileTabBarStyles';
 
 // Memoized tab item component for better performance
-const TabItemComponent = React.memo(({ item, isActive }) => {
+const TabItemComponent = React.memo(({ item, isActive, onNavigate }) => {
     const { colors } = useTheme();
     
     return (
         <TabItem $isActive={isActive}>
-            <Link to={item.path} aria-label={item.name}>
+            <Link to={item.path} aria-label={item.name} onClick={onNavigate}>
                 <TabIcon $isActive={isActive}>
                     <Icon 
                         name={item.icon} 
@@ -32,6 +33,7 @@ const TabItemComponent = React.memo(({ item, isActive }) => {
 
 const MobileTabBar = () => {
     const location = useLocation();
+    const { discardQuotationChanges } = useGlobalContext();
     
     // Memoize tab items to prevent unnecessary re-renders
     const tabItems = useMemo(() => [
@@ -64,6 +66,11 @@ const MobileTabBar = () => {
         return false;
     };
 
+    const handleNavigate = () => {
+        // Close the quotation form when navigating
+        discardQuotationChanges();
+    };
+
     return (
         <TabBarContainer>
             <TabList>
@@ -71,7 +78,8 @@ const MobileTabBar = () => {
                     <TabItemComponent 
                         key={item.name} 
                         item={item} 
-                        isActive={isPathActive(item.path)} 
+                        isActive={isPathActive(item.path)}
+                        onNavigate={handleNavigate}
                     />
                 ))}
             </TabList>

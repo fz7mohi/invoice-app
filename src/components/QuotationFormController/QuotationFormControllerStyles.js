@@ -19,7 +19,7 @@ export const StyledQuotationFormController = styled(motion.div)`
 
     // Mobile-first padding
     padding: 16px;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom)); // Account for bottom safe area
+    padding-bottom: calc(120px + env(safe-area-inset-bottom)); // Increased padding to account for mobile tab bar
     
     // Form elements styling
     input, select, textarea {
@@ -74,14 +74,14 @@ export const StyledQuotationFormController = styled(motion.div)`
         left: 80px; // Sidebar width
         border-radius: 0 20px 20px 0;
         padding: 32px 40px;
-        padding-bottom: calc(100px + env(safe-area-inset-bottom));
+        padding-bottom: calc(140px + env(safe-area-inset-bottom)); // Increased padding for tablet
     }
 
     // Desktop
     @media (min-width: 1024px) {
         max-width: 900px;
         padding: 40px 60px;
-        padding-bottom: calc(120px + env(safe-area-inset-bottom));
+        padding-bottom: calc(160px + env(safe-area-inset-bottom)); // Increased padding for desktop
     }
     
     // Large Desktop
