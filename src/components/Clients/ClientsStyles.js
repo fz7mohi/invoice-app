@@ -6,15 +6,19 @@ export const StyledClients = styled.main`
     margin: 0 auto;
     padding: 32px 24px;
     background-color: #1E2139;
-    min-height: 100vh;
+    min-height: calc(100vh - 60px);
+    padding-bottom: calc(60px + 32px);
     
     @media (min-width: 768px) {
         padding: 56px 48px;
+        padding-bottom: calc(60px + 56px);
     }
     
     @media (min-width: 1024px) {
         padding: 72px 48px;
         max-width: 1100px;
+        min-height: 100vh;
+        padding-bottom: 72px;
     }
 `;
 
@@ -79,9 +83,14 @@ export const NewClientButton = styled.button`
 
 export const ImportExportButton = styled(NewClientButton)`
     background-color: #252945;
+    display: none;
     
     &:hover {
         background-color: #373B53;
+    }
+
+    @media (min-width: 768px) {
+        display: flex;
     }
 `;
 

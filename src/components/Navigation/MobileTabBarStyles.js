@@ -8,7 +8,7 @@ export const TabBarContainer = styled.nav`
     height: 60px;
     background-color: ${({ theme }) => theme.colors.cardBg};
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
-    z-index: 100;
+    z-index: 1000;
     display: none;
     background: aliceblue;
     border-top: 1px solid ${({ theme }) => theme.colors.accent};
@@ -17,6 +17,15 @@ export const TabBarContainer = styled.nav`
     
     @media (max-width: 1024px) {
         display: block;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+    }
+
+    @media (max-width: 480px) {
+        height: 50px;
     }
 `;
 
@@ -44,6 +53,7 @@ export const TabItem = styled.li`
         text-decoration: none;
         position: relative;
         transition: all 0.2s ease;
+        padding: 4px 0;
         
         &:active {
             transform: scale(0.95);
@@ -84,6 +94,10 @@ export const TabIcon = styled.span`
             transform: scale(1.1);
         }
     `}
+
+    @media (max-width: 480px) {
+        margin-bottom: 2px;
+    }
 `;
 
 export const TabLabel = styled.span`
@@ -97,4 +111,8 @@ export const TabLabel = styled.span`
     text-overflow: ellipsis;
     max-width: 100%;
     text-align: center;
+
+    @media (max-width: 480px) {
+        font-size: 9px;
+    }
 `; 
