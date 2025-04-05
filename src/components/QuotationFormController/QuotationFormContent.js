@@ -91,6 +91,29 @@ const SelectButton = styled.button`
     }
 `;
 
+// Add a new styled component for the autocomplete input
+const AutocompleteInput = styled.input`
+    ${defaultInput}
+    width: 100%;
+    background-color: #1E2139;
+    color: #FFFFFF;
+    border: 1px solid #252945;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: text;
+
+    &:hover {
+        border-color: #7C5DFA;
+    }
+
+    &:focus {
+        border-color: #7C5DFA;
+        box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
+        outline: none;
+    }
+`;
+
 const DropdownList = styled.ul`
     position: absolute;
     top: calc(100% + 8px);
@@ -846,6 +869,8 @@ const QuotationFormContent = ({ isEdited }) => {
     
     const [isDropdownExpanded, setIsDropdownExpanded] = useState(false);
     const [isClientDropdownExpanded, setIsClientDropdownExpanded] = useState(false);
+    const [clientSearchQuery, setClientSearchQuery] = useState('');
+    const [filteredClients, setFilteredClients] = useState([]);
     const selectRef = useRef();
     const clientSelectRef = useRef();
     const isDesktop = windowWidth >= 768;
@@ -874,7 +899,22 @@ const QuotationFormContent = ({ isEdited }) => {
                 setLocalItems(items);
             }
         }
-    }, [items]); // Only depend on items
+    }, [items]);
+
+    // Filter clients based on search query
+    useEffect(() => {
+        if (clientSearchQuery.trim() === '') {
+            setFilteredClients([]);
+            return;
+        }
+        
+        const query = clientSearchQuery.toLowerCase().trim();
+        const filtered = clientState.clients.filter(client => 
+            client.companyName.toLowerCase().includes(query)
+        );
+        
+        setFilteredClients(filtered);
+    }, [clientSearchQuery, clientState.clients]);
 
     // Sync local items with global state
     useEffect(() => {
@@ -925,6 +965,15 @@ const QuotationFormContent = ({ isEdited }) => {
     
     const toggleClientDropdown = () => {
         setIsClientDropdownExpanded(!isClientDropdownExpanded);
+        if (!isClientDropdownExpanded) {
+            setClientSearchQuery('');
+            setFilteredClients([]);
+        }
+    };
+    
+    const handleClientSearchChange = (e) => {
+        setClientSearchQuery(e.target.value);
+        setIsClientDropdownExpanded(true);
     };
     
     const handleSelectOption = (event) => {
@@ -946,6 +995,7 @@ const QuotationFormContent = ({ isEdited }) => {
     const handleSelectClient = (client) => {
         // Reset dropdowns
         setIsClientDropdownExpanded(false);
+        setClientSearchQuery('');
 
         // Validate required fields
         if (!client.companyName || !client.email || !client.phone || !client.address) {
@@ -1121,16 +1171,27 @@ const QuotationFormContent = ({ isEdited }) => {
                             {errors?.clientName && <Error>can't be empty</Error>}
                         </Label>
                         <SelectWrapper ref={clientSelectRef}>
-                            <SelectButton
-                                type="button"
-                                aria-label="Select client"
-                                aria-expanded={isClientDropdownExpanded}
-                                aria-controls="client-select-list"
-                                onClick={toggleClientDropdown}
-                            >
-                                {hasClientDetails() ? quotation.clientName : 'Select a client'}
-                                <Icon name="arrow-down" size={12} color="#7C5DFA" />
-                            </SelectButton>
+                            {hasClientDetails() ? (
+                                <SelectButton
+                                    type="button"
+                                    aria-label="Select client"
+                                    aria-expanded={isClientDropdownExpanded}
+                                    aria-controls="client-select-list"
+                                    onClick={toggleClientDropdown}
+                                >
+                                    {quotation.clientName}
+                                    <Icon name="arrow-down" size={12} color="#7C5DFA" />
+                                </SelectButton>
+                            ) : (
+                                <AutocompleteInput
+                                    type="text"
+                                    placeholder="Search for a client..."
+                                    value={clientSearchQuery}
+                                    onChange={handleClientSearchChange}
+                                    onFocus={() => setIsClientDropdownExpanded(true)}
+                                    aria-label="Search for a client"
+                                />
+                            )}
                             <AnimatePresence>
                                 {isClientDropdownExpanded && (
                                     <motion.div
@@ -1140,7 +1201,7 @@ const QuotationFormContent = ({ isEdited }) => {
                                         transition={{ duration: 0.2 }}
                                     >
                                         <DropdownList id="client-select-list">
-                                            {clientState.clients.map((client) => (
+                                            {(hasClientDetails() ? clientState.clients : filteredClients).map((client) => (
                                                 <DropdownItem key={client.id}>
                                                     <DropdownOption
                                                         type="button"
@@ -1150,6 +1211,13 @@ const QuotationFormContent = ({ isEdited }) => {
                                                     </DropdownOption>
                                                 </DropdownItem>
                                             ))}
+                                            {!hasClientDetails() && filteredClients.length === 0 && clientSearchQuery.trim() !== '' && (
+                                                <DropdownItem>
+                                                    <DropdownOption disabled>
+                                                        No clients found
+                                                    </DropdownOption>
+                                                </DropdownItem>
+                                            )}
                                         </DropdownList>
                                     </motion.div>
                                 )}
