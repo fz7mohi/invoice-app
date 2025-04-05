@@ -63,19 +63,8 @@ const CloseButton = styled.button`
   }
 `;
 
-const DebugInfo = styled.div`
-  margin-top: 12px;
-  padding: 8px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #666;
-  white-space: pre-wrap;
-`;
-
 const InstallPrompt = () => {
   const [showPrompt, setShowPrompt] = useState(false);
-  const [debugInfo, setDebugInfo] = useState('');
   const [canInstall, setCanInstall] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
   const [isSafariBrowser, setIsSafariBrowser] = useState(false);
@@ -83,7 +72,7 @@ const InstallPrompt = () => {
   const [installPromptShown, setInstallPromptShown] = useState(false);
 
   useEffect(() => {
-    const updateDebugInfo = () => {
+    const logDebugInfo = () => {
       const info = {
         isRunningAsPWA: window.matchMedia('(display-mode: standalone)').matches,
         isFullscreen: window.matchMedia('(display-mode: fullscreen)').matches,
@@ -105,11 +94,10 @@ const InstallPrompt = () => {
       };
       
       console.log('Debug Info:', info);
-      setDebugInfo(JSON.stringify(info, null, 2));
     };
 
     // Initial debug info
-    updateDebugInfo();
+    logDebugInfo();
 
     // Check if we're on iOS
     setIsIOSDevice(isIOS());
@@ -121,7 +109,7 @@ const InstallPrompt = () => {
       if (event.detail && event.detail.isInstalled) {
         setIsInstalled(true);
       }
-      updateDebugInfo();
+      logDebugInfo();
     };
 
     // Listen for can install event
@@ -130,14 +118,14 @@ const InstallPrompt = () => {
       setCanInstall(true);
       // Always show the prompt when we can install
       setShowPrompt(true);
-      updateDebugInfo();
+      logDebugInfo();
     };
 
     // Listen for install prompt shown event
     const handleInstallPromptShown = (event) => {
       console.log('Install prompt shown event received:', event.detail);
       setInstallPromptShown(true);
-      updateDebugInfo();
+      logDebugInfo();
     };
 
     // Listen for app installed event
@@ -145,7 +133,7 @@ const InstallPrompt = () => {
       console.log('App installed event received');
       setIsInstalled(true);
       setShowPrompt(false);
-      updateDebugInfo();
+      logDebugInfo();
     };
 
     window.addEventListener('serviceWorkerReady', handleServiceWorkerReady);
@@ -261,32 +249,31 @@ const InstallPrompt = () => {
   return (
     <PromptContainer>
       <CloseButton onClick={handleClose}>&times;</CloseButton>
-      <Title>Install Invoice App</Title>
+      <Title>Install ForDox</Title>
       <Description>
         {isIOSDevice ? (
           <>
-            To install this app on your iOS device:
+            To install ForDox on your iOS device:
             1. Tap the Share button in Safari
             2. Scroll down and tap "Add to Home Screen"
             3. Tap "Add" to install
           </>
         ) : isSafariBrowser ? (
           <>
-            To install this app on your Mac:
+            To install ForDox on your Mac:
             1. Click the Share button in Safari
             2. Select "Add to Dock"
             3. Click "Add" to install
           </>
         ) : (
-          'Install our app for a better experience with offline access and quick launch.'
+          'Install ForDox for a better experience with offline access and quick launch.'
         )}
       </Description>
       {!isIOSDevice && !isSafariBrowser && (
         <Button onClick={handleInstallClick}>
-          Install App
+          Install ForDox
         </Button>
       )}
-      <DebugInfo>{debugInfo}</DebugInfo>
     </PromptContainer>
   );
 };
