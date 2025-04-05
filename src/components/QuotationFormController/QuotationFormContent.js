@@ -67,6 +67,9 @@ const CustomInput = forwardRef(({ isDisabled, value, onClick }, ref) => (
 const SelectWrapper = styled.div`
     position: relative;
     width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
 `;
 
 const SelectButton = styled.button`
@@ -80,6 +83,32 @@ const SelectButton = styled.button`
     border: 1px solid #252945;
     width: 100%;
     text-align: left;
+
+    &:hover {
+        border-color: #7C5DFA;
+    }
+
+    &:focus {
+        border-color: #7C5DFA;
+        box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
+    }
+`;
+
+// Add a new styled component for the New Client button
+const NewClientButton = styled.button`
+    ${defaultInput}
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background-color: #1E2139;
+    color: #FFFFFF;
+    border: 1px solid #252945;
+    padding: 8px;
+    border-radius: 4px;
+    min-width: 32px;
+    height: 32px;
+    width: 20%;
 
     &:hover {
         border-color: #7C5DFA;
@@ -864,6 +893,7 @@ const QuotationFormContent = ({ isEdited }) => {
         removeItemAtIndex,
         handleQuotationSubmit,
         toggleQuotationModal,
+        toggleForm,
         dispatch
     } = useGlobalContext();
     
@@ -1192,6 +1222,13 @@ const QuotationFormContent = ({ isEdited }) => {
                                     aria-label="Search for a client"
                                 />
                             )}
+                            <NewClientButton
+                                type="button"
+                                onClick={toggleForm}
+                                aria-label="Add new client"
+                            >
+                                <Icon name="plus" size={12} color="#7C5DFA" />
+                            </NewClientButton>
                             <AnimatePresence>
                                 {isClientDropdownExpanded && (
                                     <motion.div

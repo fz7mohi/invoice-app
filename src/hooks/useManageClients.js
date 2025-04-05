@@ -398,11 +398,8 @@ const useManageClients = () => {
      * Toggle the client form
      */
     const toggleForm = () => {
-        console.log('toggleForm called');
-        console.log('Previous state:', state);
         dispatch({ type: 'TOGGLE_FORM' });
         resetForm();
-        console.log('New state:', state);
     };
 
     /**

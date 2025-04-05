@@ -27,11 +27,13 @@ const ClientFormController = () => {
 
     // Side effect to add event listeners and disable page scrolling.
     useEffect(() => {
-        document.addEventListener('keydown', focusTrap);
-        document.addEventListener('click', handleClickOutsideForm);
-        formRef.current.focus();
-        document.body.style.overflow = 'hidden';
-        hasScroll && (document.body.style.paddingRight = '17px');
+        if (clientState.isFormOpen) {
+            document.addEventListener('keydown', focusTrap);
+            document.addEventListener('click', handleClickOutsideForm);
+            formRef.current?.focus();
+            document.body.style.overflow = 'hidden';
+            hasScroll && (document.body.style.paddingRight = '17px');
+        }
 
         return () => {
             document.removeEventListener('keydown', focusTrap);
@@ -39,7 +41,7 @@ const ClientFormController = () => {
             document.body.style.overflow = 'unset';
             document.body.style.paddingRight = 'unset';
         };
-    }, []);
+    }, [clientState.isFormOpen]);
 
     /**
      * Function to hide Form component after user click outside Form container.
@@ -61,7 +63,7 @@ const ClientFormController = () => {
         if (event.key !== 'Tab') return;
 
         const formElements =
-            formRef.current.querySelectorAll('button, a, input');
+            formRef.current?.querySelectorAll('button, a, input');
         const firstElement = formElements[0];
         const lastElement = formElements[formElements.length - 1];
 
@@ -77,6 +79,10 @@ const ClientFormController = () => {
             lastElement.focus();
         }
     };
+
+    if (!clientState.isFormOpen) {
+        return null;
+    }
 
     const controller = (
         <>

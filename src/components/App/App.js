@@ -76,10 +76,10 @@ const App = () => {
             <Wrapper>
                 <Header />
                 <AnimatePresence>
-                    {isFormOpen && <FormController />}
-                    {isClientFormOpen && <ClientFormController />}
-                    {isModalOpen && <Modal />}
-                    {isQuotationFormOpen && <QuotationFormController />}
+                    {isFormOpen && <FormController key="invoice-form" />}
+                    {isClientFormOpen && <ClientFormController key="client-form" />}
+                    {isModalOpen && <Modal key="modal" />}
+                    {isQuotationFormOpen && <QuotationFormController key="quotation-form" />}
                 </AnimatePresence>
                 <AnimatePresence exitBeforeEnter>
                     <Switch location={location} key={location.key}>
