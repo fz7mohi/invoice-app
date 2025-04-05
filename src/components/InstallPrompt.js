@@ -143,9 +143,11 @@ const InstallPrompt = () => {
             'Install ForDox for a better experience with offline access and quick launch.'
           )}
         </Description>
-        <Button onClick={handleInstallClick}>
-          Install ForDox
-        </Button>
+        {!actualIsIOS && (
+          <Button onClick={handleInstallClick}>
+            Install ForDox
+          </Button>
+        )}
         <DismissButton onClick={handleDismiss}>
           Don't show again
         </DismissButton>
