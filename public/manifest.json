@@ -3,22 +3,22 @@
   "name": "Fordox Invoice Management Application",
   "icons": [
     {
-      "src": "assets/pwa/icon-16.png",
+      "src": "icon-16.png",
       "sizes": "16x16",
       "type": "image/png"
     },
     {
-      "src": "assets/pwa/icon-24.png",
+      "src": "icon-24.png",
       "sizes": "24x24",
       "type": "image/png"
     },
     {
-      "src": "assets/pwa/logo192.png",
+      "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "assets/pwa/logo512.png",
+      "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512"
     }
