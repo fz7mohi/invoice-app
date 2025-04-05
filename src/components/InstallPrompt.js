@@ -79,6 +79,7 @@ const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
   const [isSafariBrowser, setIsSafariBrowser] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     const updateDebugInfo = () => {
@@ -92,8 +93,15 @@ const InstallPrompt = () => {
         isSafari: isSafari(),
         isMobile: isMobileDevice(),
         userAgent: navigator.userAgent,
+        serviceWorker: 'serviceWorker' in navigator,
+        manifest: !!document.querySelector('link[rel="manifest"]'),
+        themeColor: !!document.querySelector('meta[name="theme-color"]'),
+        appleCapable: !!document.querySelector('meta[name="apple-mobile-web-app-capable"]'),
+        mobileCapable: !!document.querySelector('meta[name="mobile-web-app-capable"]'),
+        isInstalled
       };
       
+      console.log('Debug Info:', info);
       setDebugInfo(JSON.stringify(info, null, 2));
     };
 
@@ -104,41 +112,65 @@ const InstallPrompt = () => {
     setIsIOSDevice(isIOS());
     setIsSafariBrowser(isSafari());
 
-    // Listen for the beforeinstallprompt event
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
+    // Listen for service worker ready event
+    const handleServiceWorkerReady = (event) => {
+      console.log('Service worker ready event received:', event.detail);
+      setIsInstalled(event.detail.isInstalled);
+      updateDebugInfo();
+    };
+
+    // Listen for can install event
+    const handleCanInstall = (event) => {
+      console.log('Can install event received:', event.detail);
+      setDeferredPrompt(event.detail.deferredPrompt);
       setShowPrompt(true);
       updateDebugInfo();
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('serviceWorkerReady', handleServiceWorkerReady);
+    window.addEventListener('canInstall', handleCanInstall);
 
     // Check if we should show the prompt
     const shouldShowPrompt = () => {
+      if (isInstalled) {
+        console.log('App is already installed, not showing prompt');
+        return;
+      }
+
       const canInstall = canInstallPWA();
       const isMobile = isMobileDevice();
       const isIOSDevice = isIOS();
       const isSafariBrowser = isSafari();
 
+      console.log('Installation check:', {
+        canInstall,
+        isMobile,
+        isIOSDevice,
+        isSafariBrowser
+      });
+
       // Always show on iOS/Safari for manual installation instructions
       if (isIOSDevice || isSafariBrowser) {
+        console.log('Showing prompt for iOS/Safari');
         setShowPrompt(true);
         return;
       }
 
       // Show on mobile devices that can install
       if (isMobile && canInstall) {
+        console.log('Showing prompt for mobile device');
         setShowPrompt(true);
         return;
       }
 
       // Show on desktop if it can be installed
       if (canInstall) {
+        console.log('Showing prompt for desktop');
         setShowPrompt(true);
         return;
       }
 
+      console.log('Not showing prompt - no conditions met');
       setShowPrompt(false);
     };
 
@@ -148,24 +180,29 @@ const InstallPrompt = () => {
     // Set up a timeout to force show the prompt if needed
     const timeoutId = setTimeout(() => {
       if (!showPrompt) {
+        console.log('Timeout reached, checking prompt again');
         shouldShowPrompt();
       }
     }, 2000);
 
     // Cleanup
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('serviceWorkerReady', handleServiceWorkerReady);
+      window.removeEventListener('canInstall', handleCanInstall);
       clearTimeout(timeoutId);
     };
-  }, []);
+  }, [isInstalled]);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
+      console.log('Triggering install prompt');
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       console.log(`User response to install prompt: ${outcome}`);
       setDeferredPrompt(null);
       setShowPrompt(false);
+    } else {
+      console.log('No deferred prompt available');
     }
   };
 

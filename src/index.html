@@ -17,12 +17,13 @@
             href="/images/favicon.png"
         />
         <!-- PWA Meta Tags -->
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#7C5DFA" />
         <meta name="description" content="Invoice Management Application" />
         <link rel="apple-touch-icon" href="/logo192.png" />
         <link rel="manifest" href="/manifest.json" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Invoice App" />
         <title>Invoices</title>
     </head>
@@ -32,16 +33,39 @@
         <script>
             // Register service worker
             if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/service-worker.js')
-                        .then(registration => {
-                            console.log('ServiceWorker registration successful');
-                        })
-                        .catch(err => {
-                            console.log('ServiceWorker registration failed: ', err);
+                window.addEventListener('load', async () => {
+                    try {
+                        const registration = await navigator.serviceWorker.register('/service-worker.js', {
+                            scope: '/'
                         });
+                        console.log('ServiceWorker registration successful with scope:', registration.scope);
+                        
+                        // Check if the app is already installed
+                        const isInstalled = window.matchMedia('(display-mode: standalone)').matches || 
+                                          window.matchMedia('(display-mode: fullscreen)').matches ||
+                                          window.navigator.standalone === true;
+                        
+                        console.log('Is app installed:', isInstalled);
+                        
+                        // Dispatch a custom event to notify the app about service worker status
+                        window.dispatchEvent(new CustomEvent('serviceWorkerReady', {
+                            detail: { isInstalled }
+                        }));
+                    } catch (err) {
+                        console.error('ServiceWorker registration failed:', err);
+                    }
                 });
             }
+            
+            // Listen for the beforeinstallprompt event
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                console.log('beforeinstallprompt event fired');
+                e.preventDefault();
+                deferredPrompt = e;
+                // Dispatch a custom event to notify the app
+                window.dispatchEvent(new CustomEvent('canInstall', { detail: { deferredPrompt } }));
+            });
         </script>
     </body>
 </html>
