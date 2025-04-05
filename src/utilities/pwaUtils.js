@@ -71,19 +71,33 @@ export const isMobileDevice = () => {
  * @returns {boolean} True if running on iOS, false otherwise
  */
 export const isIOS = () => {
+  // Get browser information
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  const platform = navigator.platform || '';
   
-  // More accurate iOS detection
-  // Check for iOS-specific features
-  const isIOSDevice = (
-    // Check for iOS devices in user agent
-    /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream &&
-    // Additional check to avoid false positives
-    !/Chrome/.test(userAgent) && !/Firefox/.test(userAgent) && !/Edge/.test(userAgent)
-  );
+  // Check for Chrome, Firefox, Edge, Opera, or other non-iOS browsers
+  const isChrome = /Chrome/.test(userAgent);
+  const isFirefox = /Firefox/.test(userAgent);
+  const isEdge = /Edge/.test(userAgent) || /Edg/.test(userAgent);
+  const isOpera = /OPR/.test(userAgent);
   
-  console.log(`Is iOS device: ${isIOSDevice}`);
-  return isIOSDevice;
+  // If any of these browsers are detected, it's not iOS Safari
+  if (isChrome || isFirefox || isEdge || isOpera) {
+    console.log(`Not iOS: Detected browser (Chrome: ${isChrome}, Firefox: ${isFirefox}, Edge: ${isEdge}, Opera: ${isOpera})`);
+    return false;
+  }
+  
+  // Check for iOS devices
+  const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+  
+  // Additional platform check
+  const isIOSPlatform = /iPhone|iPad|iPod/.test(platform);
+  
+  // Only return true if both user agent and platform indicate iOS
+  const result = isIOSDevice && isIOSPlatform;
+  
+  console.log(`Is iOS device: ${result} (UA: ${isIOSDevice}, Platform: ${isIOSPlatform})`);
+  return result;
 };
 
 /**
@@ -91,19 +105,27 @@ export const isIOS = () => {
  * @returns {boolean} True if running on Safari, false otherwise
  */
 export const isSafari = () => {
+  // Get browser information
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
   
-  // More accurate Safari detection
-  // Safari is the only browser that includes 'Safari' but not 'Chrome' in its user agent
-  const isSafariBrowser = (
-    /Safari/.test(userAgent) && 
-    !/Chrome/.test(userAgent) && 
-    !/Firefox/.test(userAgent) && 
-    !/Edge/.test(userAgent) &&
-    !/OPR/.test(userAgent) && // Opera
-    !/Edg/.test(userAgent)    // Edge
-  );
+  // Check for Chrome, Firefox, Edge, Opera, or other non-Safari browsers
+  const isChrome = /Chrome/.test(userAgent);
+  const isFirefox = /Firefox/.test(userAgent);
+  const isEdge = /Edge/.test(userAgent) || /Edg/.test(userAgent);
+  const isOpera = /OPR/.test(userAgent);
   
-  console.log(`Is Safari browser: ${isSafariBrowser}`);
-  return isSafariBrowser;
+  // If any of these browsers are detected, it's not Safari
+  if (isChrome || isFirefox || isEdge || isOpera) {
+    console.log(`Not Safari: Detected browser (Chrome: ${isChrome}, Firefox: ${isFirefox}, Edge: ${isEdge}, Opera: ${isOpera})`);
+    return false;
+  }
+  
+  // Check for Safari
+  const hasSafari = /Safari/.test(userAgent);
+  
+  // Safari is the only browser that includes 'Safari' but not 'Chrome' in its user agent
+  const result = hasSafari && !isChrome;
+  
+  console.log(`Is Safari browser: ${result} (Has Safari: ${hasSafari}, Is Chrome: ${isChrome})`);
+  return result;
 }; 

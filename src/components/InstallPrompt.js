@@ -93,9 +93,19 @@ const DismissButton = styled.button`
   }
 `;
 
+/**
+ * Check if the browser is Chrome
+ * @returns {boolean} True if the browser is Chrome, false otherwise
+ */
+const isChrome = () => {
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  return /Chrome/.test(userAgent);
+};
+
 const InstallPrompt = () => {
   const {
     showPrompt,
+    canInstall,
     handleInstallClick,
     handleClose,
     handleDismiss
@@ -104,9 +114,71 @@ const InstallPrompt = () => {
   // Get the actual values from the utility functions
   const actualIsIOS = isIOS();
   const actualIsSafari = isSafari();
+  const actualIsChrome = isChrome();
+
+  // Log the current state for debugging
+  console.log('InstallPrompt render:', {
+    showPrompt,
+    canInstall,
+    actualIsIOS,
+    actualIsSafari,
+    actualIsChrome
+  });
 
   if (!showPrompt) {
     return null;
+  }
+
+  if (actualIsIOS || actualIsSafari) {
+    return (
+      <PromptContainer>
+        <CloseButton onClick={handleClose} aria-label="Close">&times;</CloseButton>
+        <Title>Install ForDox</Title>
+        <Description>
+          {actualIsIOS ? (
+            <>
+              To install ForDox on your iOS device:
+              1. Tap the Share button in Safari
+              2. Scroll down and tap "Add to Home Screen"
+              3. Tap "Add" to install
+            </>
+          ) : actualIsSafari ? (
+            <>
+              To install ForDox on your Mac:
+              1. Click the Share button in Safari
+              2. Select "Add to Dock"
+              3. Click "Add" to install
+            </>
+          ) : (
+            'Install ForDox for a better experience with offline access and quick launch.'
+          )}
+        </Description>
+        <Button onClick={handleInstallClick}>
+          Install ForDox
+        </Button>
+        <DismissButton onClick={handleDismiss}>
+          Don't show again
+        </DismissButton>
+      </PromptContainer>
+    );
+  }
+
+  if (actualIsChrome) {
+    return (
+      <PromptContainer>
+        <CloseButton onClick={handleClose} aria-label="Close">&times;</CloseButton>
+        <Title>Install ForDox</Title>
+        <Description>
+          Install ForDox on your device for quick and easy access when you're on the go.
+        </Description>
+        <Button onClick={handleInstallClick}>
+          Install ForDox
+        </Button>
+        <DismissButton onClick={handleDismiss}>
+          Don't show again
+        </DismissButton>
+      </PromptContainer>
+    );
   }
 
   return (
@@ -114,29 +186,11 @@ const InstallPrompt = () => {
       <CloseButton onClick={handleClose} aria-label="Close">&times;</CloseButton>
       <Title>Install ForDox</Title>
       <Description>
-        {actualIsIOS ? (
-          <>
-            To install ForDox on your iOS device:
-            1. Tap the Share button in Safari
-            2. Scroll down and tap "Add to Home Screen"
-            3. Tap "Add" to install
-          </>
-        ) : actualIsSafari ? (
-          <>
-            To install ForDox on your Mac:
-            1. Click the Share button in Safari
-            2. Select "Add to Dock"
-            3. Click "Add" to install
-          </>
-        ) : (
-          'Install ForDox for a better experience with offline access and quick launch.'
-        )}
+        Install ForDox on your device for quick and easy access when you're on the go.
       </Description>
-      {!actualIsIOS && !actualIsSafari && (
-        <Button onClick={handleInstallClick}>
-          Install ForDox
-        </Button>
-      )}
+      <Button onClick={handleInstallClick}>
+        Install ForDox
+      </Button>
       <DismissButton onClick={handleDismiss}>
         Don't show again
       </DismissButton>

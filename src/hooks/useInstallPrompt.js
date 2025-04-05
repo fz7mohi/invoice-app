@@ -2,6 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { isIOS, isMobileDevice, isSafari, isRunningAsPWA } from '../utilities/pwaUtils';
 
 /**
+ * Check if the browser is Chrome
+ * @returns {boolean} True if the browser is Chrome, false otherwise
+ */
+const isChrome = () => {
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  return /Chrome/.test(userAgent);
+};
+
+/**
  * Custom hook to handle PWA installation logic
  * @returns {Object} Installation state and handlers
  */
@@ -13,6 +22,7 @@ const useInstallPrompt = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [installPromptShown, setInstallPromptShown] = useState(false);
   const [userEngagement, setUserEngagement] = useState(0);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   // Check if the prompt has been dismissed by the user
   const isPromptDismissed = localStorage.getItem('pwaPromptDismissed') === 'true';
@@ -24,6 +34,7 @@ const useInstallPrompt = () => {
     const actualIsSafari = isSafari();
     const actualIsMobile = isMobileDevice();
     const actualIsRunningAsPWA = isRunningAsPWA();
+    const actualIsChrome = isChrome();
     
     const info = {
       isRunningAsPWA: actualIsRunningAsPWA,
@@ -34,6 +45,7 @@ const useInstallPrompt = () => {
       isIOS: actualIsIOS,
       isSafari: actualIsSafari,
       isMobile: actualIsMobile,
+      isChrome: actualIsChrome,
       userAgent: navigator.userAgent,
       serviceWorker: 'serviceWorker' in navigator,
       manifest: !!document.querySelector('link[rel="manifest"]'),
@@ -45,9 +57,10 @@ const useInstallPrompt = () => {
       installPromptShown,
       userEngagement,
       isPromptDismissed,
+      hasDeferredPrompt: !!deferredPrompt,
       // Add more detailed browser info
       browser: {
-        chrome: /Chrome/.test(navigator.userAgent),
+        chrome: actualIsChrome,
         firefox: /Firefox/.test(navigator.userAgent),
         safari: /Safari/.test(navigator.userAgent),
         edge: /Edge/.test(navigator.userAgent) || /Edg/.test(navigator.userAgent),
@@ -67,7 +80,7 @@ const useInstallPrompt = () => {
     if (isSafariBrowser !== actualIsSafari) {
       console.warn(`Safari detection mismatch: state=${isSafariBrowser}, actual=${actualIsSafari}`);
     }
-  }, [isInstalled, canInstall, installPromptShown, userEngagement, isPromptDismissed, isIOSDevice, isSafariBrowser]);
+  }, [isInstalled, canInstall, installPromptShown, userEngagement, isPromptDismissed, isIOSDevice, isSafariBrowser, deferredPrompt]);
 
   // Check if we should show the prompt
   const shouldShowPrompt = useCallback(() => {
@@ -89,14 +102,25 @@ const useInstallPrompt = () => {
     const actualIsMobile = isMobileDevice();
     const actualIsIOS = isIOS();
     const actualIsSafari = isSafari();
+    const actualIsChrome = isChrome();
 
     console.log('Installation check:', {
       canInstall,
       isMobile: actualIsMobile,
       isIOSDevice: actualIsIOS,
       isSafariBrowser: actualIsSafari,
-      userEngagement
+      isChrome: actualIsChrome,
+      userEngagement,
+      hasDeferredPrompt: !!deferredPrompt
     });
+
+    // Special case for Chrome - always show the install button if we have a deferred prompt
+    if (actualIsChrome && deferredPrompt) {
+      console.log('Showing prompt for Chrome browser with deferred prompt');
+      setCanInstall(true);
+      setShowPrompt(true);
+      return;
+    }
 
     // Always show on iOS/Safari for manual installation instructions
     if (actualIsIOS || actualIsSafari) {
@@ -112,7 +136,7 @@ const useInstallPrompt = () => {
       return;
     }
 
-    // Show on desktop if it can be installed and has sufficient user engagement
+    // Show on desktop if it can be installed and have sufficient user engagement
     if (canInstall && userEngagement >= 3) {
       console.log('Showing prompt for desktop with sufficient engagement');
       setShowPrompt(true);
@@ -121,7 +145,7 @@ const useInstallPrompt = () => {
 
     console.log('Not showing prompt - no conditions met');
     setShowPrompt(false);
-  }, [isInstalled, canInstall, isPromptDismissed, userEngagement]);
+  }, [isInstalled, canInstall, isPromptDismissed, userEngagement, deferredPrompt]);
 
   // Track user engagement
   useEffect(() => {
@@ -152,6 +176,21 @@ const useInstallPrompt = () => {
     
     setIsIOSDevice(actualIsIOS);
     setIsSafariBrowser(actualIsSafari);
+
+    // Listen for the beforeinstallprompt event
+    const handleBeforeInstallPrompt = (e) => {
+      console.log('BeforeInstallPrompt event received');
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      setDeferredPrompt(e);
+      // Update UI to notify the user they can install the PWA
+      setCanInstall(true);
+      // Log debug info
+      logDebugInfo();
+      // Check if we should show the prompt
+      shouldShowPrompt();
+    };
 
     // Listen for service worker ready event
     const handleServiceWorkerReady = (event) => {
@@ -184,6 +223,8 @@ const useInstallPrompt = () => {
       logDebugInfo();
     };
 
+    // Add event listeners
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('serviceWorkerReady', handleServiceWorkerReady);
     window.addEventListener('canInstall', handleCanInstall);
     window.addEventListener('installPromptShown', handleInstallPromptShown);
@@ -197,6 +238,7 @@ const useInstallPrompt = () => {
 
     // Cleanup
     return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('serviceWorkerReady', handleServiceWorkerReady);
       window.removeEventListener('canInstall', handleCanInstall);
       window.removeEventListener('installPromptShown', handleInstallPromptShown);
@@ -207,12 +249,31 @@ const useInstallPrompt = () => {
   // Handle install button click
   const handleInstallClick = useCallback(() => {
     console.log('Install button clicked');
-    if (window.triggerInstallPrompt) {
+    
+    // If we have a deferred prompt, use it
+    if (deferredPrompt) {
+      console.log('Using deferred prompt to install');
+      // Show the install prompt
+      deferredPrompt.prompt();
+      // Wait for the user to respond to the prompt
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+          setIsInstalled(true);
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        // Clear the deferred prompt
+        setDeferredPrompt(null);
+        setCanInstall(false);
+      });
+    } else if (window.triggerInstallPrompt) {
+      console.log('Using window.triggerInstallPrompt');
       window.triggerInstallPrompt();
     } else {
-      console.log('triggerInstallPrompt function not available');
+      console.log('No installation method available');
     }
-  }, []);
+  }, [deferredPrompt]);
 
   // Handle close button click
   const handleClose = useCallback(() => {
