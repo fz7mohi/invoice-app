@@ -5,7 +5,7 @@ export const TabBarContainer = styled.nav`
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
+    height: 65px;
     background-color: ${({ theme }) => theme.colors.cardBg};
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
     z-index: 1000;
@@ -25,7 +25,7 @@ export const TabBarContainer = styled.nav`
     }
 
     @media (max-width: 480px) {
-        height: 50px;
+        height: 55px;
     }
 `;
 

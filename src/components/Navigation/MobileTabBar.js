@@ -20,7 +20,7 @@ const TabItemComponent = React.memo(({ item, isActive }) => {
                 <TabIcon $isActive={isActive}>
                     <Icon 
                         name={item.icon} 
-                        size={22} 
+                        size={24} 
                         color={isActive ? colors.accent : colors.textTertiary}
                     />
                 </TabIcon>
