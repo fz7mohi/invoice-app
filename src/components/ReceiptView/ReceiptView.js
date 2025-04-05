@@ -10,6 +10,9 @@ import { useGlobalContext } from '../App/context';
 import './ReceiptView.css';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { generateEmailTemplate, generateReceiptEmailTemplate } from '../../services/emailService';
+import EmailPreviewModal from '../shared/EmailPreviewModal/EmailPreviewModal';
+import { message } from 'antd';
 import {
     StyledReceiptView,
     Container,
@@ -116,6 +119,10 @@ const ReceiptView = () => {
     const [clientHasVAT, setClientHasVAT] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [invoiceCustomId, setInvoiceCustomId] = useState(null);
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    const [emailData, setEmailData] = useState(null);
+    const [pdfData, setPdfData] = useState(null);
+    const [isSending, setIsSending] = useState(false);
     const isLoading = receiptState?.isLoading || isDirectlyFetching || isClientFetching;
     const receiptNotFound = !isLoading && !receipt;
     const isDesktop = windowWidth >= 768;
@@ -661,6 +668,215 @@ const ReceiptView = () => {
         );
     };
 
+    const handleSendEmail = async () => {
+        try {
+            setIsSending(true);
+            
+            // Get the client's country from the receipt or client data
+            const clientCountry = clientData?.country || 'qatar';
+            
+            // Determine which company profile to use
+            let companyProfile;
+            try {
+                if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
+                    companyProfile = await getCompanyProfile('uae');
+                } else {
+                    companyProfile = await getCompanyProfile('qatar');
+                }
+            } catch (profileError) {
+                companyProfile = {
+                    name: 'Fortune Gifts',
+                    address: 'Doha, Qatar',
+                    phone: '+974 1234 5678',
+                    vatNumber: 'VAT123456789',
+                    crNumber: 'CR123456789'
+                };
+            }
+
+            // Create a new container for PDF content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                width: 297mm;
+                min-height: 420mm;
+                padding: 5mm 20mm 20mm 20mm;
+                margin: 0;
+                background-color: white;
+                box-sizing: border-box;
+                position: relative;
+                font-family: Arial, sans-serif;
+            `;
+
+            // Add header
+            pdfContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                    </div>
+                    <div style="text-align: right; font-size: 19px; color: #000000;">
+                        <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
+                        <div>${companyProfile.address}</div>
+                        <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
+                    </div>
+                </div>
+                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
+                <div style="text-align: center; margin-top: 25px;">
+                    <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">RECEIPT</h1>
+                </div>
+            `;
+
+            // Add client section
+            const clientSection = document.createElement('div');
+            clientSection.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 30px;
+                margin-top: 30px;
+                background-color: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            clientSection.innerHTML = `
+                <div>
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
+                    <div style="color: black; font-size: 16px; margin-bottom: 5px;">${receipt.clientName}</div>
+                    ${receipt.clientAddress?.street ? `<div style="color: black; font-size: 16px;">${receipt.clientAddress.street}</div>` : ''}
+                    ${receipt.clientAddress?.city ? `<div style="color: black; font-size: 16px;">${receipt.clientAddress.city}${receipt.clientAddress?.postCode ? `, ${receipt.clientAddress.postCode}` : ''}</div>` : ''}
+                    ${receipt.clientAddress?.country ? `<div style="color: black; font-size: 16px;">${receipt.clientAddress.country}</div>` : ''}
+                    ${receipt.clientPhone ? `<div style="color: black; font-size: 16px;">${receipt.clientPhone}</div>` : ''}
+                    ${receipt.clientTRN ? `<div style="color: black; font-size: 16px;">TRN: ${receipt.clientTRN}</div>` : ''}
+                </div>
+                <div style="text-align: right;">
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Receipt Details</div>
+                    <div style="color: black; font-size: 16px; margin-bottom: 5px;">Receipt #: ${receipt.customId}</div>
+                    <div style="color: black; font-size: 16px; margin-bottom: 5px;">Date: ${formatDate(receipt.paymentDate)}</div>
+                    <div style="color: black; font-size: 16px;">Invoice #: ${invoiceCustomId || receipt.invoiceId}</div>
+                </div>
+            `;
+            pdfContainer.appendChild(clientSection);
+
+            // Add payment details section
+            const paymentSection = document.createElement('div');
+            paymentSection.style.cssText = `
+                background-color: #004359;
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+            `;
+            paymentSection.innerHTML = `
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Payment Details</div>
+                <div style="font-size: 22px; margin-bottom: 10px; font-weight: bold;">Amount Received: ${formatPrice(receipt.amount, receipt.currency)}</div>
+                ${clientHasVAT ? `<div style="font-size: 16px; margin-bottom: 10px;">VAT (5%): ${formatPrice(calculateVAT(receipt.amount), receipt.currency)}</div>` : ''}
+                <div style="font-size: 16px; margin-bottom: 10px;">Payment Mode: ${receipt.mode || 'Not specified'}</div>
+                ${receipt.mode === 'cheque' && receipt.chequeNumber ? `<div style="font-size: 16px; margin-bottom: 10px;">Cheque Number: ${receipt.chequeNumber}</div>` : ''}
+                ${receipt.notes ? `<div style="font-size: 16px;">Notes: ${receipt.notes}</div>` : ''}
+            `;
+            pdfContainer.appendChild(paymentSection);
+
+            // Add signature section
+            const signatureSection = document.createElement('div');
+            signatureSection.style.cssText = `
+                position: absolute;
+                bottom: 30mm;
+                left: 20mm;
+                right: 20mm;
+                display: flex;
+                justify-content: space-between;
+            `;
+            signatureSection.innerHTML = `
+                <div style="width: 45%;">
+                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
+                </div>
+                <div style="width: 45%;">
+                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
+                </div>
+            `;
+            pdfContainer.appendChild(signatureSection);
+
+            // Add footer text
+            const footerText = document.createElement('div');
+            footerText.style.cssText = `
+                position: absolute;
+                bottom: 20mm;
+                left: 20mm;
+                right: 20mm;
+                text-align: center;
+                color: #666;
+                font-size: 12px;
+                font-style: italic;
+            `;
+            footerText.innerHTML = 'This is a computer-generated receipt and does not require a physical signature.';
+            pdfContainer.appendChild(footerText);
+
+            // Temporarily add to document to render
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            document.body.appendChild(pdfContainer);
+
+            // Convert to canvas with A3 dimensions
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                width: 1122.5, // 297mm in pixels at 96 DPI
+                height: 1587.4 // 420mm in pixels at 96 DPI
+            });
+
+            // Remove temporary elements
+            document.body.removeChild(pdfContainer);
+
+            // Create PDF with A3 size
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a3',
+                compress: true
+            });
+
+            // Add the image to fit A3 page
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
+
+            // Convert to base64
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
+
+            // Generate email content using the receipt template
+            const emailContent = generateReceiptEmailTemplate({
+                clientName: receipt.clientName,
+                invoiceNumber: invoiceCustomId || receipt.invoiceId
+            });
+
+            // Set email data and open modal
+            setEmailData({
+                to: receipt.clientEmail,
+                subject: `Receipt ${receipt.customId} from ${companyProfile.name}`,
+                content: emailContent
+            });
+            setPdfData({
+                content: pdfBase64,
+                name: `Receipt_${receipt.customId}.pdf`
+            });
+            setIsEmailModalOpen(true);
+        } catch (error) {
+            console.error('Error preparing email:', error);
+            message.error('Failed to prepare email. Please try again.');
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const handleEmailSent = () => {
+        message.success('Email sent successfully');
+        if (isEmailModalOpen) {
+            setIsEmailModalOpen(false);
+        }
+    };
+
     // Show loading state
     if (isLoading || !receipt) {
         return (
@@ -804,6 +1020,55 @@ const ReceiptView = () => {
                         </AddressGroup>
                     </InfoAddresses>
                     
+                    {receipt.clientEmail && (
+                        <AddressGroup style={{
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: '8px',
+                            padding: '16px',
+                            backgroundColor: colors.backgroundItem || colors.background,
+                            marginBottom: '32px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <div>
+                                <AddressTitle>Sent to</AddressTitle>
+                                <AddressText>
+                                    <span style={{ display: 'flex', alignItems: 'center' }}>
+                                        <Icon name="mail" size={13} style={{ marginRight: '6px', color: colors.purple }} />
+                                        {receipt.clientEmail}
+                                    </span>
+                                </AddressText>
+                            </div>
+                            <Button
+                                $secondary
+                                onClick={async () => {
+                                    setIsSending(true);
+                                    await handleSendEmail();
+                                    setIsSending(false);
+                                }}
+                                disabled={isSending}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    border: `1px solid ${colors.border}`,
+                                    backgroundColor: 'transparent',
+                                    color: colors.text,
+                                    cursor: isSending ? 'not-allowed' : 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                {isSending ? (
+                                    <Icon name="spinner" size={13} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                    <Icon name="mail" size={13} style={{ marginRight: '6px' }} />
+                                )}
+                                {isSending ? 'Sending...' : 'Send'}
+                            </Button>
+                        </AddressGroup>
+                    )}
+                    
                     <Details className="Details">
                         <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
                             <HeaderCell>Item Name</HeaderCell>
@@ -906,6 +1171,23 @@ const ReceiptView = () => {
                         {renderBankDetails()}
                     </InfoSectionsGrid>
                 </InfoCard>
+                
+                {isEmailModalOpen && emailData && pdfData && (
+                    <EmailPreviewModal
+                        isOpen={isEmailModalOpen}
+                        onClose={() => setIsEmailModalOpen(false)}
+                        onSend={handleEmailSent}
+                        emailData={emailData}
+                        documentType="receipt"
+                        documentId={receipt.id}
+                        clientName={receipt.clientName}
+                        clientEmail={receipt.clientEmail}
+                        amount={receipt.amount}
+                        currency={receipt.currency}
+                        pdfBase64={pdfData.content}
+                        pdfName={pdfData.name}
+                    />
+                )}
             </Container>
         </StyledReceiptView>
     );

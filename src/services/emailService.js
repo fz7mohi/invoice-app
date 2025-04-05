@@ -276,4 +276,24 @@ export const generateInvoiceEmailTemplate = ({ clientName }) => {
       </body>
     </html>
   `;
+};
+
+// Function to generate a receipt email template
+export const generateReceiptEmailTemplate = ({ clientName, invoiceNumber }) => {
+  return `
+    <html>
+      <body>
+        <p>Hi ${clientName},</p>
+        <p>We're happy to confirm that we've received your payment for Invoice #${invoiceNumber}.</p>
+        <p>Please find the attached payment receipt for your records.</p>
+        <p>We appreciate your prompt payment and the opportunity to serve you.</p>
+        <p>If you need anything else, we're just a message away!</p>
+        <p>Warm regards,<br>
+        Rajeev Kumar<br>
+        Accounts & Finance<br>
+        Fortune Gifts Trading W.L.L.<br>
+        📞 +974 7001 3984</p>
+      </body>
+    </html>
+  `;
 }; 
