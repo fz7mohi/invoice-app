@@ -105,7 +105,10 @@ const ClientFormController = () => {
                 exit="exit"
             >
                 {!isTablet && (
-                    <Link to="/clients" onClick={toggleForm}>
+                    <Link to="/clients" onClick={(e) => {
+                        e.preventDefault();
+                        toggleForm();
+                    }}>
                         <Icon
                             name={'arrow-left'}
                             size={10}
