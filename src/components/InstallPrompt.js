@@ -80,6 +80,7 @@ const InstallPrompt = () => {
   const [isIOSDevice, setIsIOSDevice] = useState(false);
   const [isSafariBrowser, setIsSafariBrowser] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [installPromptShown, setInstallPromptShown] = useState(false);
 
   useEffect(() => {
     const updateDebugInfo = () => {
@@ -99,7 +100,8 @@ const InstallPrompt = () => {
         appleCapable: !!document.querySelector('meta[name="apple-mobile-web-app-capable"]'),
         mobileCapable: !!document.querySelector('meta[name="mobile-web-app-capable"]'),
         isInstalled,
-        canInstall
+        canInstall,
+        installPromptShown
       };
       
       console.log('Debug Info:', info);
@@ -116,7 +118,6 @@ const InstallPrompt = () => {
     // Listen for service worker ready event
     const handleServiceWorkerReady = (event) => {
       console.log('Service worker ready event received:', event.detail);
-      // Only set isInstalled to true if the event explicitly says so
       if (event.detail && event.detail.isInstalled) {
         setIsInstalled(true);
       }
@@ -132,8 +133,25 @@ const InstallPrompt = () => {
       updateDebugInfo();
     };
 
+    // Listen for install prompt shown event
+    const handleInstallPromptShown = (event) => {
+      console.log('Install prompt shown event received:', event.detail);
+      setInstallPromptShown(true);
+      updateDebugInfo();
+    };
+
+    // Listen for app installed event
+    const handleAppInstalled = () => {
+      console.log('App installed event received');
+      setIsInstalled(true);
+      setShowPrompt(false);
+      updateDebugInfo();
+    };
+
     window.addEventListener('serviceWorkerReady', handleServiceWorkerReady);
     window.addEventListener('canInstall', handleCanInstall);
+    window.addEventListener('installPromptShown', handleInstallPromptShown);
+    window.addEventListener('appInstalled', handleAppInstalled);
 
     // Check if we should show the prompt
     const shouldShowPrompt = () => {
@@ -195,9 +213,11 @@ const InstallPrompt = () => {
     return () => {
       window.removeEventListener('serviceWorkerReady', handleServiceWorkerReady);
       window.removeEventListener('canInstall', handleCanInstall);
+      window.removeEventListener('installPromptShown', handleInstallPromptShown);
+      window.removeEventListener('appInstalled', handleAppInstalled);
       clearTimeout(timeoutId);
     };
-  }, [isInstalled, canInstall]);
+  }, [isInstalled, canInstall, installPromptShown]);
 
   // Force show the prompt after a delay if it's not showing
   useEffect(() => {

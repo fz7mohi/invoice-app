@@ -34,74 +34,108 @@
             // Global variable to store the deferred prompt
             let deferredPrompt;
             
-            // Register service worker
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', async () => {
-                    try {
-                        const registration = await navigator.serviceWorker.register('/service-worker.js', {
-                            scope: '/'
-                        });
-                        console.log('ServiceWorker registration successful with scope:', registration.scope);
-                        
-                        // Check if the app is already installed - more accurate detection
-                        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-                        const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
-                        const isIOSStandalone = window.navigator.standalone === true;
-                        
-                        // Only consider it installed if it's in standalone mode or iOS standalone
-                        // We're ignoring isFullscreen because it can be true even when not installed
-                        const isInstalled = isStandalone || isIOSStandalone;
-                        
-                        console.log('Installation status:', {
-                            isStandalone,
-                            isFullscreen,
-                            isIOSStandalone,
-                            isInstalled
-                        });
-                        
-                        // Dispatch a custom event to notify the app about service worker status
-                        window.dispatchEvent(new CustomEvent('serviceWorkerReady', {
-                            detail: { isInstalled }
-                        }));
-                    } catch (err) {
-                        console.error('ServiceWorker registration failed:', err);
-                    }
+            // Function to check if the app is installed
+            function checkIfAppIsInstalled() {
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+                const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+                const isIOSStandalone = window.navigator.standalone === true;
+                
+                // Only consider the app installed if it's in standalone mode or iOS standalone
+                // Ignore isFullscreen as it can be true even when not installed
+                const isInstalled = isStandalone || isIOSStandalone;
+                
+                console.log('Installation status:', {
+                    isStandalone,
+                    isFullscreen,
+                    isIOSStandalone,
+                    isInstalled
                 });
+                
+                return isInstalled;
             }
             
-            // Listen for the beforeinstallprompt event
-            window.addEventListener('beforeinstallprompt', (e) => {
-                console.log('beforeinstallprompt event fired');
-                
-                // Store the event for later use
-                deferredPrompt = e;
-                
-                // Dispatch a custom event to notify the app
-                window.dispatchEvent(new CustomEvent('canInstall', { 
-                    detail: { 
-                        deferredPrompt: e,
-                        canInstall: true
-                    } 
-                }));
-            });
-            
             // Function to trigger the install prompt
-            window.triggerInstallPrompt = () => {
+            window.triggerInstallPrompt = function() {
+                console.log('triggerInstallPrompt called, deferredPrompt:', deferredPrompt);
                 if (deferredPrompt) {
-                    console.log('Triggering install prompt');
-                    // Show the prompt
+                    // Show the install prompt
                     deferredPrompt.prompt();
                     
                     // Wait for the user to respond to the prompt
                     deferredPrompt.userChoice.then((choiceResult) => {
-                        console.log(`User response to install prompt: ${choiceResult.outcome}`);
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('User accepted the install prompt');
+                        } else {
+                            console.log('User dismissed the install prompt');
+                        }
+                        
                         // Clear the deferred prompt
                         deferredPrompt = null;
+                        
+                        // Dispatch an event to notify that the prompt was shown
+                        window.dispatchEvent(new CustomEvent('installPromptShown', {
+                            detail: { accepted: choiceResult.outcome === 'accepted' }
+                        }));
                     });
                 } else {
                     console.log('No deferred prompt available');
+                    // Dispatch an event to notify that the prompt is not available
+                    window.dispatchEvent(new CustomEvent('installPromptNotAvailable'));
                 }
             };
+            
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+                        .then(function(registration) {
+                            console.log('ServiceWorker registration successful with scope:', registration.scope);
+                            
+                            // Check if the app is installed
+                            const isInstalled = checkIfAppIsInstalled();
+                            
+                            // Dispatch an event to notify that the service worker is ready
+                            window.dispatchEvent(new CustomEvent('serviceWorkerReady', {
+                                detail: { 
+                                    isInstalled,
+                                    registration 
+                                }
+                            }));
+                        })
+                        .catch(function(error) {
+                            console.error('ServiceWorker registration failed:', error);
+                        });
+                });
+            }
+            
+            // Listen for the beforeinstallprompt event
+            window.addEventListener('beforeinstallprompt', function(e) {
+                console.log('beforeinstallprompt event fired');
+                
+                // Prevent Chrome 67 and earlier from automatically showing the prompt
+                e.preventDefault();
+                
+                // Stash the event so it can be triggered later
+                deferredPrompt = e;
+                
+                // Dispatch an event to notify that the app can be installed
+                window.dispatchEvent(new CustomEvent('canInstall', {
+                    detail: { 
+                        prompt: e,
+                        isInstalled: checkIfAppIsInstalled()
+                    }
+                }));
+                
+                console.log('beforeinstallprompt event handled, deferredPrompt stored');
+            });
+            
+            // Listen for app installed event
+            window.addEventListener('appinstalled', function(e) {
+                console.log('App was installed');
+                
+                // Dispatch an event to notify that the app was installed
+                window.dispatchEvent(new CustomEvent('appInstalled'));
+            });
         </script>
     </body>
 </html>
