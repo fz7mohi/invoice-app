@@ -2,15 +2,12 @@
 window.process = require('process/browser');
 
 import ReactDOM from 'react-dom';
-import { BrowserRouter as Router } from 'react-router-dom';
 import App from './components/App/App';
 import { AppProvider } from './components/App/context';
 
 ReactDOM.render(
-    <Router>
-        <AppProvider>
-            <App />
-        </AppProvider>
-    </Router>,
+    <AppProvider>
+        <App />
+    </AppProvider>,
     document.getElementById('root')
 );
