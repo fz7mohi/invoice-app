@@ -65,6 +65,8 @@
                     deferredPrompt.userChoice.then((choiceResult) => {
                         if (choiceResult.outcome === 'accepted') {
                             console.log('User accepted the install prompt');
+                            // Dispatch an event to notify that the app was installed
+                            window.dispatchEvent(new CustomEvent('appInstalled'));
                         } else {
                             console.log('User dismissed the install prompt');
                         }
@@ -76,6 +78,8 @@
                         window.dispatchEvent(new CustomEvent('installPromptShown', {
                             detail: { accepted: choiceResult.outcome === 'accepted' }
                         }));
+                    }).catch(error => {
+                        console.error('Error handling install prompt choice:', error);
                     });
                 } else {
                     console.log('No deferred prompt available');
@@ -104,8 +108,16 @@
                         })
                         .catch(function(error) {
                             console.error('ServiceWorker registration failed:', error);
+                            // Dispatch an event to notify that the service worker registration failed
+                            window.dispatchEvent(new CustomEvent('serviceWorkerError', {
+                                detail: { error }
+                            }));
                         });
                 });
+            } else {
+                console.warn('Service workers are not supported in this browser');
+                // Dispatch an event to notify that service workers are not supported
+                window.dispatchEvent(new CustomEvent('serviceWorkerNotSupported'));
             }
             
             // Listen for the beforeinstallprompt event

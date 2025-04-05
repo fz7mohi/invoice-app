@@ -15,23 +15,9 @@ export const isRunningAsPWA = () => {
     return true;
   }
   
-  // Check if running in a browser that supports the display-mode media query
-  if (window.matchMedia('(display-mode: browser)').matches) {
-    console.log('App is running in browser mode');
-    return false;
-  }
-  
-  // For browsers that don't support display-mode media query
-  // Check if the app is running in a standalone window
+  // For iOS devices
   if (window.navigator.standalone === true) {
     console.log('App is running in standalone mode (iOS)');
-    return true;
-  }
-  
-  // Check if the app is running in a standalone window (Android)
-  if (window.matchMedia('(display-mode: standalone)').matches || 
-      window.matchMedia('(display-mode: fullscreen)').matches) {
-    console.log('App is running in standalone/fullscreen mode (Android)');
     return true;
   }
   
@@ -69,7 +55,13 @@ export const canInstallPWA = () => {
  * @returns {boolean} True if running on mobile, false otherwise
  */
 export const isMobileDevice = () => {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  // Use a more reliable method to detect mobile devices
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  
+  // Regular expression to identify mobile devices
+  const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+  const isMobile = mobileRegex.test(userAgent.toLowerCase());
+  
   console.log(`Is mobile device: ${isMobile}`);
   return isMobile;
 };
@@ -79,7 +71,17 @@ export const isMobileDevice = () => {
  * @returns {boolean} True if running on iOS, false otherwise
  */
 export const isIOS = () => {
-  const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  
+  // More accurate iOS detection
+  // Check for iOS-specific features
+  const isIOSDevice = (
+    // Check for iOS devices in user agent
+    /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream &&
+    // Additional check to avoid false positives
+    !/Chrome/.test(userAgent) && !/Firefox/.test(userAgent) && !/Edge/.test(userAgent)
+  );
+  
   console.log(`Is iOS device: ${isIOSDevice}`);
   return isIOSDevice;
 };
@@ -89,7 +91,19 @@ export const isIOS = () => {
  * @returns {boolean} True if running on Safari, false otherwise
  */
 export const isSafari = () => {
-  const isSafariBrowser = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  
+  // More accurate Safari detection
+  // Safari is the only browser that includes 'Safari' but not 'Chrome' in its user agent
+  const isSafariBrowser = (
+    /Safari/.test(userAgent) && 
+    !/Chrome/.test(userAgent) && 
+    !/Firefox/.test(userAgent) && 
+    !/Edge/.test(userAgent) &&
+    !/OPR/.test(userAgent) && // Opera
+    !/Edg/.test(userAgent)    // Edge
+  );
+  
   console.log(`Is Safari browser: ${isSafariBrowser}`);
   return isSafariBrowser;
 }; 
