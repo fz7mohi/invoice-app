@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <base href="/" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -17,63 +17,91 @@
             href="/images/favicon.png"
         />
         <!-- PWA Meta Tags -->
-        <meta name="theme-color" content="#000000" />
-        <meta name="description" content="Invoice App - Create and manage invoices easily" />
+        <meta name="theme-color" content="#7C5DFA" />
+        <meta name="description" content="Invoice Management Application" />
         <link rel="apple-touch-icon" href="/logo192.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Invoice App" />
-        <title>Invoice App</title>
+        <title>Invoices</title>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script src="/index.js"></script>
         <script>
             // Global variable to store the deferred prompt
-            window.deferredPrompt = null;
+            let deferredPrompt;
+            
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', async () => {
+                    try {
+                        const registration = await navigator.serviceWorker.register('/service-worker.js', {
+                            scope: '/'
+                        });
+                        console.log('ServiceWorker registration successful with scope:', registration.scope);
+                        
+                        // Check if the app is already installed - more accurate detection
+                        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+                        const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+                        const isIOSStandalone = window.navigator.standalone === true;
+                        
+                        // Only consider it installed if it's in standalone mode or iOS standalone
+                        // We're ignoring isFullscreen because it can be true even when not installed
+                        const isInstalled = isStandalone || isIOSStandalone;
+                        
+                        console.log('Installation status:', {
+                            isStandalone,
+                            isFullscreen,
+                            isIOSStandalone,
+                            isInstalled
+                        });
+                        
+                        // Dispatch a custom event to notify the app about service worker status
+                        window.dispatchEvent(new CustomEvent('serviceWorkerReady', {
+                            detail: { isInstalled }
+                        }));
+                    } catch (err) {
+                        console.error('ServiceWorker registration failed:', err);
+                    }
+                });
+            }
+            
+            // Listen for the beforeinstallprompt event
+            window.addEventListener('beforeinstallprompt', (e) => {
+                console.log('beforeinstallprompt event fired');
+                
+                // Store the event for later use
+                deferredPrompt = e;
+                
+                // Dispatch a custom event to notify the app
+                window.dispatchEvent(new CustomEvent('canInstall', { 
+                    detail: { 
+                        deferredPrompt: e,
+                        canInstall: true
+                    } 
+                }));
+            });
             
             // Function to trigger the install prompt
-            window.triggerInstallPrompt = function() {
-                if (window.deferredPrompt) {
-                    console.log('Showing install prompt');
-                    window.deferredPrompt.prompt();
-                    window.deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            console.log('User accepted the install prompt');
-                        } else {
-                            console.log('User dismissed the install prompt');
-                        }
-                        window.deferredPrompt = null;
+            window.triggerInstallPrompt = () => {
+                if (deferredPrompt) {
+                    console.log('Triggering install prompt');
+                    // Show the prompt
+                    deferredPrompt.prompt();
+                    
+                    // Wait for the user to respond to the prompt
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        console.log(`User response to install prompt: ${choiceResult.outcome}`);
+                        // Clear the deferred prompt
+                        deferredPrompt = null;
                     });
                 } else {
                     console.log('No deferred prompt available');
                 }
             };
-            
-            // Listen for the beforeinstallprompt event
-            window.addEventListener('beforeinstallprompt', (e) => {
-                console.log('beforeinstallprompt event fired');
-                // Prevent Chrome 67 and earlier from automatically showing the prompt
-                e.preventDefault();
-                // Stash the event so it can be triggered later
-                window.deferredPrompt = e;
-                console.log('Deferred prompt stored');
-            });
-            
-            // Register service worker
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-                        .then(function(registration) {
-                            console.log('ServiceWorker registration successful with scope:', registration.scope);
-                        })
-                        .catch(function(error) {
-                            console.log('ServiceWorker registration failed:', error);
-                        });
-                });
-            }
         </script>
-    </head>
-    <body>
-        <noscript>You need to enable JavaScript to run this app.</noscript>
-        <div id="root"></div>
     </body>
 </html>

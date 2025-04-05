@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { isIOS, isSafari } from '../utilities/pwaUtils';
+import { canInstallPWA, isIOS, isMobileDevice, isSafari } from '../utilities/pwaUtils';
 
 const PromptContainer = styled.div`
   position: fixed;
@@ -74,58 +74,14 @@ const DebugInfo = styled.div`
 `;
 
 const InstallPrompt = () => {
-  const [showPrompt, setShowPrompt] = useState(true);
+  const [showPrompt, setShowPrompt] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
+  const [canInstall, setCanInstall] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
   const [isSafariBrowser, setIsSafariBrowser] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [hasDeferredPrompt, setHasDeferredPrompt] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if we're on iOS
-    setIsIOSDevice(isIOS());
-    setIsSafariBrowser(isSafari());
-    
-    // Check if app is running in standalone mode
-    const checkStandalone = () => {
-      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || 
-                              window.navigator.standalone === true;
-      setIsStandalone(isStandaloneMode);
-      
-      // If app is already installed, don't show the prompt
-      if (isStandaloneMode) {
-        setShowPrompt(false);
-      }
-    };
-    
-    // Initial check
-    checkStandalone();
-    
-    // Listen for display mode changes
-    const mediaQuery = window.matchMedia('(display-mode: standalone)');
-    const handleDisplayModeChange = () => checkStandalone();
-    mediaQuery.addListener(handleDisplayModeChange);
-    
-    // Check if we have a deferred prompt
-    const checkDeferredPrompt = () => {
-      if (window.deferredPrompt) {
-        console.log('Deferred prompt is available');
-        setHasDeferredPrompt(true);
-      } else {
-        console.log('No deferred prompt available');
-        setHasDeferredPrompt(false);
-      }
-    };
-    
-    // Initial check
-    checkDeferredPrompt();
-    
-    // Set up a timeout to check again after a short delay
-    const timeoutId = setTimeout(() => {
-      checkDeferredPrompt();
-    }, 1000);
-    
-    // Update debug info
     const updateDebugInfo = () => {
       const info = {
         isRunningAsPWA: window.matchMedia('(display-mode: standalone)').matches,
@@ -135,29 +91,135 @@ const InstallPrompt = () => {
         hasBeforeInstallPrompt: 'BeforeInstallPromptEvent' in window,
         isIOS: isIOS(),
         isSafari: isSafari(),
+        isMobile: isMobileDevice(),
         userAgent: navigator.userAgent,
         serviceWorker: 'serviceWorker' in navigator,
         manifest: !!document.querySelector('link[rel="manifest"]'),
         themeColor: !!document.querySelector('meta[name="theme-color"]'),
         appleCapable: !!document.querySelector('meta[name="apple-mobile-web-app-capable"]'),
         mobileCapable: !!document.querySelector('meta[name="mobile-web-app-capable"]'),
-        isStandalone,
-        hasDeferredPrompt
+        isInstalled,
+        canInstall
       };
       
       console.log('Debug Info:', info);
       setDebugInfo(JSON.stringify(info, null, 2));
     };
-    
+
     // Initial debug info
     updateDebugInfo();
-    
+
+    // Check if we're on iOS
+    setIsIOSDevice(isIOS());
+    setIsSafariBrowser(isSafari());
+
+    // Listen for service worker ready event
+    const handleServiceWorkerReady = (event) => {
+      console.log('Service worker ready event received:', event.detail);
+      // Only set isInstalled to true if the event explicitly says so
+      if (event.detail && event.detail.isInstalled) {
+        setIsInstalled(true);
+      }
+      updateDebugInfo();
+    };
+
+    // Listen for can install event
+    const handleCanInstall = (event) => {
+      console.log('Can install event received:', event.detail);
+      setCanInstall(true);
+      // Always show the prompt when we can install
+      setShowPrompt(true);
+      updateDebugInfo();
+    };
+
+    window.addEventListener('serviceWorkerReady', handleServiceWorkerReady);
+    window.addEventListener('canInstall', handleCanInstall);
+
+    // Check if we should show the prompt
+    const shouldShowPrompt = () => {
+      // If the app is already installed, don't show the prompt
+      if (isInstalled) {
+        console.log('App is already installed, not showing prompt');
+        setShowPrompt(false);
+        return;
+      }
+
+      const isMobile = isMobileDevice();
+      const isIOSDevice = isIOS();
+      const isSafariBrowser = isSafari();
+
+      console.log('Installation check:', {
+        canInstall,
+        isMobile,
+        isIOSDevice,
+        isSafariBrowser
+      });
+
+      // Always show on iOS/Safari for manual installation instructions
+      if (isIOSDevice || isSafariBrowser) {
+        console.log('Showing prompt for iOS/Safari');
+        setShowPrompt(true);
+        return;
+      }
+
+      // Show on mobile devices that can install
+      if (isMobile && canInstall) {
+        console.log('Showing prompt for mobile device');
+        setShowPrompt(true);
+        return;
+      }
+
+      // Show on desktop if it can be installed
+      if (canInstall) {
+        console.log('Showing prompt for desktop');
+        setShowPrompt(true);
+        return;
+      }
+
+      console.log('Not showing prompt - no conditions met');
+      setShowPrompt(false);
+    };
+
+    // Initial check
+    shouldShowPrompt();
+
+    // Set up a timeout to force show the prompt if needed
+    const timeoutId = setTimeout(() => {
+      if (!showPrompt) {
+        console.log('Timeout reached, checking prompt again');
+        shouldShowPrompt();
+      }
+    }, 2000);
+
     // Cleanup
     return () => {
-      mediaQuery.removeListener(handleDisplayModeChange);
+      window.removeEventListener('serviceWorkerReady', handleServiceWorkerReady);
+      window.removeEventListener('canInstall', handleCanInstall);
       clearTimeout(timeoutId);
     };
-  }, [isStandalone, hasDeferredPrompt]);
+  }, [isInstalled, canInstall]);
+
+  // Force show the prompt after a delay if it's not showing
+  useEffect(() => {
+    const forceShowPrompt = setTimeout(() => {
+      if (!showPrompt) {
+        console.log('Force showing prompt after delay');
+        setShowPrompt(true);
+      }
+    }, 3000);
+
+    return () => clearTimeout(forceShowPrompt);
+  }, []);
+
+  // Always show the prompt after a longer delay, regardless of other conditions
+  useEffect(() => {
+    const alwaysShowPrompt = setTimeout(() => {
+      console.log('Always showing prompt after longer delay');
+      setShowPrompt(true);
+    }, 5000);
+
+    return () => clearTimeout(alwaysShowPrompt);
+  }, []);
 
   const handleInstallClick = () => {
     console.log('Install button clicked');
