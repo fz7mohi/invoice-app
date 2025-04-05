@@ -1,55 +1,51 @@
 const fs = require('fs');
 const path = require('path');
 
-const pwaAssetsDir = path.join(__dirname, '../src/assets/pwa');
-const publicDir = path.join(__dirname, '../public');
-const publicAssetsDir = path.join(publicDir, 'assets/pwa');
-const screenshotsDir = path.join(publicDir, 'screenshots');
-
 // Ensure directories exist
-if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir);
-}
-if (!fs.existsSync(screenshotsDir)) {
-    fs.mkdirSync(screenshotsDir);
-}
-if (!fs.existsSync(publicAssetsDir)) {
-    fs.mkdirSync(path.join(publicDir, 'assets'), { recursive: true });
-    fs.mkdirSync(publicAssetsDir);
-}
+const publicDir = path.join(__dirname, '../public');
+const publicAssetsDir = path.join(publicDir, 'assets');
+const publicScreenshotsDir = path.join(publicDir, 'screenshots');
+
+// Create directories if they don't exist
+[publicDir, publicAssetsDir, publicScreenshotsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Define source and destination paths
+const srcPwaDir = path.join(__dirname, '../src/assets/pwa');
 
 // Copy PWA icons
-async function copyPWAAssets() {
-    try {
-        // Copy all PWA icons
-        const icons = ['icon-16.png', 'icon-24.png', 'logo192.png', 'logo512.png'];
-        
-        for (const icon of icons) {
-            const sourcePath = path.join(pwaAssetsDir, icon);
-            const destPath = path.join(publicAssetsDir, icon);
-            
-            if (fs.existsSync(sourcePath)) {
-                fs.copyFileSync(sourcePath, destPath);
-                console.log(`Copied ${icon} successfully!`);
-            } else {
-                console.warn(`Warning: ${icon} not found in source directory`);
-            }
-        }
+const iconFiles = ['icon-16.png', 'icon-24.png', 'logo192.png', 'logo512.png'];
+iconFiles.forEach(file => {
+  const srcPath = path.join(srcPwaDir, file);
+  const destPath = path.join(publicDir, file);
+  
+  if (fs.existsSync(srcPath)) {
+    fs.copyFileSync(srcPath, destPath);
+    console.log(`Copied ${file} successfully!`);
+  } else {
+    console.warn(`Warning: Source file ${file} not found in ${srcPwaDir}`);
+  }
+});
 
-        // Generate screenshots if they don't exist (keeping this part from the original script)
-        if (!fs.existsSync(path.join(screenshotsDir, 'desktop.png'))) {
-            console.log('Desktop screenshot not found. Please add a screenshot at screenshots/desktop.png (1920x1080)');
-        }
+// Copy screenshots
+const screenshots = [
+  { src: 'desktop.png', dest: 'desktop.png' },
+  { src: 'mobile.png', dest: 'mobile.png' }
+];
 
-        if (!fs.existsSync(path.join(screenshotsDir, 'mobile.png'))) {
-            console.log('Mobile screenshot not found. Please add a screenshot at screenshots/mobile.png (750x1334)');
-        }
+screenshots.forEach(({ src, dest }) => {
+  const srcPath = path.join(srcPwaDir, src);
+  const destPath = path.join(publicScreenshotsDir, dest);
+  
+  if (fs.existsSync(srcPath)) {
+    fs.copyFileSync(srcPath, destPath);
+    console.log(`Copied screenshot ${src} successfully!`);
+  } else {
+    console.warn(`Warning: Screenshot ${src} not found in ${srcPwaDir}`);
+  }
+});
 
-        console.log('PWA assets copied successfully!');
-    } catch (error) {
-        console.error('Error copying PWA assets:', error);
-        process.exit(1);
-    }
-}
-
-copyPWAAssets(); 
+console.log('PWA assets copied successfully!'); 
