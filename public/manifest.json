@@ -3,9 +3,9 @@
   "name": "Fordox Invoice Management Application",
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "favicon.png",
       "sizes": "32x32",
-      "type": "image/x-icon"
+      "type": "image/png"
     },
     {
       "src": "icon-16.png",
@@ -49,7 +49,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff",
+  "theme_color": "#090c1c",
+  "background_color": "#090c1c",
   "orientation": "portrait"
 } 
