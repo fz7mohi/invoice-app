@@ -3,7 +3,7 @@ window.process = require('process/browser');
 
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
-import App from './components/App/App';
+import App from './App';
 import { AppProvider } from './components/App/context';
 
 ReactDOM.render(
