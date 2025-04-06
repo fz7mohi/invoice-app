@@ -43,6 +43,12 @@ const QuotationSubmitController = () => {
                 // Show validation errors if they exist
                 if (quotationState.errors?.isError && quotationState.errors?.messages?.length > 0) {
                     console.log('Validation errors:', quotationState.errors.messages);
+                    
+                    // Add a small delay to ensure the error state is updated before scrolling
+                    setTimeout(() => {
+                        // The useEffect in QuotationFormContent will handle the scrolling
+                        console.log('Validation errors detected, auto-scrolling will be triggered');
+                    }, 100);
                 }
             }
         } catch (error) {

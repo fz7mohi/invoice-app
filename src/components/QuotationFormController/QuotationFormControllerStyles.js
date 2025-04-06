@@ -28,6 +28,7 @@ export const StyledQuotationFormController = styled(motion.div)`
         color: #FFFFFF !important;
         font-size: 16px; // Prevent zoom on iOS
         min-height: 48px; // Minimum touch target size
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
         &::placeholder {
             color: #DFE3FA !important;
@@ -39,12 +40,28 @@ export const StyledQuotationFormController = styled(motion.div)`
             outline: none;
             box-shadow: 0 0 0 2px rgba(124, 93, 250, 0.1);
         }
+        
+        // Error state styling
+        &[data-error="true"] {
+            border-color: #FF6B6B !important;
+            box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.1);
+            
+            &:focus {
+                border-color: #FF6B6B !important;
+                box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2);
+            }
+        }
     }
 
     label {
         color: #DFE3FA !important;
         font-size: 14px;
         margin-bottom: 8px;
+        
+        // Error state styling for labels
+        &[data-error="true"] {
+            color: #FF6B6B !important;
+        }
     }
 
     h1, h2, h3, h4, h5, h6, p, span {

@@ -974,6 +974,12 @@ const QuotationFormContent = ({ isEdited }) => {
     
     // Initialize local items state
     const [localItems, setLocalItems] = useState([]);
+    
+    // Add refs for form fields to enable auto-scrolling
+    const clientNameRef = useRef(null);
+    const descriptionRef = useRef(null);
+    const termsRef = useRef(null);
+    const itemRefs = useRef([]);
 
     // Initialize items when component mounts or quotation changes
     useEffect(() => {
@@ -1249,6 +1255,45 @@ const QuotationFormContent = ({ isEdited }) => {
         };
     }, []);
 
+    // Add a function to scroll to the first invalid field
+    const scrollToFirstError = () => {
+        // Check client name field
+        if (errors.clientName && clientNameRef.current) {
+            clientNameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        
+        // Check description field
+        if (errors.description && descriptionRef.current) {
+            descriptionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        
+        // Check terms field
+        if (errors.termsAndConditions && termsRef.current) {
+            termsRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        
+        // Check items
+        if (errors.items) {
+            // Find the first item with an error
+            for (let i = 0; i < itemRefs.current.length; i++) {
+                if (errors.items[i] && itemRefs.current[i]) {
+                    itemRefs.current[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+        }
+    };
+    
+    // Add effect to scroll to first error when validation errors occur
+    useEffect(() => {
+        if (errorMessages.length > 0) {
+            scrollToFirstError();
+        }
+    }, [errorMessages]);
+
     return (
         <FormContainer>
             <Title>
@@ -1260,11 +1305,10 @@ const QuotationFormContent = ({ isEdited }) => {
                 <FormSection>
                     <Legend>Bill To</Legend>
                     <InputWrapper>
-                        <Label htmlFor="clientSelect" $error={errors?.clientName}>
+                        <Label htmlFor="clientSelect" data-error={errors?.clientName}>
                             <LabelWithClear>
                                 <LabelText>
                                     Client
-                                    {errors?.clientName && <Error>can't be empty</Error>}
                                 </LabelText>
                             </LabelWithClear>
                         </Label>
@@ -1277,6 +1321,8 @@ const QuotationFormContent = ({ isEdited }) => {
                                         aria-expanded={isClientDropdownExpanded}
                                         aria-controls="client-select-list"
                                         onClick={toggleClientDropdown}
+                                        ref={clientNameRef}
+                                        data-error={errors?.clientName}
                                     >
                                         {quotation.clientName}
                                     </SelectButton>
@@ -1333,6 +1379,8 @@ const QuotationFormContent = ({ isEdited }) => {
                                     onChange={handleClientSearchChange}
                                     onFocus={() => setIsClientDropdownExpanded(true)}
                                     aria-label="Search for a client"
+                                    ref={clientNameRef}
+                                    data-error={errors?.clientName}
                                 />
                             )}
                             <NewClientButton
@@ -1432,9 +1480,8 @@ const QuotationFormContent = ({ isEdited }) => {
                 <FormSection>
                     <Legend>Project Details</Legend>
                     <InputWrapper>
-                        <Label htmlFor="description" $error={errors?.description}>
+                        <Label htmlFor="description" data-error={errors?.description}>
                             Project Description
-                            {errors?.description && <Error>can't be empty</Error>}
                         </Label>
                         <Input
                             type="text"
@@ -1443,7 +1490,8 @@ const QuotationFormContent = ({ isEdited }) => {
                             value={quotation.description || ''}
                             onChange={(e) => handleQuotationChange(e, 'quotation')}
                             placeholder="e.g. Website Redesign Service"
-                            $error={errors?.description}
+                            data-error={errors?.description}
+                            ref={descriptionRef}
                         />
                     </InputWrapper>
                 </FormSection>
@@ -1461,17 +1509,14 @@ const QuotationFormContent = ({ isEdited }) => {
                     </ItemsHeader>
                     
                     {localItems.map((item, index) => (
-                        <ItemCard key={index}>
+                        <ItemCard key={index} ref={el => itemRefs.current[index] = el}>
                             <ItemGrid>
                                 <div>
                                     <MinimalLabel
                                         htmlFor={`item-name-${index}`}
-                                        $error={errors.items && errors.items[index]?.name}
+                                        data-error={errors.items && errors.items[index]?.name}
                                     >
                                         Item Name
-                                        {errors.items && errors.items[index]?.name && (
-                                            <Error>can't be empty</Error>
-                                        )}
                                     </MinimalLabel>
                                     <MinimalInput
                                         id={`item-name-${index}`}
@@ -1479,7 +1524,7 @@ const QuotationFormContent = ({ isEdited }) => {
                                         name="name"
                                         value={item.name || ''}
                                         placeholder="Item name"
-                                        $error={errors.items && errors.items[index]?.name}
+                                        data-error={errors.items && errors.items[index]?.name}
                                         onChange={(event) => handleItemChange(event, 'items', null, index)}
                                     />
                                     
@@ -1591,6 +1636,24 @@ const QuotationFormContent = ({ isEdited }) => {
                             </div>
                         </ItemsSummary>
                     )}
+                </FormSection>
+
+                <FormSection>
+                    <Legend>Terms & Conditions</Legend>
+                    <InputWrapper>
+                        <Label htmlFor="termsAndConditions" data-error={errors?.termsAndConditions}>
+                            Terms & Conditions
+                        </Label>
+                        <TextArea
+                            id="termsAndConditions"
+                            name="termsAndConditions"
+                            value={quotation.termsAndConditions || ''}
+                            onChange={(e) => handleQuotationChange(e, 'quotation')}
+                            placeholder="Enter terms and conditions..."
+                            data-error={errors?.termsAndConditions}
+                            ref={termsRef}
+                        />
+                    </InputWrapper>
                 </FormSection>
 
                 {errorMessages.length > 0 && (
