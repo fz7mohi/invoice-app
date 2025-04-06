@@ -12,6 +12,13 @@ export const StyledHeader = styled.header`
     transition: background-color 400ms ease-in-out;
     z-index: 100;
     align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    border-bottom: 1px solid ${({ theme }) => theme?.colors?.purple || '#7c5dfa'}20;
 
     @media (min-width: 1024px) {
         position: fixed;
@@ -26,6 +33,7 @@ export const StyledHeader = styled.header`
         padding: 0;
         margin: 0;
         box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+        border-bottom: none;
     }
 `;
 
