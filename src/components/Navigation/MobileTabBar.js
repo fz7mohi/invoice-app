@@ -33,7 +33,7 @@ const TabItemComponent = React.memo(({ item, isActive, onNavigate }) => {
 
 const MobileTabBar = () => {
     const location = useLocation();
-    const { discardQuotationChanges } = useGlobalContext();
+    const { discardQuotationChanges, toggleForm, clientState } = useGlobalContext();
     
     // Memoize tab items to prevent unnecessary re-renders
     const tabItems = useMemo(() => [
@@ -69,6 +69,11 @@ const MobileTabBar = () => {
     const handleNavigate = () => {
         // Close the quotation form when navigating
         discardQuotationChanges();
+        
+        // Close the client form when navigating
+        if (clientState?.isFormOpen) {
+            toggleForm();
+        }
     };
 
     return (
