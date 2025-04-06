@@ -45,6 +45,7 @@ export const lightTheme = {
     input: '#ffffff',
     hoveredItem: '#f9fafe'
   },
+  invoiceItem: '#181b2e',
   borders: '#dfe3fa',
   sidebarBackground: '#373B53'
 };
@@ -82,6 +83,7 @@ export const darkTheme = {
     input: '#1E2139',
     hoveredItem: '#252945'
   },
+  invoiceItem: '#181b2e',
   borders: '#252945',
   sidebarBackground: '#1E2139'
 }; 

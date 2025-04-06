@@ -134,176 +134,20 @@ const QuotationView = () => {
         document.title = `Quotation | ${quotation?.customId || id}`;
     }, [quotation, id]);
 
-    // Fetch client data to get TRN
-    const fetchClientData = async (clientId, clientName) => {
-        try {
-            setIsClientFetching(true);
-            
-            // Function to normalize client names for comparison (lowercase, remove extra spaces)
-            const normalizeClientName = (name) => {
-                if (!name) return '';
-                return name.toLowerCase().trim().replace(/\s+/g, ' ');
-            };
-            
-            // Hardcoded TRN mapping for known clients - with normalized keys
-            const knownClients = {
-                "uae electric co llc": {
-                    trn: "100399600300003",
-                    phone: "+971 4 123 4567",
-                    address: "Dubai, UAE",
-                    country: "United Arab Emirates"
-                },
-                "uae electric": {
-                    trn: "100399600300003",
-                    phone: "+971 4 123 4567",
-                    address: "Dubai, UAE",
-                    country: "United Arab Emirates"
-                },
-                "uae electric co": {
-                    trn: "100399600300003",
-                    phone: "+971 4 123 4567",
-                    address: "Dubai, UAE",
-                    country: "United Arab Emirates"
-                },
-                "uaeelectric": {
-                    trn: "100399600300003",
-                    phone: "+971 4 123 4567",
-                    address: "Dubai, UAE",
-                    country: "United Arab Emirates"
-                }
-            };
-            
-            // Check if we have a hardcoded client for this name (case-insensitive)
-            if (clientName) {
-                const normalizedName = normalizeClientName(clientName);
-                
-                if (knownClients[normalizedName]) {
-                    const mockClient = {
-                        name: clientName,
-                        ...knownClients[normalizedName]
-                    };
-                    setClientData(mockClient);
-                    return mockClient;
-                }
-                
-                // Check for partial matches
-                const partialMatches = Object.keys(knownClients).filter(key => 
-                    normalizedName.includes(key) || key.includes(normalizedName)
-                );
-                
-                if (partialMatches.length > 0) {
-                    const matchedKey = partialMatches[0]; // Use the first partial match
-                    const mockClient = {
-                        name: clientName,
-                        ...knownClients[matchedKey]
-                    };
-                    setClientData(mockClient);
-                    return mockClient;
-                }
-            }
-            
-            // If we get here, no hardcoded match was found - try database lookup
-            
-            if (!clientId && !clientName) {
-                return null;
-            }
-            
-            let clientSnapshot;
-            
-            // Try to fetch by clientId first
-            if (clientId) {
-                const clientRef = doc(db, 'clients', clientId);
-                clientSnapshot = await getDoc(clientRef);
-                
-                if (clientSnapshot.exists()) {
-                    const data = clientSnapshot.data();
-                    setClientData(data);
-                    return data;
-                }
-            }
-            
-            // If no clientId or client not found by ID, try to find by name
-            if (clientName) {
-                try {
-                    // First try exact match
-                    const clientsRef = collection(db, 'clients');
-                    const q = query(clientsRef, where('companyName', '==', clientName));
-                    let querySnapshot = await getDocs(q);
-                    
-                    // If no exact match, try case-insensitive comparison using toLowerCase
-                    if (querySnapshot.empty) {
-                        // Fetch all clients and filter manually
-                        const allClientsQuery = query(clientsRef);
-                        const allClientsSnapshot = await getDocs(allClientsQuery);
-                        
-                        if (!allClientsSnapshot.empty) {
-                            const availableClients = [];
-                            allClientsSnapshot.forEach(doc => {
-                                const clientData = doc.data();
-                                availableClients.push({
-                                    id: doc.id,
-                                    name: clientData.companyName || '',
-                                    normalizedName: normalizeClientName(clientData.companyName || '')
-                                });
-                            });
-                            
-                            // Try to find a client with similar name (case-insensitive)
-                            const normalizedSearchName = normalizeClientName(clientName);
-                            
-                            // First try exact match after normalization
-                            const exactMatch = availableClients.find(client => 
-                                client.normalizedName === normalizedSearchName
-                            );
-                            
-                            if (exactMatch) {
-                                const matchDoc = allClientsSnapshot.docs.find(doc => doc.id === exactMatch.id);
-                                const data = matchDoc.data();
-                                setClientData(data);
-                                return data;
-                            }
-                            
-                            // Then try partial matches
-                            const partialMatch = availableClients.find(client => 
-                                client.normalizedName.includes(normalizedSearchName) || 
-                                normalizedSearchName.includes(client.normalizedName)
-                            );
-                            
-                            if (partialMatch) {
-                                const matchDoc = allClientsSnapshot.docs.find(doc => doc.id === partialMatch.id);
-                                const data = matchDoc.data();
-                                setClientData(data);
-                                return data;
-                            }
-                        }
-                    } else {
-                        const data = querySnapshot.docs[0].data();
-                        setClientData(data);
-                        return data;
-                    }
-                } catch (queryError) {
-                    // Handle query error silently
-                }
-            }
-            
-            return null;
-            
-        } catch (error) {
-            return null;
-        } finally {
-            setIsClientFetching(false);
-        }
-    };
-
-    // Add a function to fetch directly from Firebase if needed
-    const fetchDirectlyFromFirebase = async (quotationId) => {
+    // Add a function to fetch all data in parallel
+    const fetchAllData = async (quotationId) => {
         try {
             setIsDirectlyFetching(true);
+            setIsClientFetching(true);
             
-            const quotationRef = doc(db, 'quotations', quotationId);
-            const docSnap = await getDoc(quotationRef);
+            // Fetch quotation and client data in parallel
+            const [quotationDoc, clientDoc] = await Promise.all([
+                getDoc(doc(db, 'quotations', quotationId)),
+                quotation?.clientId ? getDoc(doc(db, 'clients', quotation.clientId)) : Promise.resolve(null)
+            ]);
             
-            if (docSnap.exists()) {
-                const data = docSnap.data();
+            if (quotationDoc.exists()) {
+                const data = quotationDoc.data();
                 
                 // Convert Firestore Timestamp back to Date object safely
                 let createdAt = new Date();
@@ -319,8 +163,8 @@ const QuotationView = () => {
                 // Create a complete quotation object
                 const fetchedQuotation = {
                     ...data,
-                    id: docSnap.id,
-                    customId: data.customId || docSnap.id,
+                    id: quotationDoc.id,
+                    customId: data.customId || quotationDoc.id,
                     createdAt,
                     paymentDue,
                     items: Array.isArray(data.items) ? data.items : [],
@@ -329,25 +173,34 @@ const QuotationView = () => {
                 
                 setQuotation(fetchedQuotation);
                 
-                // After fetching quotation, fetch client data
-                await fetchClientData(fetchedQuotation.clientId, fetchedQuotation.clientName);
+                // If we have client data, process it
+                if (clientDoc?.exists()) {
+                    const clientData = clientDoc.data();
+                    setClientData(clientData);
+                    setClientHasVAT(clientData.hasVAT || false);
+                }
+                
+                // If quotation was converted to invoice, fetch that data
+                if (fetchedQuotation.invoiceId) {
+                    fetchInvoiceData(fetchedQuotation.invoiceId);
+                }
                 
                 return true;
-            } else {
-                return false;
             }
+            return false;
         } catch (error) {
+            console.error('Error fetching data:', error);
             return false;
         } finally {
             setIsDirectlyFetching(false);
+            setIsClientFetching(false);
         }
     };
-    
-    // Trigger fetch of quotation data
+
+    // Trigger fetch of all data
     useEffect(() => {
-        // This will try to fetch directly from Firebase as soon as we have an ID
         if (id && !quotation && !isDirectlyFetching) {
-            fetchDirectlyFromFirebase(id);
+            fetchAllData(id);
         }
     }, [id, quotation, isDirectlyFetching]);
 
@@ -373,7 +226,7 @@ const QuotationView = () => {
                 setQuotation(foundQuotation);
                 
                 // After setting quotation, fetch client data
-                fetchClientData(foundQuotation.clientId, foundQuotation.clientName);
+                fetchAllData(foundQuotation.id);
             }
         }
     }, [quotationState?.quotations, id, isDeleting]);
@@ -394,7 +247,7 @@ const QuotationView = () => {
                     setQuotation(parsedData);
                     
                     // After setting quotation from session storage, fetch client data
-                    fetchClientData(parsedData.clientId, parsedData.clientName);
+                    fetchAllData(parsedData.id);
                 } catch (err) {
                     // Handle error silently
                 }
@@ -1143,9 +996,17 @@ const QuotationView = () => {
                         exit="exit"
                         className="Controller"
                     >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                             <Text>Loading quotation...</Text>
-                            <div style={{ marginLeft: 16, width: 16, height: 16 }} className="loading-spinner"></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: 16, height: 16 }} className="loading-spinner"></div>
+                                <Text style={{ fontSize: '13px', color: colors.textTertiary }}>
+                                    {isDirectlyFetching ? 'Fetching quotation data...' :
+                                     isClientFetching ? 'Loading client information...' :
+                                     isFetchingInvoice ? 'Loading invoice details...' :
+                                     'Preparing view...'}
+                                </Text>
+                            </div>
                         </div>
                     </Controller>
                 </Container>

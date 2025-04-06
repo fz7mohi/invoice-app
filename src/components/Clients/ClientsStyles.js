@@ -135,13 +135,14 @@ export const ClientList = styled.div`
     display: grid;
     gap: 16px;
     
+    
     @media (min-width: 768px) {
         gap: 24px;
     }
 `;
 
 export const ClientItem = styled.div`
-    background-color: #252945;
+    background-color: ${({ theme }) => theme.invoiceItem};
     border-radius: 8px;
     padding: 24px;
     border: 1px solid #252945;
