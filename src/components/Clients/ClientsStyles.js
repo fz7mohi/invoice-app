@@ -325,4 +325,38 @@ export const SearchIcon = styled.span`
     ${SearchContainer}:focus-within & {
         color: #7C5DFA;
     }
+`;
+
+export const Pagination = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 16px;
+`;
+
+export const PageButton = styled.button`
+    background-color: #252945;
+    color: #FFF;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background-color: #7C5DFA;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+`;
+
+export const PageInfo = styled.span`
+    color: #DFE3FA;
+    font-size: 14px;
 `; 

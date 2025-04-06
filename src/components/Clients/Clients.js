@@ -25,13 +25,16 @@ import {
     SearchIcon,
     HeaderContent,
     TitleGroup,
-    ImportExportButton
+    ImportExportButton,
+    Pagination,
+    PageButton,
+    PageInfo
 } from './ClientsStyles';
 import Icon from '../shared/Icon/Icon';
 import ConfirmModal from '../shared/ConfirmModal/ConfirmModal';
 import ErrorMessage from './ErrorMessage/ErrorMessage';
 import { clientsVariants } from '../../utilities/framerVariants';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
 
 const Clients = () => {
@@ -46,10 +49,12 @@ const Clients = () => {
     
     const { clients, isModalOpen, isLoading } = clientState;
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const shouldReduceMotion = useReducedMotion();
     const fileInputRef = useRef(null);
     
-    // Enhanced search functionality
+    // Enhanced search functionality with pagination
     const filteredClients = useMemo(() => {
         if (!searchQuery.trim()) return clients;
         
@@ -69,6 +74,25 @@ const Clients = () => {
             );
         });
     }, [clients, searchQuery]);
+
+    // Calculate paginated clients
+    const paginatedClients = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return filteredClients.slice(startIndex, endIndex);
+    }, [filteredClients, currentPage]);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+
+    // Reset to first page when search query changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
     
     const variant = (element, index) => {
         if (typeof clientsVariants[element] === 'function') {
@@ -257,54 +281,76 @@ const Clients = () => {
             ) : filteredClients.length === 0 ? (
                 <ErrorMessage variant={variant} />
             ) : (
-                <ClientList>
-                    {filteredClients.map((client, index) => (
-                        <ClientItem 
-                            key={client.id}
-                            as={motion.div}
-                            variants={variant('clientItem', index)}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                            layout
-                        >
-                            <CompanyName>{client.companyName}</CompanyName>
-                            <ClientInfo>
-                                <InfoItem>
-                                    <strong>Email:</strong> {client.email}
-                                </InfoItem>
-                                {client.phone && (
+                <>
+                    <ClientList>
+                        {paginatedClients.map((client, index) => (
+                            <ClientItem 
+                                key={client.id}
+                                as={motion.div}
+                                variants={variant('clientItem', index)}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                layout
+                            >
+                                <CompanyName>{client.companyName}</CompanyName>
+                                <ClientInfo>
                                     <InfoItem>
-                                        <strong>Phone:</strong> {client.phone}
+                                        <strong>Email:</strong> {client.email}
                                     </InfoItem>
-                                )}
-                                {client.address && (
-                                    <InfoItem>
-                                        <strong>Address:</strong> {client.address}
-                                    </InfoItem>
-                                )}
-                                {client.country && (
-                                    <InfoItem>
-                                        <strong>Country:</strong> {client.country}
-                                    </InfoItem>
-                                )}
-                                {client.trnNumber && (
-                                    <InfoItem>
-                                        <strong>TRN:</strong> {client.trnNumber}
-                                    </InfoItem>
-                                )}
-                            </ClientInfo>
-                            <ActionButtons>
-                                <EditButton onClick={() => editClient(client.id)} disabled={isLoading}>
-                                    Edit
-                                </EditButton>
-                                <DeleteButton onClick={() => handleDeleteClick(client.id)} disabled={isLoading}>
-                                    Delete
-                                </DeleteButton>
-                            </ActionButtons>
-                        </ClientItem>
-                    ))}
-                </ClientList>
+                                    {client.phone && (
+                                        <InfoItem>
+                                            <strong>Phone:</strong> {client.phone}
+                                        </InfoItem>
+                                    )}
+                                    {client.address && (
+                                        <InfoItem>
+                                            <strong>Address:</strong> {client.address}
+                                        </InfoItem>
+                                    )}
+                                    {client.country && (
+                                        <InfoItem>
+                                            <strong>Country:</strong> {client.country}
+                                        </InfoItem>
+                                    )}
+                                    {client.trnNumber && (
+                                        <InfoItem>
+                                            <strong>TRN:</strong> {client.trnNumber}
+                                        </InfoItem>
+                                    )}
+                                </ClientInfo>
+                                <ActionButtons>
+                                    <EditButton onClick={() => editClient(client.id)} disabled={isLoading}>
+                                        Edit
+                                    </EditButton>
+                                    <DeleteButton onClick={() => handleDeleteClick(client.id)} disabled={isLoading}>
+                                        Delete
+                                    </DeleteButton>
+                                </ActionButtons>
+                            </ClientItem>
+                        ))}
+                    </ClientList>
+                    
+                    {totalPages > 1 && (
+                        <Pagination>
+                            <PageButton
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                            >
+                                Previous
+                            </PageButton>
+                            <PageInfo>
+                                Page {currentPage} of {totalPages}
+                            </PageInfo>
+                            <PageButton
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                            >
+                                Next
+                            </PageButton>
+                        </Pagination>
+                    )}
+                </>
             )}
             
             {isModalOpen.status && (

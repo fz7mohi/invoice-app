@@ -76,7 +76,7 @@ export const StatsGrid = styled.div`
 `;
 
 export const StatCard = styled.div`
-    background-color: ${({ theme }) => theme.colors.backgroundAlt};
+    background-color: ${({ theme }) => theme.invoiceItem};
     border-radius: 16px;
     padding: 24px;
     display: flex;
@@ -329,7 +329,7 @@ export const ClientsList = styled.div`
 `;
 
 export const ClientItem = styled.div`
-    background-color: ${({ theme }) => theme.colors.backgroundAlt};
+    background-color: ${({ theme }) => theme.invoiceItem};
     border-radius: 16px;
     padding: 24px;
     display: flex;
