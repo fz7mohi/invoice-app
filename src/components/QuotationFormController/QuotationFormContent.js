@@ -1120,45 +1120,35 @@ const QuotationFormContent = ({ isEdited }) => {
             }
         }, 'quotation');
         
-        // Initialize clientAddress object with empty values
+        // Update client address fields
         handleQuotationChange({
             target: { 
                 name: 'clientAddress', 
                 value: {
-                    street: '',
+                    street: client.address || '',
                     city: '',
                     postCode: '',
-                    country: ''
+                    country: client.country || ''
                 }
             }
         }, 'quotation');
         
-        // Update client address fields
-        if (client.address) {
-            // Set the address in the clientAddress object
-            handleQuotationChange({
-                target: { name: 'street', value: client.address }
-            }, 'clientAddress');
-        }
+        // Set client ID
+        handleQuotationChange({
+            target: { name: 'clientId', value: client.id }
+        }, 'quotation');
         
-        // Set country
-        if (client.country) {
+        // Check if client is from UAE
+        const isUAE = client.country?.toLowerCase().includes('emirates') || 
+                      client.country?.toLowerCase().includes('uae');
+        setIsUAEClient(isUAE);
+        
+        // Set currency based on country
+        const currency = getCurrencySymbol(client.country);
+        if (currency) {
             handleQuotationChange({
-                target: { name: 'country', value: client.country }
-            }, 'clientAddress');
-            
-            // Check if client is from UAE
-            const isUAE = client.country.toLowerCase().includes('emirates') || 
-                         client.country.toLowerCase().includes('uae');
-            setIsUAEClient(isUAE);
-            
-            // Set currency based on country
-            const currency = getCurrencySymbol(client.country);
-            if (currency) {
-                handleQuotationChange({
-                    target: { name: 'currency', value: currency }
-                }, 'quotation');
-            }
+                target: { name: 'currency', value: currency }
+            }, 'quotation');
         }
     };
 

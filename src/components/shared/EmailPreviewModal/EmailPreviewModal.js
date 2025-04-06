@@ -65,6 +65,7 @@ const ModalIconWrapper = styled.div`
   align-items: center;
   justify-content: center;
   margin-right: 12px;
+  color: ${({ theme }) => theme.colors.purple};
 `;
 
 const ModalTitle = styled.h2`
@@ -72,6 +73,8 @@ const ModalTitle = styled.h2`
   font-size: 1.25rem;
   color: ${({ theme }) => theme.colors.text};
   font-weight: 600;
+  display: flex;
+  align-items: center;
 `;
 
 const ModalBody = styled.div`
@@ -97,6 +100,44 @@ const EmailSubject = styled.div`
 const EmailContent = styled.div`
   color: ${({ theme }) => theme.colors.backgroundItem};
   line-height: 1.5;
+`;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  min-height: 200px;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  background-color: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.backgroundItem};
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  margin-bottom: 20px;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.purple};
+  }
+`;
+
+const EditButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.white};
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: right;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.dark};
+  }
 `;
 
 const AttachmentPreview = styled.div`
@@ -172,6 +213,8 @@ const EmailPreviewModal = ({
 }) => {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(emailData.content);
   const isMounted = useRef(true);
 
   // Add cleanup effect to prevent state updates after unmounting
@@ -180,6 +223,10 @@ const EmailPreviewModal = ({
       isMounted.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    setEditedContent(emailData.content);
+  }, [emailData.content]);
 
   if (!isOpen) return null;
 
@@ -201,7 +248,7 @@ const EmailPreviewModal = ({
       await sendEmailWithAttachment(
         clientEmail,
         emailData.subject,
-        emailData.content,
+        isEditing ? editedContent : emailData.content,
         pdfBase64,
         pdfName
       );
@@ -228,6 +275,10 @@ const EmailPreviewModal = ({
     }
   };
 
+  const toggleEdit = () => {
+    setIsEditing(!isEditing);
+  };
+
   return (
     <ModalOverlay role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <ModalContent>
@@ -239,22 +290,35 @@ const EmailPreviewModal = ({
         
         <ModalHeader>
           <ModalIconWrapper>
-            <Icon name="mail" size={20} color="#7C5DFA" />
+            <Icon name="mail" size={20} />
           </ModalIconWrapper>
           <ModalTitle id="modalTitle">Send {documentType === 'invoice' ? 'Invoice' : 'Quotation'}</ModalTitle>
         </ModalHeader>
         
         <ModalBody>
-          <EmailPreview>
-            <EmailSubject>{emailData.subject}</EmailSubject>
-            <EmailContent dangerouslySetInnerHTML={{ __html: emailData.content }} />
-            <AttachmentPreview>
-              <AttachmentIcon>
-                <Icon name="file" size={16} />
-              </AttachmentIcon>
-              <AttachmentName>{pdfName}</AttachmentName>
-            </AttachmentPreview>
-          </EmailPreview>
+          <EditButton onClick={toggleEdit}>
+            <Icon name={isEditing ? "eye" : "edit"} size={16} />
+            {isEditing ? 'Preview' : 'Edit Content'}
+          </EditButton>
+
+          {isEditing ? (
+            <TextArea
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              placeholder="Edit email content..."
+            />
+          ) : (
+            <EmailPreview>
+              <EmailSubject>{emailData.subject}</EmailSubject>
+              <EmailContent dangerouslySetInnerHTML={{ __html: editedContent }} />
+              <AttachmentPreview>
+                <AttachmentIcon>
+                  <Icon name="file" size={16} />
+                </AttachmentIcon>
+                <AttachmentName>{pdfName}</AttachmentName>
+              </AttachmentPreview>
+            </EmailPreview>
+          )}
           
           {error && (
             <div style={{ color: 'red', marginBottom: '10px' }} role="alert">

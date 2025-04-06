@@ -245,13 +245,15 @@ export const generateQuotationEmailTemplate = ({ clientName }) => {
         <p>As discussed, I've attached the quotation for your requested products. It includes all branding and delivery charges — no hidden costs.</p>
         <p>Take your time to review it. If you'd like to adjust anything or need a custom sample, just let me know!</p>
         <p>Thanks again for considering Fortune Gifts.</p>
-        <p>Warm regards,<br>
-        Fayas<br>
-        Sales Head - GCC<br>
-        Fortune Gifts Trading W.L.L.<br>
-        Old Salata - Doha<br>
-        Qatar<br>
-        📞 +974 7001 3984</p>
+        <p style="font-weight: bold;">
+          Warm regards,<br>
+          Fayas<br>
+          Sales Head - GCC<br>
+          Fortune Gifts Trading W.L.L.<br>
+          Old Salata - Doha<br>
+          Qatar<br>
+          📞 +974 7001 3984
+        </p>
       </body>
     </html>
   `;
@@ -266,13 +268,15 @@ export const generateInvoiceEmailTemplate = ({ clientName }) => {
         <p>Thanks once again for your order!</p>
         <p>Please find attached the invoice for your recent purchase. It contains all the payment details you'll need. Feel free to get in touch if anything needs clarification.</p>
         <p>We truly appreciate your business and look forward to serving you again.</p>
-        <p>Warm regards,<br>
-        Fayas<br>
-        Sales Head - GCC<br>
-        Fortune Gifts Trading W.L.L.<br>
-        Old Salata - Doha<br>
-        Qatar<br>
-        📞 +974 7001 3984</p>
+        <p style="font-weight: bold;">
+          Warm regards,<br>
+          Fayas<br>
+          Sales Head - GCC<br>
+          Fortune Gifts Trading W.L.L.<br>
+          Old Salata - Doha<br>
+          Qatar<br>
+          📞 +974 7001 3984
+        </p>
       </body>
     </html>
   `;
@@ -288,11 +292,13 @@ export const generateReceiptEmailTemplate = ({ clientName, invoiceNumber }) => {
         <p>Please find the attached payment receipt for your records.</p>
         <p>We appreciate your prompt payment and the opportunity to serve you.</p>
         <p>If you need anything else, we're just a message away!</p>
-        <p>Warm regards,<br>
-        Rajeev Kumar<br>
-        Accounts & Finance<br>
-        Fortune Gifts Trading W.L.L.<br>
-        📞 +974 7001 3984</p>
+        <p style="font-weight: bold;">
+          Warm regards,<br>
+          Rajeev Kumar<br>
+          Accounts & Finance<br>
+          Fortune Gifts Trading W.L.L.<br>
+          📞 +974 7001 3984
+        </p>
       </body>
     </html>
   `;

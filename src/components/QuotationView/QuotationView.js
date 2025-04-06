@@ -140,11 +140,8 @@ const QuotationView = () => {
             setIsDirectlyFetching(true);
             setIsClientFetching(true);
             
-            // Fetch quotation and client data in parallel
-            const [quotationDoc, clientDoc] = await Promise.all([
-                getDoc(doc(db, 'quotations', quotationId)),
-                quotation?.clientId ? getDoc(doc(db, 'clients', quotation.clientId)) : Promise.resolve(null)
-            ]);
+            // First fetch the quotation
+            const quotationDoc = await getDoc(doc(db, 'quotations', quotationId));
             
             if (quotationDoc.exists()) {
                 const data = quotationDoc.data();
@@ -173,11 +170,14 @@ const QuotationView = () => {
                 
                 setQuotation(fetchedQuotation);
                 
-                // If we have client data, process it
-                if (clientDoc?.exists()) {
-                    const clientData = clientDoc.data();
-                    setClientData(clientData);
-                    setClientHasVAT(clientData.hasVAT || false);
+                // Now that we have the quotation data, fetch the client data if we have a clientId
+                if (fetchedQuotation.clientId) {
+                    const clientDoc = await getDoc(doc(db, 'clients', fetchedQuotation.clientId));
+                    if (clientDoc.exists()) {
+                        const clientData = clientDoc.data();
+                        setClientData(clientData);
+                        setClientHasVAT(clientData.hasVAT || false);
+                    }
                 }
                 
                 // If quotation was converted to invoice, fetch that data
@@ -328,14 +328,14 @@ const QuotationView = () => {
                 <div style="flex: 1;">
                     <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
                     <div style="color: black; font-size: 16px;">
-                        <strong>${quotation.clientName}</strong><br />
-                        ${clientData?.address || quotation.clientAddress?.street || ''}
+                        <strong>${quotation.clientName}</strong>
+                        ${(clientData?.address || quotation.clientAddress?.street) ? `<br>${clientData?.address || quotation.clientAddress?.street}` : ''}
                         ${quotation.clientAddress?.city ? `, ${quotation.clientAddress.city}` : ''}
                         ${quotation.clientAddress?.postCode ? `, ${quotation.clientAddress.postCode}` : ''}
                         ${clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
-                        ${clientData?.phone ? `<br />${clientData.phone}` : ''}
+                        ${clientData?.phone ? `<br>${clientData.phone}` : ''}
                         ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && clientData?.trn ? 
-                            `<br /><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
+                            `<br><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
                     </div>
                 </div>
                 <div style="text-align: right;">
@@ -552,20 +552,30 @@ const QuotationView = () => {
             clientData?.taxNumber ||
             quotation?.clientTRN;
 
+        // Get address and country from either source
+        const clientAddress = quotation.clientAddress?.street || clientData?.address || '';
+        const clientCountry = quotation.clientAddress?.country || clientData?.country || '';
+        const clientCity = quotation.clientAddress?.city || '';
+        const clientPostCode = quotation.clientAddress?.postCode || '';
+
+        // Format the address parts
+        const addressParts = [];
+        if (clientAddress) addressParts.push(clientAddress);
+        if (clientCity) addressParts.push(clientCity);
+        if (clientPostCode) addressParts.push(clientPostCode);
+        if (clientCountry) addressParts.push(clientCountry);
+
         return (
             <AddressGroup>
                 <AddressTitle>Bill To</AddressTitle>
                 <AddressText>
                     <strong>{quotation.clientName}</strong>
-                    {(clientData?.address || quotation.clientAddress?.street) && (
+                    {addressParts.length > 0 && (
                         <>
                             <br />
-                            {clientData?.address || quotation.clientAddress?.street}
+                            {addressParts.join(', ')}
                         </>
                     )}
-                    {quotation.clientAddress?.city && `, ${quotation.clientAddress.city}`}
-                    {quotation.clientAddress?.postCode && `, ${quotation.clientAddress.postCode}`}
-                    {(clientData?.country || quotation.clientAddress?.country) && `, ${clientData?.country || quotation.clientAddress?.country}`}
                     {clientData?.phone && (
                         <>
                             <br />
