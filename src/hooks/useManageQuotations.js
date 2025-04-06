@@ -484,12 +484,13 @@ const useManageQuotations = () => {
                     if (!documentId) {
                         throw new Error('No document ID found for editing');
                     }
+      
                     const quotationRef = doc(db, 'quotations', documentId);
                     await updateDoc(quotationRef, firestoreDoc);
                     
                     // Update local state immediately
                     const updatedQuotation = {
-                        ...quotationDoc,
+                        ...firestoreDoc,
                         id: documentId,
                         customId: quotationDoc.customId || documentId,
                         createdAt: quotationDoc.createdAt,
@@ -505,8 +506,12 @@ const useManageQuotations = () => {
                     dispatch({ type: 'SET_QUOTATIONS', payload: updatedQuotations });
                     dispatch(change(updatedQuotation));
                     
-                    // Force a refresh of the quotations list
-                    await refreshQuotations();
+                    // Reset form and close modal
+                    resetForm();
+                    dispatch(discard());
+                    
+                    // Return success without forcing a refresh
+                    return true;
                 } else {
                     // Add new document
                     const quotationsRef = collection(db, 'quotations');
@@ -518,17 +523,17 @@ const useManageQuotations = () => {
                         id: docRef.id,
                         customId: quotationDoc.customId || docRef.id
                     };
+                    
+                    // Update state
                     dispatch(add(newQuotation, state, type));
+                    
+                    // Reset form and close modal
+                    resetForm();
+                    dispatch(discard());
+                    
+                    // Return success without forcing a refresh
+                    return true;
                 }
-                
-                // Reset form and close modal
-                resetForm();
-                dispatch(discard());
-                
-                // Final refresh to ensure everything is in sync
-                await refreshQuotations();
-
-                return true;
             } catch (firebaseError) {
                 throw firebaseError;
             }

@@ -63,7 +63,7 @@ import {
     HeaderSection,
     HeaderTitle,
 } from './QuotationViewStyles';
-import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, updateDoc, Timestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import { generateEmailTemplate, generateQuotationEmailTemplate } from '../../services/emailService';
 import EmailPreviewModal from '../shared/EmailPreviewModal/EmailPreviewModal';
@@ -109,7 +109,11 @@ const QuotationView = () => {
     const [isConverting, setIsConverting] = useState(false);
     const [invoiceData, setInvoiceData] = useState(null);
     const [isFetchingInvoice, setIsFetchingInvoice] = useState(false);
-    const isLoading = quotationState?.isLoading || isDirectlyFetching || isClientFetching;
+    const [isLoading, setIsLoading] = useState(true);
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    const [emailData, setEmailData] = useState(null);
+    const [pdfData, setPdfData] = useState(null);
+    const [isSending, setIsSending] = useState(false);
     const quotationNotFound = !isLoading && !quotation;
     const isPending = quotation?.status === 'pending';
     const isDraft = quotation?.status === 'draft';
@@ -117,10 +121,6 @@ const QuotationView = () => {
     const isDesktop = windowWidth >= 768;
     const shouldReduceMotion = useReducedMotion();
     const history = useHistory();
-    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-    const [emailData, setEmailData] = useState(null);
-    const [pdfData, setPdfData] = useState(null);
-    const [isSending, setIsSending] = useState(false);
     
     // Variant selector for animations
     const variant = (element) => {
@@ -133,6 +133,77 @@ const QuotationView = () => {
     useEffect(() => {
         document.title = `Quotation | ${quotation?.customId || id}`;
     }, [quotation, id]);
+
+    // Update loading state when other loading states change
+    useEffect(() => {
+        const isCurrentlyLoading = quotationState?.isLoading || 
+                                 isDirectlyFetching || 
+                                 isClientFetching || 
+                                 isFetchingInvoice;
+        setIsLoading(isCurrentlyLoading);
+    }, [quotationState?.isLoading, isDirectlyFetching, isClientFetching, isFetchingInvoice]);
+
+    // Add subscription to quotation changes
+    useEffect(() => {
+        let unsubscribe;
+        
+        const subscribeToQuotation = async () => {
+            if (!id) return;
+            
+            const quotationRef = doc(db, 'quotations', id);
+            unsubscribe = onSnapshot(quotationRef, async (docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const data = docSnapshot.data();
+                    
+                    // Convert Firestore Timestamp to Date
+                    const createdAt = data.createdAt?.toDate() || new Date();
+                    const paymentDue = data.paymentDue?.toDate() || new Date();
+                    
+                    setQuotation({
+                        ...data,
+                        id: docSnapshot.id,
+                        createdAt,
+                        paymentDue
+                    });
+                    
+                    // If client data exists, fetch it
+                    if (data.clientId) {
+                        try {
+                            const clientDoc = await getDoc(doc(db, 'clients', data.clientId));
+                            if (clientDoc.exists()) {
+                                setClientData(clientDoc.data());
+                                setClientHasVAT(clientDoc.data().hasVAT || false);
+                            }
+                        } catch (error) {
+                            console.error('Error fetching client data:', error);
+                        }
+                    }
+                    
+                    // If quotation was converted to invoice, fetch that data
+                    if (data.invoiceId) {
+                        fetchInvoiceData(data.invoiceId);
+                    }
+                    
+                    setIsLoading(false);
+                } else {
+                    // Handle non-existent quotation
+                    history.push('/quotations');
+                }
+            }, (error) => {
+                console.error('Error listening to quotation:', error);
+                setIsLoading(false);
+            });
+        };
+        
+        subscribeToQuotation();
+        
+        // Cleanup subscription
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
+    }, [id, history]);
 
     // Add a function to fetch all data in parallel
     const fetchAllData = async (quotationId) => {
@@ -333,7 +404,12 @@ const QuotationView = () => {
                         ${quotation.clientAddress?.city ? `, ${quotation.clientAddress.city}` : ''}
                         ${quotation.clientAddress?.postCode ? `, ${quotation.clientAddress.postCode}` : ''}
                         ${clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
-                        ${clientData?.phone ? `<br>${clientData.phone}` : ''}
+                        {clientData?.phone && (
+                            <>
+                                <br />
+                                {clientData.phone}
+                            </>
+                        )}
                         ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && clientData?.trn ? 
                             `<br><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
                     </div>
@@ -1396,7 +1472,7 @@ const QuotationView = () => {
                                 )}
                             </div>
                             <TotalAmount>
-                                {formatPrice(quotation.grandTotal || quotation.total || 0, quotation.currency)}
+                                {formatPrice(quotation.total || quotation.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0), quotation.currency)}
                             </TotalAmount>
                         </Total>
                     </Details>
