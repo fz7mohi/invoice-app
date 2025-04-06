@@ -75,7 +75,7 @@ const Quotations = () => {
             filterType,
             windowWidth
         );
-        document.title = `Invoice App | ${message}`;
+        document.title = `Fordox App | ${message}`;
     }, [filteredQuotations.length, filterType, windowWidth]);
 
     // Define variant based on element type and reduced motion preference

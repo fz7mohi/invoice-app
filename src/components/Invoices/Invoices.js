@@ -70,7 +70,7 @@ const Invoices = () => {
             filterType,
             windowWidth
         );
-        document.title = `Invoice App | ${message}`;
+        document.title = `Fordox App | ${message}`;
     }, [filteredInvoices.length, filterType, windowWidth]);
 
     // Define variant based on element type and reduced motion preference

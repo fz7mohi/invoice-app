@@ -111,7 +111,7 @@ const Receipts = () => {
             filterType,
             windowWidth
         );
-        document.title = `Invoice App | ${message}`;
+        document.title = `Fordox App | ${message}`;
     }, [filteredReceipts.length, filterType, windowWidth]);
 
     return (
