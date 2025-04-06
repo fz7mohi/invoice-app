@@ -1191,12 +1191,20 @@ const QuotationFormContent = ({ isEdited }) => {
                 if (name === 'quantity' || name === 'price') {
                     const quantity = parseFloat(updatedItems[index].quantity) || 0;
                     const price = parseFloat(updatedItems[index].price) || 0;
-                    const subtotal = quantity * price;
                     
-                    // Calculate VAT for UAE clients
-                    const vat = isUAEClient ? subtotal * 0.05 : 0;
-                    updatedItems[index].vat = vat;
-                    updatedItems[index].total = subtotal + vat;
+                    // Ensure we're working with valid numbers
+                    if (!isNaN(quantity) && !isNaN(price)) {
+                        const subtotal = Number((quantity * price).toFixed(2));
+                        
+                        // Calculate VAT for UAE clients
+                        const vat = isUAEClient ? Number((subtotal * 0.05).toFixed(2)) : 0;
+                        updatedItems[index].vat = vat;
+                        updatedItems[index].total = Number((subtotal + vat).toFixed(2));
+                    } else {
+                        // If invalid numbers, set to 0
+                        updatedItems[index].vat = 0;
+                        updatedItems[index].total = 0;
+                    }
                 }
                 
                 return updatedItems;
@@ -1562,12 +1570,25 @@ const QuotationFormContent = ({ isEdited }) => {
                                     </MinimalLabel>
                                     <MinimalInput
                                         id={`item-price-${index}`}
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
+                                        type="text"
+                                        inputMode="decimal"
+                                        pattern="[0-9]*[.,]?[0-9]*"
                                         name="price"
                                         value={item.price || ''}
                                         onChange={(event) => handleItemChange(event, 'items', null, index)}
+                                        onBlur={(event) => {
+                                            // Format the number on blur to ensure proper decimal places
+                                            const value = event.target.value;
+                                            if (value && !isNaN(Number(value))) {
+                                                const formattedValue = Number(value).toFixed(2);
+                                                handleItemChange({
+                                                    target: {
+                                                        name: 'price',
+                                                        value: formattedValue
+                                                    }
+                                                }, 'items', null, index);
+                                            }
+                                        }}
                                     />
                                 </div>
                                 

@@ -1,14 +1,21 @@
 /**
  * Function that allows the user to enter only numbers and a single decimal point.
+ * Handles locale-specific decimal separators and limits to 2 decimal places.
  * @param    {string}  value - string to convert
  * @return {string} String with a valid number.
  */
 const allowOnlyNumbers = (value) => {
-    // If empty, return 0
-    if (!value) return '0';
+    // If empty or null, return empty string to allow clearing the field
+    if (!value && value !== 0) return '';
 
+    // Convert to string and handle locale-specific decimal separators
+    const stringValue = value.toString();
+    
+    // Replace comma with period for decimal point
+    const normalizedValue = stringValue.replace(/,/g, '.');
+    
     // Remove any characters that aren't numbers or decimal point
-    const cleaned = value.replace(/[^\d.]/g, '');
+    const cleaned = normalizedValue.replace(/[^\d.]/g, '');
 
     // Handle multiple decimal points - keep only the first one
     const parts = cleaned.split('.');
@@ -16,9 +23,14 @@ const allowOnlyNumbers = (value) => {
         return parts[0] + '.' + parts.slice(1).join('');
     }
 
-    // If it's not a valid number after cleaning, return 0
+    // If it's not a valid number after cleaning, return empty string
     if (isNaN(Number(cleaned))) {
-        return '0';
+        return '';
+    }
+
+    // Limit to 2 decimal places if there's a decimal point
+    if (parts.length === 2) {
+        return parts[0] + '.' + parts[1].slice(0, 2);
     }
 
     return cleaned;
