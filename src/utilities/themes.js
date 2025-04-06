@@ -78,7 +78,7 @@ export const darkTheme = {
   },
   backgrounds: {
     main: '#1E2139',
-    card: '#252945',
+    card: '#181b2e',
     input: '#1E2139',
     hoveredItem: '#252945'
   },
