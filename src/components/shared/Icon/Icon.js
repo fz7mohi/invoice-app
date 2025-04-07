@@ -18,7 +18,12 @@ import {
     faFileAlt,
     faCalendar,
     faTimes,
-    faTrash
+    faTrash,
+    faMapMarkerAlt,
+    faDownload,
+    faEnvelope,
+    faCopy,
+    faEdit
 } from '@fortawesome/free-solid-svg-icons';
 
 const iconMap = {
@@ -40,7 +45,13 @@ const iconMap = {
     'statement': faFileAlt,
     'calendar': faCalendar,
     'close': faTimes,
-    'delete': faTrash
+    'delete': faTrash,
+    'trash': faTrash,
+    'map': faMapMarkerAlt,
+    'download': faDownload,
+    'mail': faEnvelope,
+    'copy': faCopy,
+    'edit': faEdit
 };
 
 const getFontAwesomeSize = (size) => {

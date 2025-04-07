@@ -531,6 +531,9 @@ const useManageQuotations = () => {
                     resetForm();
                     dispatch(discard());
                     
+                    // Redirect to the new quotation view
+                    window.location.href = `/quotation/${docRef.id}`;
+                    
                     // Return success without forcing a refresh
                     return true;
                 }

@@ -2,6 +2,44 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
+export const ActionButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 24px;
+    background-color: ${({ theme }) => theme.colors.backgroundItem};
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 14px;
+    font-weight: 700;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+
+    svg {
+        flex-shrink: 0;
+    }
+
+    &:hover {
+        background-color: ${({ theme }) => theme.colors.backgroundItemHover};
+    }
+
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    @media (min-width: 768px) {
+        padding: 8px 24px;
+        font-size: 15px;
+    }
+`;
+
+export const DownloadButton = styled(ActionButton)`
+    // Inherit all styles from ActionButton
+`;
+
 export const StyledQuotationView = styled.main`
     padding: 28px 24px 0;
     width: 100%;
@@ -76,27 +114,137 @@ export const Text = styled.span`
 
 export const ButtonWrapper = styled.div`
     display: flex;
-    gap: 8px;
-    position: fixed;
+    flex-direction: column;
+    width: 100%;
+    background: ${({ theme }) => theme.colors.background};
+    position: sticky;
+    bottom: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    padding: 16px 20px;
-    width: 100%;
-    background-color: ${({ theme }) => theme.colors.backgroundAlt};
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
     z-index: 10;
-    transition: all 0.3s ease;
-    padding-bottom: 76px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-top: 1px solid ${({ theme }) => theme.colors.border};
 
     @media (min-width: 768px) {
-        position: relative;
-        margin-left: auto;
+        flex-direction: row;
+        justify-content: flex-end;
+        padding: 16px 24px;
+        gap: 12px;
+        border-radius: 8px;
+        margin: 0 24px 24px;
         width: auto;
-        background-color: transparent;
-        box-shadow: none;
-        padding: 0;
-        padding-bottom: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    button {
+        width: 100%;
+        height: 56px;
+        padding: 0 16px;
+        border-radius: 0;
+        font-size: 15px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+
+        &:not(:last-child) {
+            border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        svg {
+            width: 18px;
+            height: 18px;
+            transition: transform 0.2s ease;
+        }
+
+        &:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+    }
+
+    button[data-action="duplicate"] {
+        background-color: ${({ theme }) => theme.colors.purple};
+        color: white;
+        border: none;
+
+        &:hover:not(:disabled) {
+            background-color: ${({ theme }) => theme.colors.purpleHover};
+        }
+    }
+
+    button[data-action="edit"] {
+        background-color: ${({ theme }) => theme.colors.background};
+        color: ${({ theme }) => theme.colors.text};
+        border: none;
+
+        &:hover:not(:disabled) {
+            background-color: ${({ theme }) => theme.colors.backgroundAlt};
+        }
+    }
+
+    button[data-action="delete"] {
+        background-color: ${({ theme }) => theme.colors.background};
+        color: ${({ theme }) => theme.colors.red};
+        border: none;
+
+        &:hover:not(:disabled) {
+            background-color: ${({ theme }) => theme.colors.red};
+            color: white;
+        }
+    }
+
+    button[data-action="invoice"] {
+        background-color: ${({ theme }) => theme.colors.purple};
+        color: white;
+        border: none;
+
+        &:hover:not(:disabled) {
+            background-color: ${({ theme }) => theme.colors.purpleHover};
+        }
+    }
+
+    @media (min-width: 768px) {
+        button {
+            width: auto;
+            min-width: 120px;
+            height: 44px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            
+            &:not(:last-child) {
+                border-bottom: none;
+            }
+        }
+
+        button[data-action="edit"] {
+            background-color: transparent;
+            border: 1px solid ${({ theme }) => theme.colors.border};
+
+            &:hover:not(:disabled) {
+                background-color: transparent;
+                border-color: ${({ theme }) => theme.colors.purple};
+                color: ${({ theme }) => theme.colors.purple};
+            }
+        }
+
+        button[data-action="delete"] {
+            background-color: transparent;
+            border: 1px solid ${({ theme }) => theme.colors.red};
+
+            &:hover:not(:disabled) {
+                background-color: ${({ theme }) => theme.colors.red};
+                color: white;
+            }
+        }
     }
 `;
 
@@ -497,45 +645,47 @@ export const PrintButton = styled.button`
     }
 `;
 
-export const DownloadButton = styled.button`
+export const ActionButtons = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
-    border-radius: 24px;
-    background-color: ${({ theme }) => theme.colors.backgroundItem};
-    color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 14px;
-    font-weight: 700;
-    border: 1px solid ${({ theme }) => theme.colors.border};
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-        background-color: ${({ theme }) => theme.colors.backgroundItemHover};
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin: 0 -24px;
+    padding-left: 24px;
+    padding-right: 24px;
+    -webkit-overflow-scrolling: touch;
+    
+    &::-webkit-scrollbar {
+        display: none;
     }
-
-    &:disabled {
-        opacity: 0.7;
-        cursor: not-allowed;
-    }
-
+    
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    
     @media (min-width: 768px) {
-        padding: 8px 24px;
-        font-size: 15px;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
     }
 `;
 
 export const HeaderSection = styled.div`
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 16px;
     margin-bottom: 24px;
     padding-bottom: 16px;
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 
     @media (min-width: 768px) {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
         margin-bottom: 32px;
         padding-bottom: 20px;
+        gap: 24px;
     }
 `;
 

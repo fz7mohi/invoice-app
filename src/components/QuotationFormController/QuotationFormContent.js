@@ -663,19 +663,20 @@ const FormSection = styled.section`
 const ItemCard = styled.div`
     background: rgba(37, 41, 69, 0.3);
     border-radius: 12px;
-    padding: 16px;
+    padding: 20px;
     margin-bottom: 16px;
     border: 1px solid #252945;
     position: relative;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 
     @media (min-width: 768px) {
-        padding: 24px;
+        padding: 28px;
         margin-bottom: 24px;
         
         &:hover {
             border-color: #7C5DFA;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
         }
     }
 `;
@@ -708,17 +709,19 @@ const ItemTitle = styled.h3`
 
 const ItemGrid = styled.div`
     display: grid;
-    gap: 16px;
+    gap: 20px;
     grid-template-columns: 1fr;
     
     @media (min-width: 768px) {
-        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-        gap: 24px;
+        grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr;
+        gap: 32px;
         align-items: start;
     }
 
-    @media (min-width: 1024px) {
-        grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr;
+    > div {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 `;
 
@@ -728,14 +731,25 @@ const DeleteButton = styled.button`
     padding: 8px;
     color: #888EB0;
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: 6px;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1;
+
+    @media (min-width: 768px) {
+        top: 28px;
+        right: 28px;
+        padding: 10px;
+    }
 
     &:hover {
         color: #EC5757;
+        background: rgba(236, 87, 87, 0.1);
     }
 
     &:focus-visible {
@@ -822,57 +836,71 @@ const ItemsHeader = styled.div`
     
     @media (min-width: 768px) {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-        gap: 24px;
-        padding: 0 24px 12px 24px;
+        grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr;
+        gap: 32px;
+        padding: 0 28px 16px 28px;
         border-bottom: 1px solid #252945;
-        margin-bottom: 24px;
+        margin-bottom: 32px;
         
         span {
             color: #DFE3FA;
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-    }
-
-    @media (min-width: 1024px) {
-        grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr;
     }
 `;
 
 // Add a total summary section for desktop
 const ItemsSummary = styled.div`
-    display: none;
+    display: flex;
+    flex-direction: column;
+    margin-top: 24px;
+    padding: 20px;
+    background: rgba(37, 41, 69, 0.3);
+    border-radius: 12px;
+    border: 1px solid #252945;
+
+    .summary-content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .label {
+            color: #DFE3FA;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .value {
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .currency {
+            color: #888EB0;
+            margin-right: 4px;
+        }
+    }
     
     @media (min-width: 768px) {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
         margin-top: 32px;
-        padding: 24px;
-        background: #252945;
-        border-radius: 12px;
-        
+        padding: 24px 28px;
+        justify-content: flex-end;
+
         .summary-content {
-            display: grid;
-            grid-template-columns: auto auto;
-            gap: 16px 32px;
-            align-items: center;
-            
-            .label {
-                color: #DFE3FA;
-                font-size: 13px;
-            }
-            
-            .value {
-                color: #FFFFFF;
-                font-size: 16px;
-                font-weight: 700;
-                text-align: right;
-                min-width: 120px;
-            }
+            min-width: 300px;
         }
     }
 `;
@@ -1641,7 +1669,6 @@ const QuotationFormContent = ({ isEdited }) => {
                                 type="button"
                                 onClick={() => removeItemAtIndex(index)}
                                 aria-label={`Delete item ${index + 1}`}
-                                style={{ position: 'absolute', top: '24px', right: '24px' }}
                             >
                                 <Icon name="delete" size={16} />
                             </DeleteButton>
@@ -1660,28 +1687,39 @@ const QuotationFormContent = ({ isEdited }) => {
                     {localItems.length > 0 && (
                         <ItemsSummary>
                             <div className="summary-content">
-                                <span className="label">Subtotal:</span>
-                                <span className="value">
-                                    {quotation.currency || 'USD'} {formatNumber(
-                                        localItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
-                                    )}
-                                </span>
+                                <div className="summary-row">
+                                    <span className="label">Subtotal:</span>
+                                    <span className="value">
+                                        <span className="currency">{quotation.currency || 'USD'}</span>
+                                        {formatNumber(
+                                            localItems.reduce((sum, item) => {
+                                                const quantity = parseFloat(item.quantity) || 0;
+                                                const price = parseFloat(item.price) || 0;
+                                                return sum + (quantity * price);
+                                            }, 0)
+                                        )}
+                                    </span>
+                                </div>
                                 {isUAEClient && (
-                                    <>
+                                    <div className="summary-row">
                                         <span className="label">VAT (5%):</span>
                                         <span className="value">
-                                            {quotation.currency || 'USD'} {formatNumber(
+                                            <span className="currency">{quotation.currency || 'USD'}</span>
+                                            {formatNumber(
                                                 localItems.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0)
                                             )}
                                         </span>
-                                    </>
+                                    </div>
                                 )}
-                                <span className="label">Total:</span>
-                                <span className="value">
-                                    {quotation.currency || 'USD'} {formatNumber(
-                                        localItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
-                                    )}
-                                </span>
+                                <div className="summary-row">
+                                    <span className="label">Total:</span>
+                                    <span className="value">
+                                        <span className="currency">{quotation.currency || 'USD'}</span>
+                                        {formatNumber(
+                                            localItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
+                                        )}
+                                    </span>
+                                </div>
                             </div>
                         </ItemsSummary>
                     )}

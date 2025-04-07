@@ -62,6 +62,7 @@ import {
     StatusContainer,
     HeaderSection,
     HeaderTitle,
+    ActionButton,
 } from './QuotationViewStyles';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, updateDoc, Timestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
@@ -69,6 +70,7 @@ import { generateEmailTemplate, generateQuotationEmailTemplate } from '../../ser
 import EmailPreviewModal from '../shared/EmailPreviewModal/EmailPreviewModal';
 import { format } from 'date-fns';
 import { message } from 'antd';
+import styled from 'styled-components';
 
 // Use same variants as invoices for consistent animations
 const quotationViewVariants = {
@@ -1219,6 +1221,30 @@ const QuotationView = () => {
                 
                 <HeaderSection>
                     <HeaderTitle>Quotation</HeaderTitle>
+                    <ActionButtons>
+                        <ActionButton onClick={handleDuplicateQuotation} disabled={isLoading}>
+                            <Icon name="copy" size={13} />
+                            
+                        </ActionButton>
+                        <ActionButton onClick={handleEditClick} disabled={isLoading || quotation.convertedToInvoice}>
+                            <Icon name="edit" size={13} />
+                            
+                        </ActionButton>
+                        <ActionButton onClick={handleDeleteClick} disabled={isLoading} style={{color: 'red'}}>
+                            <Icon name="trash" size={13} color="red" />
+                            
+                        </ActionButton>
+                        <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
+                            <Icon name="download" size={13} />
+                        
+                        </DownloadButton>
+                        {isPending && !quotation.convertedToInvoice && (
+                            <ActionButton onClick={handleConvertToInvoice} disabled={isLoading || isConverting}>
+                                <Icon name="arrow-right" size={13} />
+                                {isConverting ? 'Converting...' : 'Invoice'}
+                            </ActionButton>
+                        )}
+                    </ActionButtons>
                 </HeaderSection>
                 
                 {/* Status bar with action buttons */}
@@ -1236,60 +1262,7 @@ const QuotationView = () => {
                                  quotation.status === 'pending' ? 'Pending' : 'Draft'}
                             </span>
                         </StatusBadge>
-                        <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
-                            <Icon name="download" size={13} />
-                                    Share
-                        </DownloadButton>
                     </div>
-                    
-                    {isDesktop && (
-                        <ButtonWrapper className="ButtonWrapper">
-                            <Button
-                                $primary
-                                onClick={handleDuplicateQuotation}
-                                disabled={isLoading}
-                                style={{
-                                    backgroundColor: colors.purple,
-                                    border: 'none'
-                                }}
-                            >
-                                <Icon 
-                                    name="copy" 
-                                    size={14} 
-                                    color="white"
-                                />
-                                <span>Duplicate</span>
-                            </Button>
-                            <Button
-                                $secondary
-                                onClick={handleEditClick}
-                                disabled={isLoading || quotation.convertedToInvoice}
-                                style={{
-                                    opacity: quotation.convertedToInvoice ? 0.6 : 1,
-                                    cursor: quotation.convertedToInvoice ? 'not-allowed' : 'pointer'
-                                }}
-                            >
-                                Edit
-                            </Button>
-                            <Button
-                                $delete
-                                onClick={handleDeleteClick}
-                                disabled={isLoading}
-                            >
-                                Delete
-                            </Button>
-                            {isPending && !quotation.convertedToInvoice && (
-                                <Button
-                                    $primary
-                                    onClick={handleConvertToInvoice}
-                                    disabled={isLoading || isConverting}
-                                >
-                                    <Icon name="arrow-right" size={13} style={{ marginRight: '6px' }} />
-                                    {isConverting ? 'Converting...' : 'Invoice'}
-                                </Button>
-                            )}
-                        </ButtonWrapper>
-                    )}
                 </Controller>
                 
                 {/* Main quotation info */}
@@ -1320,7 +1293,7 @@ const QuotationView = () => {
                                         color={colors.textTertiary}
                                         style={{ marginRight: '8px', verticalAlign: 'middle' }}
                                     />
-                                    Converted to Invoice: 
+                                    Invoice 
                                     <Link
                                         to={`/invoice/${quotation.convertedToInvoice}`}
                                         style={{ 
@@ -1487,60 +1460,6 @@ const QuotationView = () => {
                 </InfoCard>
             </Container>
             
-            {/* Mobile action buttons */}
-            {!isDesktop && (
-                <ButtonWrapper className="ButtonWrapper">
-                    {!isConverting && (
-                        <>
-                            <Button
-                                $secondary
-                                onClick={handleEditClick}
-                                disabled={isLoading || quotation.convertedToInvoice}
-                                style={{
-                                    opacity: quotation.convertedToInvoice ? 0.6 : 1,
-                                    cursor: quotation.convertedToInvoice ? 'not-allowed' : 'pointer'
-                                }}
-                            >
-                                Edit
-                            </Button>
-                            <Button
-                                $primary
-                                onClick={handleDuplicateQuotation}
-                                disabled={isLoading}
-                                style={{
-                                    backgroundColor: colors.purple,
-                                    border: 'none'
-                                }}
-                            >
-                                <Icon 
-                                    name="copy" 
-                                    size={14} 
-                                    color="white"
-                                />
-                                <span>Duplicate</span>
-                            </Button>
-                            <Button
-                                $delete
-                                onClick={handleDeleteClick}
-                                disabled={isLoading}
-                            >
-                                Delete
-                            </Button>
-                            {isPending && !quotation.convertedToInvoice && (
-                                <Button
-                                    $primary
-                                    onClick={handleConvertToInvoice}
-                                    disabled={isLoading || isConverting}
-                                >
-                                    <Icon name="arrow-right" size={13} style={{ marginRight: '6px' }} />
-                                    {isConverting ? 'Converting...' : 'Invoice'}
-                                </Button>
-                            )}
-                        </>
-                    )}
-                </ButtonWrapper>
-            )}
-
             {/* Convert Confirmation Modal */}
             {showConvertModal && (
                 <div style={{
@@ -1588,7 +1507,7 @@ const QuotationView = () => {
                                 fontSize: '1.25rem',
                                 color: colors.text,
                                 fontWeight: '600'
-                            }}>Convert to Invoice</h2>
+                            }}>Invoice</h2>
                         </div>
                         <p style={{ 
                             marginBottom: '2rem',
