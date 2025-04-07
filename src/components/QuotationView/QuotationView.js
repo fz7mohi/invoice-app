@@ -1270,7 +1270,7 @@ const QuotationView = () => {
                             <InfoID>
                                 <span>#</span>{quotation.customId}
                             </InfoID>
-                            <InfoDesc>{quotation.description || 'No description'}</InfoDesc>
+                            <InfoDesc>Project: {quotation.description || 'No description'}</InfoDesc>
                             {quotation.convertedToInvoice && (
                                 <span style={{ 
                                     color: colors.textTertiary,
@@ -1306,10 +1306,10 @@ const QuotationView = () => {
                                     <Icon name="calendar" size={13} />
                                     Created: {formatDate(quotation.createdAt)}
                                 </MetaItem>
-                                <MetaItem>
+                                {/* <MetaItem>
                                     <Icon name="calendar" size={13} />
                                     Due: {formatDate(quotation.paymentDue)}
-                                </MetaItem>
+                                </MetaItem> */}
                             </MetaInfo>
                         </InfoGroup>
                     </InfoHeader>
@@ -1343,10 +1343,10 @@ const QuotationView = () => {
                             alignItems: 'center'
                         }}>
                             <div>
-                                <AddressTitle>Sent to</AddressTitle>
+                                <AddressTitle>Email to</AddressTitle>
                                 <AddressText>
                                     <span style={{ display: 'flex', alignItems: 'center' }}>
-                                        <Icon name="mail" size={13} style={{ marginRight: '6px', color: colors.purple }} />
+                                        <Icon name="mail" size={8} style={{ marginRight: '6px', color: colors.purple }} />
                                         {quotation.clientEmail}
                                     </span>
                                 </AddressText>
@@ -1367,15 +1367,18 @@ const QuotationView = () => {
                                     color: colors.text,
                                     cursor: isSending ? 'not-allowed' : 'pointer',
                                     transition: 'all 0.2s ease',
-                                    fontSize: '0.9rem'
+                                    fontSize: '0.9rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
                                 }}
                             >
                                 {isSending ? (
-                                    <Icon name="spinner" size={13} style={{ marginRight: '6px', animation: 'spin 1s linear infinite' }} />
+                                    <Icon name="spinner" size={13} style={{ animation: 'spin 1s linear infinite' }} />
                                 ) : (
-                                    <Icon name="mail" size={13} style={{ marginRight: '6px' }} />
+                                    <Icon name="mail" size={13} />
                                 )}
-                                {isSending ? 'Sending...' : 'Send'}
+                                {isSending ? 'Sending...' : 'Email'}
                             </Button>
                         </AddressGroup>
                     )}
