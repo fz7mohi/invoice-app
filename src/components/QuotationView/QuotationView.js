@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Redirect, useHistory, Link } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import { useReducedMotion } from 'framer-motion';
@@ -123,7 +123,30 @@ const QuotationView = () => {
     const isDesktop = windowWidth >= 768;
     const shouldReduceMotion = useReducedMotion();
     const history = useHistory();
+    const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+    const timelineRef = useRef(null);
+    const toggleButtonRef = useRef(null);
     
+    // Add click outside handler for timeline drawer
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                isTimelineOpen && 
+                timelineRef.current && 
+                !timelineRef.current.contains(event.target) &&
+                toggleButtonRef.current &&
+                !toggleButtonRef.current.contains(event.target)
+            ) {
+                setIsTimelineOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isTimelineOpen]);
+
     // Variant selector for animations
     const variant = (element) => {
         return shouldReduceMotion
@@ -1055,6 +1078,55 @@ const QuotationView = () => {
         }
     };
 
+    // Mock timeline data
+    const timelineData = [
+        {
+            id: 1,
+            type: 'edit',
+            icon: 'edit',
+            title: 'Quotation Edited',
+            description: 'Updated item quantities and prices',
+            timestamp: '2024-03-20T10:30:00',
+            user: 'John Doe'
+        },
+        {
+            id: 2,
+            type: 'email',
+            icon: 'mail',
+            title: 'Email Sent',
+            description: 'Quotation sent to client@example.com',
+            timestamp: '2024-03-19T15:45:00',
+            user: 'System'
+        },
+        {
+            id: 3,
+            type: 'download',
+            icon: 'download',
+            title: 'PDF Downloaded',
+            description: 'Client downloaded quotation PDF',
+            timestamp: '2024-03-19T14:20:00',
+            user: 'Client'
+        },
+        {
+            id: 4,
+            type: 'duplicate',
+            icon: 'copy',
+            title: 'Quotation Duplicated',
+            description: 'Created duplicate quotation #QT-2024-002',
+            timestamp: '2024-03-18T11:15:00',
+            user: 'Jane Smith'
+        },
+        {
+            id: 5,
+            type: 'create',
+            icon: 'plus',
+            title: 'Quotation Created',
+            description: 'New quotation created',
+            timestamp: '2024-03-18T10:00:00',
+            user: 'Jane Smith'
+        }
+    ];
+
     // Show loading state
     if (isLoading || !quotation) {
         return (
@@ -1206,252 +1278,477 @@ const QuotationView = () => {
     return (
         <StyledQuotationView className="StyledQuotationView">
             <Container>
-                <MotionLink
-                    to="/quotations"
-                    variants={variant('link')}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className="MotionLink"
-                    style={{ marginBottom: '28px' }}
-                >
-                    <Icon name={'arrow-left'} size={10} color={colors.purple} />
-                    Go back
-                </MotionLink>
-                
-                <HeaderSection>
-                    <HeaderTitle>
-                        Quotation
-                        <StatusBadge status={quotation.status}>
-                            <StatusDot />
-                            <span>
-                                {quotation.status === 'approved' ? 'Approved' : 
-                                 quotation.status === 'pending' ? 'Pending' : 'Draft'}
-                            </span>
-                        </StatusBadge>
-                    </HeaderTitle>
-                    <ActionButtons>
-                        <ActionButton onClick={handleDuplicateQuotation} disabled={isLoading}>
-                            <Icon name="copy" size={13} />
+                <div style={{ display: 'flex', gap: '24px', position: 'relative' }}>
+                    <div style={{ flex: 1 }}>
+                        <MotionLink
+                            to="/quotations"
+                            variants={variant('link')}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            className="MotionLink"
+                            style={{ marginBottom: '28px' }}
+                        >
+                            <Icon name={'arrow-left'} size={10} color={colors.purple} />
+                            Go back
+                        </MotionLink>
+                        
+                        <HeaderSection>
+                            <HeaderTitle>
+                                Quotation
+                                <StatusBadge status={quotation.status}>
+                                    <StatusDot />
+                                    <span>
+                                        {quotation.status === 'approved' ? 'Approved' : 
+                                         quotation.status === 'pending' ? 'Pending' : 'Draft'}
+                                    </span>
+                                </StatusBadge>
+                            </HeaderTitle>
+                            <ActionButtons>
+                                <ActionButton onClick={handleDuplicateQuotation} disabled={isLoading}>
+                                    <Icon name="copy" size={13} />
+                                    
+                                </ActionButton>
+                                <ActionButton onClick={handleEditClick} disabled={isLoading || quotation.convertedToInvoice}>
+                                    <Icon name="edit" size={13} />
+                                    
+                                </ActionButton>
+                                <ActionButton onClick={handleDeleteClick} disabled={isLoading}>
+                                    <Icon name="trash" size={13} color="red" />
+                                    
+                                </ActionButton>
+                                <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
+                                    <Icon name="download" size={13} />
+                                    
+                                </DownloadButton>
+                                {isPending && !quotation.convertedToInvoice && (
+                                    <ActionButton onClick={handleConvertToInvoice} disabled={isLoading || isConverting}>
+                                        <Icon name="arrow-right" size={13} />
+                                        {isConverting ? 'Converting...' : 'Invoice'}
+                                    </ActionButton>
+                                )}
+                            </ActionButtons>
                             
-                        </ActionButton>
-                        <ActionButton onClick={handleEditClick} disabled={isLoading || quotation.convertedToInvoice}>
-                            <Icon name="edit" size={13} />
+                        </HeaderSection>
+                        
+                        <InfoCard
+                            id="quotation-content"
+                            variants={variant('info')}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            className="InfoCard"
+                        >
+                            <InfoHeader>
+                                <InfoGroup>
+                                    <InfoID>
+                                        <span>#</span>{quotation.customId}
+                                    </InfoID>
+                                    <InfoDesc>Project: {quotation.description || 'No description'}</InfoDesc>
+                                    {quotation.convertedToInvoice && (
+                                        <span style={{ 
+                                            color: colors.textTertiary,
+                                            fontSize: '13px',
+                                            display: 'block',
+                                            marginTop: '4px'
+                                        }}>
+                                            <Icon 
+                                                name="arrow-right" 
+                                                size={12} 
+                                                color={colors.textTertiary}
+                                                style={{ marginRight: '8px', verticalAlign: 'middle' }}
+                                            />
+                                            Invoice 
+                                            <Link
+                                                to={`/invoice/${quotation.convertedToInvoice}`}
+                                                style={{ 
+                                                    color: 'white',
+                                                    textDecoration: 'none',
+                                                    cursor: 'pointer',
+                                                    fontWeight: '500',
+                                                    marginLeft: '4px',
+                                                    marginTop: '10px',
+                                                    verticalAlign: 'middle'
+                                                }}
+                                            >
+                                                #{isFetchingInvoice ? 'Loading...' : (invoiceData?.customId || quotation.convertedToInvoice)}
+                                            </Link>
+                                        </span>
+                                    )}
+                                    <MetaInfo>
+                                        <MetaItem>
+                                            <Icon name="calendar" size={13} />
+                                            Created: {formatDate(quotation.createdAt)}
+                                        </MetaItem>
+                                        {/* <MetaItem>
+                                            <Icon name="calendar" size={13} />
+                                            Due: {formatDate(quotation.paymentDue)}
+                                        </MetaItem> */}
+                                    </MetaInfo>
+                                </InfoGroup>
+                            </InfoHeader>
                             
-                        </ActionButton>
-                        <ActionButton onClick={handleDeleteClick} disabled={isLoading}>
-                            <Icon name="trash" size={13} color="red" />
+                            <InfoAddresses className="InfoAddresses">
+                                {renderClientSection()}
+                                
+                                <AddressGroup align="right">
+                                    <AddressTitle>Quotation #</AddressTitle>
+                                    <AddressText>
+                                        {quotation.customId || id}
+                                    </AddressText>
+                                    <br />
+                                    <AddressTitle>Quote Date</AddressTitle>
+                                   
+                                    <AddressText>
+                                        {formatDate(quotation.createdAt)}
+                                    </AddressText>
+                                </AddressGroup>
+                            </InfoAddresses>
                             
-                        </ActionButton>
-                        <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
-                            <Icon name="download" size={13} />
-                            
-                        </DownloadButton>
-                        {isPending && !quotation.convertedToInvoice && (
-                            <ActionButton onClick={handleConvertToInvoice} disabled={isLoading || isConverting}>
-                                <Icon name="arrow-right" size={13} />
-                                {isConverting ? 'Converting...' : 'Invoice'}
-                            </ActionButton>
-                        )}
-                    </ActionButtons>
-                    
-                </HeaderSection>
-                
-                <InfoCard
-                    id="quotation-content"
-                    variants={variant('info')}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className="InfoCard"
-                >
-                    <InfoHeader>
-                        <InfoGroup>
-                            <InfoID>
-                                <span>#</span>{quotation.customId}
-                            </InfoID>
-                            <InfoDesc>Project: {quotation.description || 'No description'}</InfoDesc>
-                            {quotation.convertedToInvoice && (
-                                <span style={{ 
-                                    color: colors.textTertiary,
-                                    fontSize: '13px',
-                                    display: 'block',
-                                    marginTop: '4px'
+                            {quotation.clientEmail && (
+                                <AddressGroup style={{
+                                    border: `1px solid ${colors.border}`,
+                                    borderRadius: '8px',
+                                    padding: '16px',
+                                    backgroundColor: colors.backgroundItem,
+                                    marginBottom: '32px',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
                                 }}>
-                                    <Icon 
-                                        name="arrow-right" 
-                                        size={12} 
-                                        color={colors.textTertiary}
-                                        style={{ marginRight: '8px', verticalAlign: 'middle' }}
-                                    />
-                                    Invoice 
-                                    <Link
-                                        to={`/invoice/${quotation.convertedToInvoice}`}
-                                        style={{ 
-                                            color: 'white',
-                                            textDecoration: 'none',
-                                            cursor: 'pointer',
-                                            fontWeight: '500',
-                                            marginLeft: '4px',
-                                            marginTop: '10px',
-                                            verticalAlign: 'middle'
+                                    <div>
+                                        <AddressTitle>Email to</AddressTitle>
+                                        <AddressText>
+                                            <span style={{ display: 'flex', alignItems: 'center' }}>
+                                                <Icon name="mail" size={8} style={{ marginRight: '6px', color: colors.purple }} />
+                                                {quotation.clientEmail}
+                                            </span>
+                                        </AddressText>
+                                    </div>
+                                    <Button
+                                        $secondary
+                                        onClick={async () => {
+                                            setIsSending(true);
+                                            await handleSendEmail();
+                                            setIsSending(false);
+                                        }}
+                                        disabled={isSending}
+                                        style={{
+                                            padding: '8px 16px',
+                                            borderRadius: '8px',
+                                            border: `1px solid ${colors.border}`,
+                                            backgroundColor: colors.background,
+                                            color: colors.text,
+                                            cursor: isSending ? 'not-allowed' : 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            fontSize: '0.9rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
                                         }}
                                     >
-                                        #{isFetchingInvoice ? 'Loading...' : (invoiceData?.customId || quotation.convertedToInvoice)}
-                                    </Link>
-                                </span>
+                                        {isSending ? (
+                                            <Icon name="spinner" size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                                        ) : (
+                                            <Icon name="mail" size={13} />
+                                        )}
+                                        {isSending ? 'Sending...' : 'Email'}
+                                    </Button>
+                                </AddressGroup>
                             )}
-                            <MetaInfo>
-                                <MetaItem>
-                                    <Icon name="calendar" size={13} />
-                                    Created: {formatDate(quotation.createdAt)}
-                                </MetaItem>
-                                {/* <MetaItem>
-                                    <Icon name="calendar" size={13} />
-                                    Due: {formatDate(quotation.paymentDue)}
-                                </MetaItem> */}
-                            </MetaInfo>
-                        </InfoGroup>
-                    </InfoHeader>
-                    
-                    <InfoAddresses className="InfoAddresses">
-                        {renderClientSection()}
-                        
-                        <AddressGroup align="right">
-                            <AddressTitle>Quotation #</AddressTitle>
-                            <AddressText>
-                                {quotation.customId || id}
-                            </AddressText>
-                            <br />
-                            <AddressTitle>Quote Date</AddressTitle>
-                           
-                            <AddressText>
-                                {formatDate(quotation.createdAt)}
-                            </AddressText>
-                        </AddressGroup>
-                    </InfoAddresses>
-                    
-                    {quotation.clientEmail && (
-                        <AddressGroup style={{
-                            border: `1px solid ${colors.border}`,
-                            borderRadius: '8px',
-                            padding: '16px',
-                            backgroundColor: colors.backgroundItem,
-                            marginBottom: '32px',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                        }}>
-                            <div>
-                                <AddressTitle>Email to</AddressTitle>
-                                <AddressText>
-                                    <span style={{ display: 'flex', alignItems: 'center' }}>
-                                        <Icon name="mail" size={8} style={{ marginRight: '6px', color: colors.purple }} />
-                                        {quotation.clientEmail}
-                                    </span>
-                                </AddressText>
-                            </div>
-                            <Button
-                                $secondary
-                                onClick={async () => {
-                                    setIsSending(true);
-                                    await handleSendEmail();
-                                    setIsSending(false);
-                                }}
-                                disabled={isSending}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '8px',
-                                    border: `1px solid ${colors.border}`,
-                                    backgroundColor: colors.background,
-                                    color: colors.text,
-                                    cursor: isSending ? 'not-allowed' : 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    fontSize: '0.9rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}
-                            >
-                                {isSending ? (
-                                    <Icon name="spinner" size={13} style={{ animation: 'spin 1s linear infinite' }} />
-                                ) : (
-                                    <Icon name="mail" size={13} />
-                                )}
-                                {isSending ? 'Sending...' : 'Email'}
-                            </Button>
-                        </AddressGroup>
-                    )}
-                    
-                    {/* Items section */}
-                    <Details className="Details">
-                        <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
-                            <HeaderCell>Item Name</HeaderCell>
-                            <HeaderCell>QTY.</HeaderCell>
-                            <HeaderCell>Price</HeaderCell>
-                            {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
-                            <HeaderCell>Total</HeaderCell>
-                        </ItemsHeader>
-                        
-                        <Items>
-                            {quotation.items && quotation.items.map((item, index) => {
-                                // Use the stored VAT value from the database instead of recalculating
-                                const itemVAT = item.vat || 0;
+                            
+                            {/* Items section */}
+                            <Details className="Details">
+                                <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
+                                    <HeaderCell>Item Name</HeaderCell>
+                                    <HeaderCell>QTY.</HeaderCell>
+                                    <HeaderCell>Price</HeaderCell>
+                                    {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
+                                    <HeaderCell>Total</HeaderCell>
+                                </ItemsHeader>
                                 
-                                return (
-                                    <Item key={index} showVat={clientHasVAT}>
-                                        <div className="item-details">
-                                            <ItemName>{item.name}</ItemName>
-                                            {item.description && (
-                                                <ItemDescription>{item.description}</ItemDescription>
-                                            )}
-                                            <div className="item-mobile-details">
-                                                <span>
-                                                    {item.quantity || 0} × {formatPrice(item.price || 0, quotation.currency)}
-                                                    {clientHasVAT && ` (+${formatPrice(itemVAT, quotation.currency)} VAT)`}
+                                <Items>
+                                    {quotation.items && quotation.items.map((item, index) => {
+                                        // Use the stored VAT value from the database instead of recalculating
+                                        const itemVAT = item.vat || 0;
+                                        
+                                        return (
+                                            <Item key={index} showVat={clientHasVAT}>
+                                                <div className="item-details">
+                                                    <ItemName>{item.name}</ItemName>
+                                                    {item.description && (
+                                                        <ItemDescription>{item.description}</ItemDescription>
+                                                    )}
+                                                    <div className="item-mobile-details">
+                                                        <span>
+                                                            {item.quantity || 0} × {formatPrice(item.price || 0, quotation.currency)}
+                                                            {clientHasVAT && ` (+${formatPrice(itemVAT, quotation.currency)} VAT)`}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <ItemQty>{item.quantity || 0}</ItemQty>
+                                                <ItemPrice>
+                                                    {formatPrice(item.price || 0, quotation.currency)}
+                                                </ItemPrice>
+                                                {clientHasVAT && (
+                                                    <ItemVat>
+                                                        {formatPrice(itemVAT, quotation.currency)}
+                                                    </ItemVat>
+                                                )}
+                                                <ItemTotal>
+                                                    {formatPrice(item.total || 0, quotation.currency)}
+                                                </ItemTotal>
+                                            </Item>
+                                        );
+                                    })}
+                                </Items>
+                                
+                                <Total className="Total">
+                                    <div>
+                                        <TotalText>Grand Total</TotalText>
+                                        {clientHasVAT && (
+                                            <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.8, color: 'white' }}>
+                                                Includes VAT: {formatPrice(quotation.items.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0), quotation.currency)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <TotalAmount>
+                                        {formatPrice(quotation.total || quotation.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0), quotation.currency)}
+                                    </TotalAmount>
+                                </Total>
+                            </Details>
+                            
+                            {/* Terms and conditions section */}
+                            {quotation.termsAndConditions && (
+                                <TermsSection className="TermsSection">
+                                    <TermsTitle>Terms and Conditions</TermsTitle>
+                                    <TermsText>{quotation.termsAndConditions}</TermsText>
+                                </TermsSection>
+                            )}
+                        </InfoCard>
+                    </div>
+
+                    {/* Timeline Drawer Toggle Button */}
+                    <div 
+                        ref={toggleButtonRef}
+                        style={{
+                            position: 'fixed',
+                            right: isTimelineOpen ? '320px' : '0',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            zIndex: 1000,
+                            transition: 'right 0.3s ease',
+                            height: '120px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <button
+                            onClick={() => setIsTimelineOpen(!isTimelineOpen)}
+                            style={{
+                                padding: '12px 8px',
+                                background: '#181b2e',
+                                border: '2px solid #a78bfa',
+                                borderRadius: '0px 8px 8px 0px',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 0 10px rgba(167, 139, 250, 0.5)',
+                                transition: 'all 0.3s ease',
+                                color: 'white',
+                                fontWeight: '200',
+                                fontSize: '10px',
+                                letterSpacing: '0.5px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '80%',
+                                width: '40px',
+                                writingMode: 'vertical-rl',
+                                textOrientation: 'mixed',
+                                transform: 'rotate(180deg)',
+                                whiteSpace: 'nowrap',
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15), 0 0 15px rgba(167, 139, 250, 0.7)';
+                                e.currentTarget.style.border = '2px solid #b794f4';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15), 0 0 10px rgba(167, 139, 250, 0.5)';
+                                e.currentTarget.style.border = '2px solid #a78bfa';
+                            }}
+                        >
+                            {isTimelineOpen ? 'Close' : 'Activity Monitor'}
+                        </button>
+                    </div>
+
+                    {/* Timeline Drawer */}
+                    <div 
+                        ref={timelineRef}
+                        style={{
+                            position: 'fixed',
+                            right: isTimelineOpen ? '0' : '-320px',
+                            top: 0,
+                            bottom: 0,
+                            width: '320px',
+                            background: '#181b2e',
+                            borderLeft: 'none',
+                            boxShadow: isTimelineOpen ? '-4px 0 20px rgba(0, 0, 0, 0.2)' : 'none',
+                            transition: 'all 0.3s ease',
+                            zIndex: 999,
+                            overflowY: 'auto'
+                        }}
+                    >
+                        <div style={{
+                            padding: '24px',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                marginBottom: '24px',
+                                paddingBottom: '16px',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                            }}>
+                                <h3 style={{
+                                    margin: 0,
+                                    fontSize: '18px',
+                                    fontWeight: '600',
+                                    color: 'white'
+                                }}>
+                                    Activity Timeline
+                                </h3>
+                                <button
+                                    onClick={() => setIsTimelineOpen(false)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        padding: '8px',
+                                        cursor: 'pointer',
+                                        color: 'rgba(255, 255, 255, 0.7)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderRadius: '50%',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                    <Icon name="x" size={16} color="white" />
+                                </button>
+                            </div>
+                            
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '20px',
+                                flex: 1
+                            }}>
+                                {timelineData.map((item) => (
+                                    <div key={item.id} style={{
+                                        display: 'flex',
+                                        gap: '16px',
+                                        position: 'relative',
+                                        paddingLeft: '28px'
+                                    }}>
+                                        {/* Timeline line */}
+                                        {item.id !== timelineData.length && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                left: '13px',
+                                                top: '28px',
+                                                bottom: '-20px',
+                                                width: '2px',
+                                                background: 'rgba(255, 255, 255, 0.1)'
+                                            }} />
+                                        )}
+                                        
+                                        {/* Icon */}
+                                        <div style={{
+                                            width: '28px',
+                                            height: '28px',
+                                            borderRadius: '50%',
+                                            background: item.type === 'edit' ? 'rgba(0, 123, 255, 0.2)' :
+                                                       item.type === 'email' ? 'rgba(40, 167, 69, 0.2)' :
+                                                       item.type === 'download' ? 'rgba(255, 193, 7, 0.2)' :
+                                                       item.type === 'duplicate' ? 'rgba(111, 66, 193, 0.2)' :
+                                                       'rgba(23, 162, 184, 0.2)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            position: 'relative',
+                                            zIndex: 1,
+                                            border: '2px solid rgba(255, 255, 255, 0.1)'
+                                        }}>
+                                            <Icon 
+                                                name={item.icon} 
+                                                size={12} 
+                                                color={item.type === 'edit' ? '#007bff' :
+                                                       item.type === 'email' ? '#28a745' :
+                                                       item.type === 'download' ? '#ffc107' :
+                                                       item.type === 'duplicate' ? '#6f42c1' :
+                                                       '#17a2b8'}
+                                            />
+                                        </div>
+                                        
+                                        {/* Content */}
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'flex-start',
+                                                marginBottom: '6px'
+                                            }}>
+                                                <h4 style={{
+                                                    margin: 0,
+                                                    fontSize: '15px',
+                                                    fontWeight: '500',
+                                                    color: 'white'
+                                                }}>
+                                                    {item.title}
+                                                </h4>
+                                                <span style={{
+                                                    fontSize: '12px',
+                                                    color: 'rgba(255, 255, 255, 0.5)'
+                                                }}>
+                                                    {formatDate(new Date(item.timestamp))}
                                                 </span>
                                             </div>
+                                            <p style={{
+                                                margin: '0 0 6px 0',
+                                                fontSize: '13px',
+                                                color: 'rgba(255, 255, 255, 0.7)',
+                                                lineHeight: '1.5'
+                                            }}>
+                                                {item.description}
+                                            </p>
+                                            <span style={{
+                                                fontSize: '12px',
+                                                color: 'rgba(255, 255, 255, 0.5)',
+                                                display: 'flex',
+                                                alignItems: 'center'
+                                            }}>
+                                                <span style={{ 
+                                                    width: '6px', 
+                                                    height: '6px', 
+                                                    borderRadius: '50%', 
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                                    marginRight: '6px'
+                                                }}></span>
+                                                By {item.user}
+                                            </span>
                                         </div>
-                                        <ItemQty>{item.quantity || 0}</ItemQty>
-                                        <ItemPrice>
-                                            {formatPrice(item.price || 0, quotation.currency)}
-                                        </ItemPrice>
-                                        {clientHasVAT && (
-                                            <ItemVat>
-                                                {formatPrice(itemVAT, quotation.currency)}
-                                            </ItemVat>
-                                        )}
-                                        <ItemTotal>
-                                            {formatPrice(item.total || 0, quotation.currency)}
-                                        </ItemTotal>
-                                    </Item>
-                                );
-                            })}
-                        </Items>
-                        
-                        <Total className="Total">
-                            <div>
-                                <TotalText>Grand Total</TotalText>
-                                {clientHasVAT && (
-                                    <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.8, color: 'white' }}>
-                                        Includes VAT: {formatPrice(quotation.items.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0), quotation.currency)}
                                     </div>
-                                )}
+                                ))}
                             </div>
-                            <TotalAmount>
-                                {formatPrice(quotation.total || quotation.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0), quotation.currency)}
-                            </TotalAmount>
-                        </Total>
-                    </Details>
-                    
-                    {/* Terms and conditions section */}
-                    {quotation.termsAndConditions && (
-                        <TermsSection className="TermsSection">
-                            <TermsTitle>Terms and Conditions</TermsTitle>
-                            <TermsText>{quotation.termsAndConditions}</TermsText>
-                        </TermsSection>
-                    )}
-                </InfoCard>
+                        </div>
+                    </div>
+                </div>
             </Container>
             
             {/* Convert Confirmation Modal */}

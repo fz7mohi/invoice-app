@@ -23,7 +23,10 @@ import {
     faDownload,
     faEnvelope,
     faCopy,
-    faEdit
+    faEdit,
+    faChevronLeft,
+    faChevronRight,
+    faSpinner
 } from '@fortawesome/free-solid-svg-icons';
 
 const iconMap = {
@@ -51,7 +54,11 @@ const iconMap = {
     'download': faDownload,
     'mail': faEnvelope,
     'copy': faCopy,
-    'edit': faEdit
+    'edit': faEdit,
+    'chevron-left': faChevronLeft,
+    'chevron-right': faChevronRight,
+    'x': faTimes,
+    'spinner': faSpinner
 };
 
 const getFontAwesomeSize = (size) => {
