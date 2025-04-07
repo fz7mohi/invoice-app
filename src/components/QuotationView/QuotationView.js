@@ -1220,7 +1220,16 @@ const QuotationView = () => {
                 </MotionLink>
                 
                 <HeaderSection>
-                    <HeaderTitle>Quotation</HeaderTitle>
+                    <HeaderTitle>
+                        Quotation
+                        <StatusBadge status={quotation.status}>
+                            <StatusDot />
+                            <span>
+                                {quotation.status === 'approved' ? 'Approved' : 
+                                 quotation.status === 'pending' ? 'Pending' : 'Draft'}
+                            </span>
+                        </StatusBadge>
+                    </HeaderTitle>
                     <ActionButtons>
                         <ActionButton onClick={handleDuplicateQuotation} disabled={isLoading}>
                             <Icon name="copy" size={13} />
@@ -1230,13 +1239,13 @@ const QuotationView = () => {
                             <Icon name="edit" size={13} />
                             
                         </ActionButton>
-                        <ActionButton onClick={handleDeleteClick} disabled={isLoading} style={{color: 'red'}}>
+                        <ActionButton onClick={handleDeleteClick} disabled={isLoading}>
                             <Icon name="trash" size={13} color="red" />
                             
                         </ActionButton>
                         <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
                             <Icon name="download" size={13} />
-                        
+                            
                         </DownloadButton>
                         {isPending && !quotation.convertedToInvoice && (
                             <ActionButton onClick={handleConvertToInvoice} disabled={isLoading || isConverting}>
@@ -1245,27 +1254,9 @@ const QuotationView = () => {
                             </ActionButton>
                         )}
                     </ActionButtons>
+                    
                 </HeaderSection>
                 
-                {/* Status bar with action buttons */}
-                <Controller
-                    variants={variant('controller')}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className="Controller"
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <StatusBadge status={quotation.status}>
-                            <span>
-                                {quotation.status === 'approved' ? 'Approved' : 
-                                 quotation.status === 'pending' ? 'Pending' : 'Draft'}
-                            </span>
-                        </StatusBadge>
-                    </div>
-                </Controller>
-                
-                {/* Main quotation info */}
                 <InfoCard
                     id="quotation-content"
                     variants={variant('info')}

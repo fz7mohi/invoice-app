@@ -535,60 +535,75 @@ export const TermsText = styled.p`
     white-space: pre-wrap;
 `;
 
-export const StatusBadge = styled.div`
+export const StatusDot = styled.span`
+    width: 6px;
+    height: 6px;
+    background: currentColor;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+`;
+
+export const StatusBadge = styled.span`
     display: inline-flex;
     align-items: center;
-    padding: 8px 12px;
-    border-radius: 4px;
-    background-color: ${({ theme, status }) => {
-        switch (status) {
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    box-shadow: 0 0 0 1px ${props => {
+        switch (props.status) {
             case 'approved':
-                return theme.colors.statusApprovedBg || 'rgba(51, 214, 159, 0.1)';
+                return 'rgba(0, 200, 83, 0.2)';
             case 'pending':
-                return theme.colors.statusPendingBg || 'rgba(255, 143, 0, 0.1)';
-            case 'draft':
-                return theme.colors.statusDraftBg || 'rgba(55, 59, 83, 0.1)';
+                return 'rgba(255, 171, 0, 0.2)';
             default:
-                return theme.colors.statusPendingBg || 'rgba(255, 143, 0, 0.1)';
+                return 'rgba(130, 143, 163, 0.2)';
         }
     }};
-    
-    span {
-        font-size: 13px;
-        font-weight: 600;
-        color: ${({ theme, status }) => {
-            switch (status) {
-                case 'approved':
-                    return theme.colors.statusApprovedText || 'rgb(51, 214, 159)';
-                case 'pending':
-                    return theme.colors.statusPendingText || 'rgb(255, 143, 0)';
-                case 'draft':
-                    return theme.colors.statusDraftText || 'rgb(55, 59, 83)';
-                default:
-                    return theme.colors.statusPendingText || 'rgb(255, 143, 0)';
-            }
-        }};
-        padding-left: 8px;
-    }
+    background: ${props => {
+        switch (props.status) {
+            case 'approved':
+                return 'rgba(0, 200, 83, 0.1)';
+            case 'pending':
+                return 'rgba(255, 171, 0, 0.1)';
+            default:
+                return 'rgba(130, 143, 163, 0.1)';
+        }
+    }};
+    color: ${props => {
+        switch (props.status) {
+            case 'approved':
+                return '#00C853';
+            case 'pending':
+                return '#FFAB00';
+            default:
+                return '#828FA3';
+        }
+    }};
+    position: relative;
+    overflow: hidden;
 
-    &:before {
+    &::before {
         content: '';
-        display: block;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background-color: ${({ theme, status }) => {
-            switch (status) {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: ${props => {
+            switch (props.status) {
                 case 'approved':
-                    return theme.colors.statusApprovedText || 'rgb(51, 214, 159)';
+                    return 'radial-gradient(circle at center, rgba(0, 200, 83, 0.2) 0%, transparent 70%)';
                 case 'pending':
-                    return theme.colors.statusPendingText || 'rgb(255, 143, 0)';
-                case 'draft':
-                    return theme.colors.statusDraftText || 'rgb(55, 59, 83)';
+                    return 'radial-gradient(circle at center, rgba(255, 171, 0, 0.2) 0%, transparent 70%)';
                 default:
-                    return theme.colors.statusPendingText || 'rgb(255, 143, 0)';
+                    return 'radial-gradient(circle at center, rgba(130, 143, 163, 0.2) 0%, transparent 70%)';
             }
         }};
+        filter: blur(4px);
+        z-index: -1;
     }
 `;
 
@@ -695,6 +710,9 @@ export const HeaderTitle = styled.h1`
     color: ${({ theme }) => theme.colors.textPrimary};
     margin: 0;
     letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 
     @media (min-width: 768px) {
         font-size: 24px;
