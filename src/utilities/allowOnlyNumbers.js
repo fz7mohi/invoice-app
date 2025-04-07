@@ -14,6 +14,21 @@ const allowOnlyNumbers = (value) => {
     // Replace comma with period for decimal point
     const normalizedValue = stringValue.replace(/,/g, '.');
     
+    // Check if the value is just a decimal point
+    if (normalizedValue === '.') return '0.';
+    
+    // Check if the value ends with a decimal point
+    if (normalizedValue.endsWith('.')) {
+        // Remove any characters that aren't numbers or decimal point
+        const cleaned = normalizedValue.replace(/[^\d.]/g, '');
+        // Ensure there's only one decimal point
+        const parts = cleaned.split('.');
+        if (parts.length > 2) {
+            return parts[0] + '.';
+        }
+        return cleaned;
+    }
+    
     // Remove any characters that aren't numbers or decimal point
     const cleaned = normalizedValue.replace(/[^\d.]/g, '');
 
@@ -24,7 +39,7 @@ const allowOnlyNumbers = (value) => {
     }
 
     // If it's not a valid number after cleaning, return empty string
-    if (isNaN(Number(cleaned))) {
+    if (isNaN(Number(cleaned)) && cleaned !== '.') {
         return '';
     }
 

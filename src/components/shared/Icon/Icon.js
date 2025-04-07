@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
     faArrowDown, 
     faArrowRight, 
+    faArrowLeft,
     faCheck, 
     faPlus,
     faImage,
@@ -16,12 +17,14 @@ import {
     faSearch,
     faFileAlt,
     faCalendar,
-    faTimes
+    faTimes,
+    faTrash
 } from '@fortawesome/free-solid-svg-icons';
 
 const iconMap = {
     'arrow-down': faArrowDown,
     'arrow-right': faArrowRight,
+    'arrow-left': faArrowLeft,
     'check': faCheck,
     'plus': faPlus,
     'image': faImage,
@@ -36,7 +39,8 @@ const iconMap = {
     'search': faSearch,
     'statement': faFileAlt,
     'calendar': faCalendar,
-    'close': faTimes
+    'close': faTimes,
+    'delete': faTrash
 };
 
 const getFontAwesomeSize = (size) => {

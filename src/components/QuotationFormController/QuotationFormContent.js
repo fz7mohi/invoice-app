@@ -1166,12 +1166,23 @@ const QuotationFormContent = ({ isEdited }) => {
             // Update the item in the local state
             setLocalItems(prevItems => {
                 const updatedItems = [...prevItems];
-                // Allow only numbers for quantity and price
-                const processedValue = 
-                    (name === 'quantity' || name === 'price') 
-                    ? allowOnlyNumbers(value) 
-                    : value;
-                    
+                
+                // Handle different fields
+                let processedValue = value;
+                
+                if (name === 'quantity') {
+                    // For quantity, only allow whole numbers
+                    processedValue = value.replace(/[^\d]/g, '');
+                } else if (name === 'price') {
+                    // For price, allow decimal numbers
+                    // Only update if empty or matches valid decimal pattern
+                    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                        processedValue = value;
+                    } else {
+                        return prevItems; // Return without updating if invalid
+                    }
+                }
+                
                 updatedItems[index] = {
                     ...updatedItems[index],
                     [name]: processedValue
@@ -1547,9 +1558,17 @@ const QuotationFormContent = ({ isEdited }) => {
                                     </MinimalLabel>
                                     <MinimalInput
                                         id={`item-quantity-${index}`}
-                                        type="text"
+                                        type="number"
+                                        inputMode="numeric"
+                                        min="0"
                                         name="quantity"
                                         value={item.quantity || ''}
+                                        style={{
+                                            fontSize: '16px',
+                                            WebkitAppearance: 'none',
+                                            appearance: 'none',
+                                            touchAction: 'manipulation'
+                                        }}
                                         onChange={(event) => handleItemChange(event, 'items', null, index)}
                                     />
                                 </div>
@@ -1558,19 +1577,38 @@ const QuotationFormContent = ({ isEdited }) => {
                                     <MinimalLabel htmlFor={`item-price-${index}`}>
                                         Price ({quotation.currency || 'USD'})
                                     </MinimalLabel>
-                                    <MinimalInput
+                                    <input
                                         id={`item-price-${index}`}
-                                        type="text"
+                                        type="number"
                                         inputMode="decimal"
-                                        pattern="[0-9]*[.,]?[0-9]*"
+                                        step="0.01"
+                                        min="0"
                                         name="price"
                                         value={item.price || ''}
-                                        onChange={(event) => handleItemChange(event, 'items', null, index)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 12px',
+                                            backgroundColor: '#252945',
+                                            color: '#FFFFFF',
+                                            border: '1px solid #252945',
+                                            borderRadius: '4px',
+                                            fontSize: '16px',
+                                            WebkitAppearance: 'none',
+                                            appearance: 'none',
+                                            touchAction: 'manipulation'
+                                        }}
+                                        onChange={(event) => {
+                                            handleItemChange({
+                                                target: {
+                                                    name: 'price',
+                                                    value: event.target.value
+                                                }
+                                            }, 'items', null, index);
+                                        }}
                                         onBlur={(event) => {
-                                            // Format the number on blur to ensure proper decimal places
                                             const value = event.target.value;
-                                            if (value && !isNaN(Number(value))) {
-                                                const formattedValue = Number(value).toFixed(2);
+                                            if (value && !isNaN(parseFloat(value))) {
+                                                const formattedValue = parseFloat(value).toFixed(2);
                                                 handleItemChange({
                                                     target: {
                                                         name: 'price',

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #141625;
+            color: #FFFFFF;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #7C5DFA;
+        }
+        .input-container {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #1E2139;
+            border-radius: 8px;
+            border: 1px solid #252945;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: #252945;
+            color: #FFFFFF;
+            border: 1px solid #252945;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            border-color: #7C5DFA;
+            outline: none;
+        }
+        .value-display {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #DFE3FA;
+        }
+        .description {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #888EB0;
+        }
+        .debug-info {
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #888EB0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Input Test Page</h1>
+    <p>This page contains various input fields to test decimal input functionality.</p>
+
+    <div class="input-container">
+        <label for="basic-input">Basic Text Input</label>
+        <input type="text" id="basic-input" placeholder="Type anything here...">
+        <div class="value-display">Current value: <span id="basic-input-value">empty</span></div>
+        <div class="description">This is a basic text input with no restrictions.</div>
+        <div class="debug-info" id="basic-input-debug"></div>
+    </div>
+
+    <div class="input-container">
+        <label for="number-input">Number Input</label>
+        <input type="number" id="number-input" step="0.01" min="0" placeholder="Type numbers here...">
+        <div class="value-display">Current value: <span id="number-input-value">empty</span></div>
+        <div class="description">This uses the HTML5 number input type with step="0.01".</div>
+        <div class="debug-info" id="number-input-debug"></div>
+    </div>
+
+    <div class="input-container">
+        <label for="decimal-input">Decimal Input (text)</label>
+        <input 
+            type="text" 
+            id="decimal-input" 
+            inputmode="decimal" 
+            pattern="[0-9]*[.,]?[0-9]*"
+            placeholder="Type decimal numbers here..."
+            onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 46"
+        >
+        <div class="value-display">Current value: <span id="decimal-input-value">empty</span></div>
+        <div class="description">This is a text input with inputmode="decimal", pattern, and keypress validation.</div>
+        <div class="debug-info" id="decimal-input-debug"></div>
+    </div>
+
+    <div class="input-container">
+        <label for="custom-input">Custom Decimal Input</label>
+        <input type="text" id="custom-input" placeholder="Type decimal numbers here...">
+        <div class="value-display">Current value: <span id="custom-input-value">empty</span></div>
+        <div class="description">This input uses JavaScript to handle decimal input.</div>
+        <div class="debug-info" id="custom-input-debug"></div>
+    </div>
+
+    <script>
+        // Debug info update function
+        function updateDebugInfo(event, debugId) {
+            const debugElement = document.getElementById(debugId);
+            const info = {
+                type: event.type,
+                key: event.key,
+                keyCode: event.keyCode,
+                charCode: event.charCode,
+                which: event.which,
+                target: {
+                    value: event.target.value,
+                    selectionStart: event.target.selectionStart,
+                    selectionEnd: event.target.selectionEnd
+                }
+            };
+            debugElement.textContent = JSON.stringify(info, null, 2);
+        }
+
+        // Update value displays with debug info
+        function updateValueDisplay(inputId, displayId, debugId) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+            
+            ['input', 'keydown', 'keypress', 'keyup'].forEach(eventType => {
+                input.addEventListener(eventType, function(event) {
+                    display.textContent = this.value || 'empty';
+                    updateDebugInfo(event, debugId);
+                });
+            });
+        }
+
+        // Initialize all value displays
+        updateValueDisplay('basic-input', 'basic-input-value', 'basic-input-debug');
+        updateValueDisplay('number-input', 'number-input-value', 'number-input-debug');
+        updateValueDisplay('decimal-input', 'decimal-input-value', 'decimal-input-debug');
+        updateValueDisplay('custom-input', 'custom-input-value', 'custom-input-debug');
+
+        // Improved custom decimal input handler
+        const customInput = document.getElementById('custom-input');
+        customInput.addEventListener('input', function(e) {
+            let value = e.target.value;
+            const cursorPosition = e.target.selectionStart;
+            
+            // Replace commas with periods
+            value = value.replace(/,/g, '.');
+            
+            // Remove any non-numeric characters except decimal point
+            value = value.replace(/[^\d.]/g, '');
+            
+            // Ensure only one decimal point
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // Handle special case of just a decimal point
+            if (value === '.') {
+                value = '0.';
+            }
+            
+            // Update the input value
+            e.target.value = value;
+            
+            // Restore cursor position
+            e.target.setSelectionRange(cursorPosition, cursorPosition);
+        });
+    </script>
+</body>
+</html> 
