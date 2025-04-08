@@ -429,12 +429,7 @@ const QuotationView = () => {
                         ${quotation.clientAddress?.city ? `, ${quotation.clientAddress.city}` : ''}
                         ${quotation.clientAddress?.postCode ? `, ${quotation.clientAddress.postCode}` : ''}
                         ${clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
-                        {clientData?.phone && (
-                            <>
-                                <br />
-                                {clientData.phone}
-                            </>
-                        )}
+                        ${clientData?.phone ? `<br>${clientData.phone}` : ''}
                         ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && clientData?.trn ? 
                             `<br><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
                     </div>
