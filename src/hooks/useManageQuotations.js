@@ -134,7 +134,7 @@ const useManageQuotations = () => {
                     const quotationsCollection = collection(db, 'quotations');
                     const quotationsQuery = query(
                         quotationsCollection,
-                        orderBy('createdAt', 'desc') // Sort by creation date in descending order
+                        orderBy('modifiedAt', 'desc') // Sort by modified date in descending order
                     );
                     const querySnapshot = await getDocs(quotationsQuery);
                     
@@ -432,6 +432,7 @@ const useManageQuotations = () => {
                 quotationDoc.customId = quotationDoc.id;
                 quotationDoc.status = type === 'draft' ? 'draft' : 'pending';
                 quotationDoc.createdAt = new Date();
+                quotationDoc.modifiedAt = new Date();
                 quotationDoc.paymentDue = new Date();
             } else {
                 // Preserve the existing ID and customId for editing
@@ -440,6 +441,7 @@ const useManageQuotations = () => {
                 // Preserve the original status and dates
                 quotationDoc.status = quotation.status || 'pending';
                 quotationDoc.createdAt = quotation.createdAt || new Date();
+                quotationDoc.modifiedAt = new Date();
                 quotationDoc.paymentDue = quotation.paymentDue || new Date();
             }
 

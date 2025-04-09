@@ -108,7 +108,7 @@ const List = ({ quotations, isLoading, variant }) => {
             const quotationsCollection = collection(db, 'quotations');
             const quotationsQuery = query(
                 quotationsCollection,
-                orderBy('createdAt', 'desc') // Sort by creation date in descending order
+                orderBy('modifiedAt', 'desc') // Sort by modified date in descending order
             );
             const querySnapshot = await getDocs(quotationsQuery);
             
