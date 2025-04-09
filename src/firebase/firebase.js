@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, enableIndexedDbPersistence, collection, addDoc, deleteDoc, doc, getDocs, query, limit } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, deleteDoc, doc, getDocs, query, limit, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
 // Your Firebase configuration
 // Replace these with your actual Firebase project config
@@ -15,7 +15,13 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+
+// Initialize Firestore with persistence enabled using the new approach
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
 
 // Test Firebase write functionality
 const testFirebaseWrite = async () => {
@@ -43,14 +49,5 @@ const testFirebaseWrite = async () => {
 setTimeout(() => {
   testFirebaseWrite();
 }, 2000);
-
-// Enable offline persistence
-try {
-  enableIndexedDbPersistence(db).catch(() => {
-    // Handle persistence error silently
-  });
-} catch (error) {
-  // Handle error silently
-}
 
 export { db };

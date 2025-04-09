@@ -58,7 +58,8 @@ const iconMap = {
     'chevron-left': faChevronLeft,
     'chevron-right': faChevronRight,
     'x': faTimes,
-    'spinner': faSpinner
+    'spinner': faSpinner,
+    'loading': faSpinner
 };
 
 const getFontAwesomeSize = (size) => {
