@@ -35,7 +35,10 @@ const Quotations = () => {
 
     // Force a refresh of quotations data on component mount, only once
     useEffect(() => {
-        refreshQuotations();
+        // Only refresh if we don't have quotations yet
+        if (!rawQuotations || rawQuotations.length === 0) {
+            refreshQuotations();
+        }
     }, []);
 
     // Filter quotations based on status and search query
@@ -153,6 +156,7 @@ const Quotations = () => {
             </Header>
 
             <List 
+                key={`quotations-list-${rawQuotations.length}-${isLoading}`}
                 isLoading={isLoading}
                 quotations={filteredQuotations} 
                 variant={variant}

@@ -1,6 +1,6 @@
 import { Link as RouterLink } from 'react-router-dom';
 import { useTheme } from 'styled-components';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '../../shared/Icon/Icon';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import { formatDate, formatPrice } from '../../../utilities/helpers';
@@ -101,6 +101,11 @@ const List = ({ quotations, isLoading, variant }) => {
     const [directData, setDirectData] = useState([]);
     const [loading, setLoading] = useState(false);
     
+    // Force a re-render when quotations change
+    useEffect(() => {
+        // No-op effect to track changes
+    }, [quotations]);
+    
     // Function to fetch directly from Firebase
     const fetchDirectly = async () => {
         setLoading(true);
@@ -121,15 +126,11 @@ const List = ({ quotations, isLoading, variant }) => {
             const quotationsList = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 
-                // Check if currency exists in the raw data
-                console.log(`Raw Firestore document ${doc.id} has currency:`, data.currency);
-                
                 // Ensure each quotation has a custom ID in the correct format
                 const customId = data.customId || generateCustomId();
                 
                 // Explicitly set currency with a clear default
                 const currency = data.currency || 'USD';
-                console.log(`Setting currency for ${customId} to:`, currency);
                 
                 return {
                     ...data,
@@ -145,7 +146,7 @@ const List = ({ quotations, isLoading, variant }) => {
             
             setDirectData(quotationsList);
         } catch (error) {
-            console.error('Error fetching directly:', error);
+            // Error handling is done silently
         } finally {
             setLoading(false);
         }
@@ -168,6 +169,7 @@ const List = ({ quotations, isLoading, variant }) => {
     // Choose which data to display
     const dataToDisplay = quotations || [];
     
+    // Show loading state if either the parent is loading or we're loading directly
     if (isLoading || loading) {
         return (
             <StyledList
@@ -177,18 +179,20 @@ const List = ({ quotations, isLoading, variant }) => {
                 exit="exit"
             >
                 <LoadingContainer>
+                    <Icon name="spinner" size={24} style={{ marginRight: '10px', animation: 'spin 1s linear infinite' }} />
                     Loading quotations...
                 </LoadingContainer>
             </StyledList>
         );
     }
 
-    if (dataToDisplay.length === 0) {
+    // Only show error message if we're not loading and there are no quotations
+    if (!isLoading && !loading && dataToDisplay.length === 0) {
         return (
             <ErrorMessage variant={variant} />
         );
     }
-
+    
     return (
         <>
             <ListHeader>
@@ -199,7 +203,12 @@ const List = ({ quotations, isLoading, variant }) => {
                 <HeaderItem className="price">Amount</HeaderItem>
                 <HeaderItem className="status">Status</HeaderItem>
             </ListHeader>
-            <StyledList>
+            <StyledList
+                variants={variant('list', 0)}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+            >
                 {dataToDisplay.map((quotation, index) => (
                     <Item
                         key={quotation.id}

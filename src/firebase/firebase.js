@@ -16,11 +16,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with persistence enabled using the new approach
+// Initialize Firestore with cache settings
 const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
+  localCache: persistentLocalCache(
+    { tabManager: persistentMultipleTabManager() }
+  )
 });
 
 // Test Firebase write functionality

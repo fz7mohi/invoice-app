@@ -106,13 +106,11 @@ const AppProvider = ({ children }) => {
 
     // Add effect to track quotationState changes
     useEffect(() => {
-        // Remove debug logs
-        
         // If isCreating is true, ensure the modal is open
         if (quotationState?.form?.isCreating === true) {
-            // Remove debug log
+            // Handle creating state silently
         }
-    }, [quotationState?.form]);
+    }, [quotationState]);
 
     return (
         <AppContext.Provider

@@ -375,13 +375,24 @@ const useManageQuotations = () => {
                 }
             });
             
+            // Use setTimeout to ensure the state update happens after the current render cycle
+            setTimeout(() => {
+                dispatch({ 
+                    type: 'SET_QUOTATIONS', 
+                    payload: quotationsList 
+                });
+                
+                // Set loading to false after a short delay to ensure the state update is processed
+                setTimeout(() => {
+                    dispatch({ type: 'SET_LOADING', payload: false });
+                }, 100);
+            }, 0);
+        } catch (error) {
+            // Set an empty array to prevent UI errors
             dispatch({ 
                 type: 'SET_QUOTATIONS', 
-                payload: quotationsList 
+                payload: [] 
             });
-        } catch (error) {
-            // Silent error handling
-        } finally {
             dispatch({ type: 'SET_LOADING', payload: false });
         }
     };
