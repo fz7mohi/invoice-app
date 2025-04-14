@@ -1,6 +1,6 @@
 import { Link as RouterLink } from 'react-router-dom';
 import { useTheme } from 'styled-components';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Icon from '../../shared/Icon/Icon';
 import Status from '../../shared/Status/Status';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
@@ -74,6 +74,36 @@ const HeaderItem = styled.div`
         text-align: center;
         padding-right: 20px;
     }
+
+    // Add hover and active states
+    &:hover {
+        color: ${({ theme }) => theme.colors.primary};
+        .sort-icon {
+            opacity: 1;
+        }
+    }
+
+    &.active {
+        color: ${({ theme }) => theme.colors.primary};
+        font-weight: 600;
+    }
+
+    // Add transition for smooth effects
+    transition: color 0.2s ease, font-weight 0.2s ease;
+`;
+
+const SortIcon = styled(Icon)`
+    margin-left: 4px;
+    opacity: 0.5;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    
+    ${HeaderItem}:hover & {
+        opacity: 1;
+    }
+    
+    ${HeaderItem}.active & {
+        opacity: 1;
+    }
 `;
 
 const LoadingContainer = styled.div`
@@ -131,7 +161,74 @@ const List = ({ invoices, isLoading, variant }) => {
     // State for direct Firebase data
     const [directData, setDirectData] = useState([]);
     const [loading, setLoading] = useState(false);
-    
+    const [sortConfig, setSortConfig] = useState({
+        key: 'createdAt',
+        direction: 'desc'
+    });
+
+    // Function to handle sorting
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    // Function to sort invoices
+    const sortedInvoices = useMemo(() => {
+        if (!sortConfig.key) return invoices;
+
+        return [...invoices].sort((a, b) => {
+            let aValue = a[sortConfig.key];
+            let bValue = b[sortConfig.key];
+
+            // Handle special cases for different fields
+            switch (sortConfig.key) {
+                case 'paymentDue':
+                case 'createdAt':
+                    aValue = new Date(aValue);
+                    bValue = new Date(bValue);
+                    break;
+                case 'total':
+                    aValue = parseFloat(aValue);
+                    bValue = parseFloat(bValue);
+                    break;
+                case 'status':
+                    aValue = formatStatus(aValue);
+                    bValue = formatStatus(bValue);
+                    break;
+                default:
+                    aValue = String(aValue || '').toLowerCase();
+                    bValue = String(bValue || '').toLowerCase();
+            }
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
+    }, [invoices, sortConfig]);
+
+    // Function to format status text
+    const formatStatus = (status) => {
+        switch (status) {
+            case 'pending':
+                return 'Pending';
+            case 'paid':
+                return 'Paid';
+            case 'partially_paid':
+                return 'Partially Paid';
+            case 'void':
+                return 'Void';
+            default:
+                return 'Draft';
+        }
+    };
+
     // Function to generate custom ID if not exists
     const generateCustomId = () => {
         const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -204,15 +301,99 @@ const List = ({ invoices, isLoading, variant }) => {
     return (
         <>
             <ListHeader>
-                <HeaderItem className="date">Due Date</HeaderItem>
-                <HeaderItem className="client">Client</HeaderItem>
-                <HeaderItem className="project">Project</HeaderItem>
-                <HeaderItem className="id">Invoice ID</HeaderItem>
-                <HeaderItem className="price">Amount</HeaderItem>
-                <HeaderItem className="status">Status</HeaderItem>
+                <HeaderItem 
+                    className={`date ${sortConfig.key === 'createdAt' ? 'active' : ''}`}
+                    onClick={() => handleSort('createdAt')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Invoice Date
+                    <SortIcon 
+                        name={sortConfig.key === 'createdAt' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`client ${sortConfig.key === 'clientName' ? 'active' : ''}`}
+                    onClick={() => handleSort('clientName')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Client
+                    <SortIcon 
+                        name={sortConfig.key === 'clientName' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`project ${sortConfig.key === 'description' ? 'active' : ''}`}
+                    onClick={() => handleSort('description')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Project
+                    <SortIcon 
+                        name={sortConfig.key === 'description' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`id ${sortConfig.key === 'customId' ? 'active' : ''}`}
+                    onClick={() => handleSort('customId')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Invoice ID
+                    <SortIcon 
+                        name={sortConfig.key === 'customId' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`price ${sortConfig.key === 'total' ? 'active' : ''}`}
+                    onClick={() => handleSort('total')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Amount
+                    <SortIcon 
+                        name={sortConfig.key === 'total' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`status ${sortConfig.key === 'status' ? 'active' : ''}`}
+                    onClick={() => handleSort('status')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Status
+                    <SortIcon 
+                        name={sortConfig.key === 'status' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
             </ListHeader>
             <StyledList>
-                {invoices.map((invoice, index) => (
+                {sortedInvoices.map((invoice, index) => (
                     <Item
                         key={invoice.id}
                         layout
@@ -230,7 +411,7 @@ const List = ({ invoices, isLoading, variant }) => {
                     >
                         <Link to={`/invoice/${invoice.id}`}>
                             <PaymentDue>
-                                {formatDate(invoice.paymentDue)}
+                                {formatDate(invoice.createdAt)}
                             </PaymentDue>
                             <Description>{invoice.description || 'No Project'}</Description>
                             <Uid>
@@ -243,8 +424,7 @@ const List = ({ invoices, isLoading, variant }) => {
                             </TotalPrice>
                             <StatusBadge currStatus={invoice.status}>
                                 <StatusDot currStatus={invoice.status} />
-                                {invoice.status === 'partially_paid' ? 'Partially Paid' : 
-                                 invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                {formatStatus(invoice.status)}
                             </StatusBadge>
                             {isDesktop && (
                                 <Icon
