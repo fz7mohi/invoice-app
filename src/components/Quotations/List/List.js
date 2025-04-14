@@ -1,6 +1,6 @@
 import { Link as RouterLink } from 'react-router-dom';
 import { useTheme } from 'styled-components';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Icon from '../../shared/Icon/Icon';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import { formatDate, formatPrice } from '../../../utilities/helpers';
@@ -20,6 +20,8 @@ import {
     StatusDot
 } from './ListStyles';
 import styled from 'styled-components';
+import { motion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 
 // Add a header component
 const ListHeader = styled.div`
@@ -71,6 +73,36 @@ const HeaderItem = styled.div`
         text-align: center;
         padding-right: 20px;
     }
+
+    // Add hover and active states
+    &:hover {
+        color: ${({ theme }) => theme.colors.primary};
+        .sort-icon {
+            opacity: 1;
+        }
+    }
+
+    &.active {
+        color: ${({ theme }) => theme.colors.primary};
+        font-weight: 600;
+    }
+
+    // Add transition for smooth effects
+    transition: color 0.2s ease, font-weight 0.2s ease;
+`;
+
+const SortIcon = styled(Icon)`
+    margin-left: 4px;
+    opacity: 0.5;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    
+    ${HeaderItem}:hover & {
+        opacity: 1;
+    }
+    
+    ${HeaderItem}.active & {
+        opacity: 1;
+    }
 `;
 
 // Add LoadingContainer styled component
@@ -100,7 +132,11 @@ const List = ({ quotations, isLoading, variant }) => {
     // State for direct Firebase data
     const [directData, setDirectData] = useState([]);
     const [loading, setLoading] = useState(false);
-    
+    const [sortConfig, setSortConfig] = useState({
+        key: 'createdAt',
+        direction: 'desc'
+    });
+
     // Force a re-render when quotations change
     useEffect(() => {
         // No-op effect to track changes
@@ -166,6 +202,53 @@ const List = ({ quotations, isLoading, variant }) => {
         }
     };
 
+    // Function to handle sorting
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    // Function to sort quotations
+    const sortedQuotations = useMemo(() => {
+        if (!sortConfig.key) return quotations;
+
+        return [...quotations].sort((a, b) => {
+            let aValue = a[sortConfig.key];
+            let bValue = b[sortConfig.key];
+
+            // Handle special cases for different fields
+            switch (sortConfig.key) {
+                case 'paymentDue':
+                case 'createdAt':
+                    aValue = new Date(aValue);
+                    bValue = new Date(bValue);
+                    break;
+                case 'total':
+                    aValue = parseFloat(aValue);
+                    bValue = parseFloat(bValue);
+                    break;
+                case 'status':
+                    aValue = formatStatus(aValue);
+                    bValue = formatStatus(bValue);
+                    break;
+                default:
+                    aValue = String(aValue || '').toLowerCase();
+                    bValue = String(bValue || '').toLowerCase();
+            }
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
+    }, [quotations, sortConfig]);
+
     // Choose which data to display
     const dataToDisplay = quotations || [];
     
@@ -196,12 +279,96 @@ const List = ({ quotations, isLoading, variant }) => {
     return (
         <>
             <ListHeader>
-                <HeaderItem className="date">Due Date</HeaderItem>
-                <HeaderItem className="client">Client</HeaderItem>
-                <HeaderItem className="project">Project</HeaderItem>
-                <HeaderItem className="id">Quotation ID</HeaderItem>
-                <HeaderItem className="price">Amount</HeaderItem>
-                <HeaderItem className="status">Status</HeaderItem>
+                <HeaderItem 
+                    className={`date ${sortConfig.key === 'createdAt' ? 'active' : ''}`}
+                    onClick={() => handleSort('createdAt')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Date
+                    <SortIcon 
+                        name={sortConfig.key === 'createdAt' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`client ${sortConfig.key === 'clientName' ? 'active' : ''}`}
+                    onClick={() => handleSort('clientName')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Client
+                    <SortIcon 
+                        name={sortConfig.key === 'clientName' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`project ${sortConfig.key === 'description' ? 'active' : ''}`}
+                    onClick={() => handleSort('description')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Project
+                    <SortIcon 
+                        name={sortConfig.key === 'description' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`id ${sortConfig.key === 'customId' ? 'active' : ''}`}
+                    onClick={() => handleSort('customId')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Quotation ID
+                    <SortIcon 
+                        name={sortConfig.key === 'customId' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`price ${sortConfig.key === 'total' ? 'active' : ''}`}
+                    onClick={() => handleSort('total')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Amount
+                    <SortIcon 
+                        name={sortConfig.key === 'total' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`status ${sortConfig.key === 'status' ? 'active' : ''}`}
+                    onClick={() => handleSort('status')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Status
+                    <SortIcon 
+                        name={sortConfig.key === 'status' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
             </ListHeader>
             <StyledList
                 variants={variant('list', 0)}
@@ -209,7 +376,7 @@ const List = ({ quotations, isLoading, variant }) => {
                 animate="visible"
                 exit="exit"
             >
-                {dataToDisplay.map((quotation, index) => (
+                {sortedQuotations.map((quotation, index) => (
                     <Item
                         key={quotation.id}
                         variants={variant('list', index)}
