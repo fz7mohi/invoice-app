@@ -37,7 +37,8 @@ const middleEasternCountries = [
     "Palestine",
     "Syria",
     "Turkey",
-    "Yemen"
+    "Yemen",
+    "Singapore"
 ];
 
 const ClientFormContent = ({ isEdited }) => {
@@ -107,7 +108,8 @@ const ClientFormContent = ({ isEdited }) => {
             'Oman': '+968',
             'Egypt': '+20',
             'Jordan': '+962',
-            'Lebanon': '+961'
+            'Lebanon': '+961',
+            'Singapore': '+65'
         };
         
         const countryCode = countryCodes[country];

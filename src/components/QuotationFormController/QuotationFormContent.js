@@ -543,19 +543,22 @@ const MinimalInput = styled(Input)`
     height: auto;
 `;
 
-// Add this currency utility function before the QuotationFormContent component
+// Add a function to get currency symbol based on country
 const getCurrencySymbol = (country) => {
-    if (!country) return '';
+    const currencyMap = {
+        'United Arab Emirates': 'AED',
+        'Qatar': 'QAR',
+        'Saudi Arabia': 'SAR',
+        'Bahrain': 'BHD',
+        'Kuwait': 'KWD',
+        'Oman': 'OMR',
+        'Egypt': 'EGP',
+        'Jordan': 'JOD',
+        'Lebanon': 'LBP',
+        'Singapore': 'USD'
+    };
     
-    const countryLower = country.toLowerCase();
-    if (countryLower.includes('emirates') || countryLower.includes('uae') || countryLower.includes('united arab')) {
-        return 'AED';
-    } else if (countryLower.includes('qatar')) {
-        return 'QAR';
-    } else if (countryLower.includes('saudi') || countryLower.includes('ksa')) {
-        return 'SAR';
-    }
-    return '';
+    return currencyMap[country] || 'USD';
 };
 
 // Add a number formatting utility function
