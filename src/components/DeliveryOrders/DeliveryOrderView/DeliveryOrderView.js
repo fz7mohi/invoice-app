@@ -380,7 +380,7 @@ const DeliveryOrderView = () => {
                         accountName: profile.accountName || '',
                         accountNumber: profile.accountNumber || '',
                         iban: profile.iban || '',
-                        swift: profile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+                        swift: profile.swift || '' // Use proper swift field
                     }
                 };
                 
@@ -406,7 +406,7 @@ const DeliveryOrderView = () => {
                             accountName: qatarProfile.accountName || '',
                             accountNumber: qatarProfile.accountNumber || '',
                             iban: qatarProfile.iban || '',
-                            swift: qatarProfile.chequesPayableTo || '' // Using chequesPayableTo as SWIFT code
+                            swift: qatarProfile.swift || '' // Use proper swift field
                         }
                     };
                     

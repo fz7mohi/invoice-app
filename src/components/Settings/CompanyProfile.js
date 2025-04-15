@@ -25,6 +25,7 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
     accountName: '',
     accountNumber: '',
     iban: '',
+    swift: '',
     chequesPayableTo: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,6 +66,7 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
         accountName: editingCompany.accountName || '',
         accountNumber: editingCompany.accountNumber || '',
         iban: editingCompany.iban || '',
+        swift: editingCompany.swift || '',
         chequesPayableTo: editingCompany.chequesPayableTo || ''
       });
     }
@@ -87,6 +89,7 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
       accountName: '',
       accountNumber: '',
       iban: '',
+      swift: '',
       chequesPayableTo: ''
     });
     setError(null);
@@ -462,6 +465,20 @@ const CompanyProfile = ({ companies, setCompanies, isLoading }) => {
                     placeholder="Enter IBAN"
                   />
                 </FormGroup>
+                <FormGroup>
+                  <Label htmlFor="swift">SWIFT Code</Label>
+                  <Input
+                    type="text"
+                    id="swift"
+                    name="swift"
+                    value={formData.swift}
+                    onChange={handleChange}
+                    placeholder="Enter SWIFT code"
+                  />
+                </FormGroup>
+              </FormRow>
+
+              <FormRow>
                 <FormGroup>
                   <Label htmlFor="chequesPayableTo">Cheques Payable To</Label>
                   <Input
