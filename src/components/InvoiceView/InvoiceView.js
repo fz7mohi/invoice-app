@@ -675,6 +675,11 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         const isUAE = clientData?.country?.toLowerCase().includes('emirates') || 
                       clientData?.country?.toLowerCase().includes('uae');
 
+        console.log('Invoice Client Data:', clientData);
+        console.log('Is UAE Client:', isUAE);
+        console.log('Client TRN:', clientTRN);
+        console.log('Client Country:', clientData?.country);
+
         return (
             <AddressGroup>
                 <AddressTitle>Bill To</AddressTitle>
@@ -983,6 +988,12 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 border: 1px solid #e0e0e0;
                 border-radius: 4px;
             `;
+
+            // Debug logs
+            console.log('PDF Generation - Client Data:', clientData);
+            console.log('PDF Generation - Client Country:', clientCountry);
+            console.log('PDF Generation - Client TRN:', clientData?.trn || clientData?.trnNumber || invoice?.clientTRN);
+
             clientSection.innerHTML = `
                 <div style="flex: 1;">
                     <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
@@ -993,8 +1004,8 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         ${invoice.clientAddress?.postCode ? `, ${invoice.clientAddress.postCode}` : ''}
                         ${clientData?.country || invoice.clientAddress?.country ? `, ${clientData?.country || invoice.clientAddress?.country}` : ''}
                         ${clientData?.phone ? `<br />${clientData.phone}` : ''}
-                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && clientData?.trn ? 
-                            `<br /><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
+                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || invoice?.clientTRN) ? 
+                            `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber || invoice?.clientTRN}</span>` : ''}
                     </div>
                 </div>
                 <div style="display: flex; gap: 40px;">
@@ -1733,6 +1744,12 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 border: 1px solid #e0e0e0;
                 border-radius: 4px;
             `;
+
+            // Debug logs
+            console.log('PDF Generation - Client Data:', clientData);
+            console.log('PDF Generation - Client Country:', clientCountry);
+            console.log('PDF Generation - Client TRN:', clientData?.trn || clientData?.trnNumber || invoice?.clientTRN);
+
             clientSection.innerHTML = `
                 <div style="flex: 1;">
                     <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
@@ -1743,8 +1760,8 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         ${invoice.clientAddress?.postCode ? `, ${invoice.clientAddress.postCode}` : ''}
                         ${clientData?.country || invoice.clientAddress?.country ? `, ${clientData?.country || invoice.clientAddress?.country}` : ''}
                         ${clientData?.phone ? `<br />${clientData.phone}` : ''}
-                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && clientData?.trn ? 
-                            `<br /><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
+                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || invoice?.clientTRN) ? 
+                            `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber || invoice?.clientTRN}</span>` : ''}
                     </div>
                 </div>
                 <div style="display: flex; gap: 40px;">

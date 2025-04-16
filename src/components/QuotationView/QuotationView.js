@@ -420,18 +420,24 @@ const QuotationView = () => {
                 border: 1px solid #e0e0e0;
                 border-radius: 4px;
             `;
+
+            // Debug logs
+            console.log('PDF Generation - Client Data:', clientData);
+            console.log('PDF Generation - Client Country:', clientCountry);
+            console.log('PDF Generation - Client TRN:', clientData?.trn || clientData?.trnNumber || quotation?.clientTRN);
+
             clientSection.innerHTML = `
                 <div style="flex: 1;">
                     <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
                     <div style="color: black; font-size: 16px;">
-                        <strong>${quotation.clientName}</strong>
-                        ${(clientData?.address || quotation.clientAddress?.street) ? `<br>${clientData?.address || quotation.clientAddress?.street}` : ''}
+                        <strong>${quotation.clientName}</strong><br />
+                        ${clientData?.address || quotation.clientAddress?.street || ''}
                         ${quotation.clientAddress?.city ? `, ${quotation.clientAddress.city}` : ''}
                         ${quotation.clientAddress?.postCode ? `, ${quotation.clientAddress.postCode}` : ''}
                         ${clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
-                        ${clientData?.phone ? `<br>${clientData.phone}` : ''}
-                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && clientData?.trn ? 
-                            `<br><span style="font-weight: 600;">TRN: ${clientData.trn}</span>` : ''}
+                        ${clientData?.phone ? `<br />${clientData.phone}` : ''}
+                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || quotation?.clientTRN) ? 
+                            `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber || quotation?.clientTRN}</span>` : ''}
                     </div>
                 </div>
                 <div style="text-align: right;">
@@ -647,6 +653,11 @@ const QuotationView = () => {
             clientData?.tax_registration_number ||
             clientData?.taxNumber ||
             quotation?.clientTRN;
+
+        console.log('Client Data:', clientData);
+        console.log('Is UAE Client:', isUAE);
+        console.log('Client TRN:', clientTRN);
+        console.log('Client Country:', clientData?.country || quotation?.clientAddress?.country);
 
         // Get address and country from either source
         const clientAddress = quotation.clientAddress?.street || clientData?.address || '';
