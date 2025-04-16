@@ -6,8 +6,6 @@ import useManageClients from '../../hooks/useManageClients';
 import useManageQuotations from '../../hooks/useManageQuotations';
 import useManageDeliveryOrders from '../../hooks/useManageDeliveryOrders';
 import useFilter from '../../hooks/useFilter';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
 
 // Fortune Gifts brand colors
 export const fortuneGiftsTheme = {
@@ -82,13 +80,6 @@ const AppProvider = ({ children }) => {
 
     const { filteredInvoices, filterType, changeFilterType } = useFilter(invoiceState);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-    const [purchaseOrders, setPurchaseOrders] = useState([]);
-    const [purchaseOrderState, setPurchaseOrderState] = useState({
-        isLoading: false,
-        error: null
-    });
-    const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
-    const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
 
     /**
      * Listen for window resize and call handleResize function
@@ -120,36 +111,6 @@ const AppProvider = ({ children }) => {
             // Handle creating state silently
         }
     }, [quotationState]);
-
-    const refreshPurchaseOrders = async () => {
-        setPurchaseOrderState(prev => ({ ...prev, isLoading: true }));
-        try {
-            const purchaseOrdersRef = collection(db, 'purchaseOrders');
-            const q = query(purchaseOrdersRef, orderBy('createdAt', 'desc'));
-            const snapshot = await getDocs(q);
-            const purchaseOrders = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate(),
-                paymentDue: doc.data().paymentDue?.toDate()
-            }));
-            setPurchaseOrders(purchaseOrders);
-        } catch (error) {
-            console.error('Error fetching purchase orders:', error);
-            setPurchaseOrderState(prev => ({ ...prev, error: error.message }));
-        } finally {
-            setPurchaseOrderState(prev => ({ ...prev, isLoading: false }));
-        }
-    };
-
-    const togglePurchaseOrderModal = () => {
-        setShowPurchaseOrderModal(prev => !prev);
-    };
-
-    const editPurchaseOrder = (purchaseOrder) => {
-        setSelectedPurchaseOrder(purchaseOrder);
-        togglePurchaseOrderModal();
-    };
 
     return (
         <AppContext.Provider
@@ -207,12 +168,7 @@ const AppProvider = ({ children }) => {
                 refreshDeliveryOrders,
                 createDeliveryOrder,
                 updateDeliveryOrder,
-                fortuneGiftsTheme,
-                purchaseOrders,
-                purchaseOrderState,
-                refreshPurchaseOrders,
-                togglePurchaseOrderModal,
-                editPurchaseOrder
+                fortuneGiftsTheme
             }}
         >
             <Provider themeColor={theme}>{children}</Provider>

@@ -26,8 +26,6 @@ import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '../../utilities/themes';
 import MobileTabBar from '../Navigation/MobileTabBar';
 import InstallPrompt from '../InstallPrompt';
-import PurchaseOrders from '../PurchaseOrders/PurchaseOrders';
-import PurchaseOrderView from '../PurchaseOrderView/PurchaseOrderView';
 
 // Create spinner animation keyframes
 const spinnerStyle = document.createElement('style');
@@ -124,12 +122,6 @@ const App = () => {
                         </Route>
                         <Route path="/settings">
                             <Settings />
-                        </Route>
-                        <Route path="/purchase-orders">
-                            <PurchaseOrders />
-                        </Route>
-                        <Route path="/purchase-orders/:id">
-                            <PurchaseOrderView />
                         </Route>
                         <Route path="*">
                             <RouteError />
