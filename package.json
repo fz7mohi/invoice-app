@@ -44,6 +44,8 @@
         "@fortawesome/fontawesome-svg-core": "^6.4.0",
         "@fortawesome/free-solid-svg-icons": "^6.4.0",
         "@fortawesome/react-fontawesome": "^0.2.0",
+        "@styled-icons/boxicons-regular": "^10.47.0",
+        "@styled-icons/feather": "^10.47.0",
         "antd": "^5.24.6",
         "axios": "^1.8.4",
         "browser-process-hrtime": "^1.0.0",

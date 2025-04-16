@@ -19,6 +19,8 @@ import {
     SearchInput,
     SearchIcon
 } from './InvoicesStyles';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { db } from '../../firebase/firebase';
 
 const Invoices = () => {
     const [filterType, setFilterType] = useState('all');
@@ -87,6 +89,22 @@ const Invoices = () => {
 
     const handleSearch = (e) => {
         setSearchQuery(e.target.value);
+    };
+
+    const createPurchaseOrder = async (invoice) => {
+        try {
+            const purchaseOrderRef = collection(db, 'purchaseOrders');
+            const purchaseOrderData = {
+                ...invoice,
+                customId: `FTPO${Date.now().toString().slice(-4)}`,
+                createdAt: Timestamp.now(),
+                status: 'pending',
+                sourceInvoiceId: invoice.id
+            };
+            await addDoc(purchaseOrderRef, purchaseOrderData);
+        } catch (error) {
+            console.error('Error creating purchase order:', error);
+        }
     };
 
     return (

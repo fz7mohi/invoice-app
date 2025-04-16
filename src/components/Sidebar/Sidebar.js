@@ -1,4 +1,4 @@
-import { BiHomeAlt, BiFile, BiUser, BiListOl, BiCog, BiTruck } from 'react-icons/bi';
+import { BiHomeAlt, BiFile, BiUser, BiListOl, BiCog, BiTruck, BiPurchaseTag } from 'react-icons/bi';
 import { Link, NavLink } from 'react-router-dom';
 import styled from 'styled-components';
 import logo from '../../assets/logo.svg';
@@ -54,6 +54,13 @@ const Sidebar = () => {
                     title="Delivery Orders"
                 >
                     <BiTruck />
+                </MenuItem>
+                <MenuItem
+                    to="/purchase-orders"
+                    activeStyle={{ color: '#7c5dfa' }}
+                    title="Purchase Orders"
+                >
+                    <BiPurchaseTag />
                 </MenuItem>
                 <MenuItem
                     to="/clients"

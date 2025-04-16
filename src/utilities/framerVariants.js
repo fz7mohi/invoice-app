@@ -441,3 +441,60 @@ export const receiptsViewVariants = {
         exit: { opacity: 0 },
     },
 };
+
+// Purchase Orders variants
+export const purchaseOrdersVariants = (shouldReduceMotion) => {
+    if (shouldReduceMotion) {
+        return {
+            header: {
+                hidden: { opacity: 0 },
+                visible: { opacity: 1 },
+                exit: { opacity: 0 }
+            },
+            list: () => ({
+                hidden: { opacity: 0 },
+                visible: { opacity: 1 },
+                exit: { opacity: 0 }
+            })
+        };
+    }
+
+    return {
+        header: {
+            hidden: { opacity: 0, x: -50 },
+            visible: {
+                opacity: 1,
+                x: 0,
+                transition: {
+                    duration: 1,
+                },
+            },
+            exit: {
+                opacity: 0,
+            },
+        },
+        list: (index) => ({
+            hidden: {
+                y: 10,
+                opacity: 0,
+            },
+            visible: {
+                y: 0,
+                opacity: 1,
+                transition: {
+                    type: 'spring',
+                    delay: 0.1 * index,
+                },
+            },
+            exit: {
+                y: 10,
+                opacity: 0,
+                transition: {
+                    type: 'spring',
+                    delay: 0.05 * index,
+                    duration: 0.45,
+                },
+            },
+        })
+    };
+};

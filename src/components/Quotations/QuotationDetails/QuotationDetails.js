@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from 'styled-components';
 import { useGlobalContext } from '../../contexts/GlobalContext';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
+import { db } from '../../firebase/firebase';
 import { LoadingContainer, DetailsContainer, DetailsHeader, DetailsTitle, CloseButton, DetailsContent, DetailsSection, DetailsLabel, DetailsValue, StatusBadge, StatusDot } from '../../styles/QuotationDetailsStyles';
 import { Icon } from '../../components/Icon';
 import { formatDate, formatPrice } from '../../utils/formatters';
