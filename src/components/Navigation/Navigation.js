@@ -12,6 +12,7 @@ const Navigation = ({ isMobile, onNavigate }) => {
         { name: 'Clients', icon: 'clients', path: '/clients' },
         { name: 'Quotations', icon: 'quotation', path: '/quotations' },
         { name: 'Invoices', icon: 'invoice', path: '/invoices' },
+        { name: 'Internal POs', icon: 'invoice', path: '/internal-pos' },
         { name: 'Receipts', icon: 'receipt', path: '/receipts' },
         { name: 'Delivery Orders', icon: 'delivery', path: '/delivery-orders' },
         { name: 'Settings', icon: 'settings', path: '/settings' }
@@ -28,7 +29,8 @@ const Navigation = ({ isMobile, onNavigate }) => {
             <NavList>
                 {navItems.map((item) => {
                     const isActive = location.pathname === item.path || 
-                        (item.path === '/invoices' && location.pathname.includes('/invoice/'));
+                        (item.path === '/invoices' && location.pathname.includes('/invoice/')) ||
+                        (item.path === '/internal-pos' && location.pathname.includes('/internal-po/'));
                     
                     return (
                         <NavItem key={item.name} $isActive={isActive} $isMobile={isMobile}>

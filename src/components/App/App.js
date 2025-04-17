@@ -26,6 +26,8 @@ import { ThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme } from '../../utilities/themes';
 import MobileTabBar from '../Navigation/MobileTabBar';
 import InstallPrompt from '../InstallPrompt';
+import InternalPOs from '../InternalPOs/InternalPOs';
+import InternalPOView from '../InternalPOView/InternalPOView';
 
 // Create spinner animation keyframes
 const spinnerStyle = document.createElement('style');
@@ -122,6 +124,12 @@ const App = () => {
                         </Route>
                         <Route path="/settings">
                             <Settings />
+                        </Route>
+                        <Route exact path="/internal-pos">
+                            <InternalPOs />
+                        </Route>
+                        <Route path="/internal-po/:id">
+                            <InternalPOView />
                         </Route>
                         <Route path="*">
                             <RouteError />

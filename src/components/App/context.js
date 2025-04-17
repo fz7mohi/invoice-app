@@ -5,6 +5,7 @@ import useManageInvoices from '../../hooks/useManageInvoices';
 import useManageClients from '../../hooks/useManageClients';
 import useManageQuotations from '../../hooks/useManageQuotations';
 import useManageDeliveryOrders from '../../hooks/useManageDeliveryOrders';
+import useManageInternalPOs from '../../hooks/useManageInternalPOs';
 import useFilter from '../../hooks/useFilter';
 
 // Fortune Gifts brand colors
@@ -37,6 +38,23 @@ const AppProvider = ({ children }) => {
         toggleModal,
         createInvoice,
     } = useManageInvoices();
+
+    const {
+        state: internalPOState,
+        internalPO,
+        handleInternalPOChange,
+        handleSubmit: handleInternalPOSubmit,
+        handleMarkAsPaid: handleInternalPOMarkAsPaid,
+        handleDelete: handleInternalPODelete,
+        editInternalPO,
+        discardChanges: discardInternalPOChanges,
+        toggleModal: toggleInternalPOModal,
+        createInternalPO,
+        addInternalPOItem,
+        removeInternalPOItem,
+        handleItemsAdd,
+        handleItemsRemove,
+    } = useManageInternalPOs();
 
     const {
         state: quotationState,
@@ -134,6 +152,20 @@ const AppProvider = ({ children }) => {
                 discardChanges,
                 toggleModal,
                 createInvoice,
+                internalPOState,
+                internalPO,
+                handleInternalPOChange,
+                handleInternalPOSubmit,
+                handleInternalPOMarkAsPaid,
+                handleInternalPODelete,
+                editInternalPO,
+                discardInternalPOChanges,
+                toggleInternalPOModal,
+                createInternalPO,
+                addInternalPOItem,
+                removeInternalPOItem,
+                handleItemsAdd,
+                handleItemsRemove,
                 quotationState,
                 quotation,
                 handleQuotationChange,
