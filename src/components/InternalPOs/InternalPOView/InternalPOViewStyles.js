@@ -72,21 +72,6 @@ export const Link = styled(RouterLink)`
     }
 `;
 
-export const MotionLink = styled(motion(RouterLink))`
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: 500;
-    text-decoration: none;
-    margin-bottom: 32px;
-    width: fit-content;
-
-    &:hover {
-        color: ${({ theme }) => theme.colors.purple};
-    }
-`;
-
 export const Controller = styled(motion.div)`
     display: flex;
     justify-content: space-between;
@@ -126,10 +111,19 @@ export const InfoHeader = styled.div`
     display: grid;
     grid-template-columns: 1fr;
     margin-bottom: 32px;
+    gap: 16px;
+
+    @media (min-width: 768px) {
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
 `;
 
 export const InfoGroup = styled.div`
     text-align: ${({ $right }) => ($right ? 'right' : 'left')};
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 `;
 
 export const InfoID = styled.h1`
@@ -138,6 +132,9 @@ export const InfoID = styled.h1`
     color: ${({ theme }) => theme.colors.textPrimary};
     margin: 0;
     letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     
     span {
         color: ${({ theme }) => theme.colors.textQuaternary};
@@ -152,6 +149,28 @@ export const InfoDesc = styled.p`
     color: ${({ theme }) => theme.colors.textTertiary};
     margin: 8px 0 0;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+`;
+
+export const LPONumber = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 4px;
+
+    &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 4px;
+        background-color: ${({ theme }) => theme.colors.textTertiary};
+        border-radius: 50%;
+    }
 `;
 
 export const InfoAddresses = styled.div`
