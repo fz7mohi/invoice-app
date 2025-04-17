@@ -242,26 +242,17 @@ const List = ({ internalPOs, isLoading, variant }) => {
             const internalPOsCollection = collection(db, 'internalPOs');
             const internalPOsQuery = query(
                 internalPOsCollection,
-                orderBy('createdAt', 'desc') // Sort by creation date in descending order
+                orderBy('createdAt', 'desc')
             );
             const querySnapshot = await getDocs(internalPOsQuery);
             
             const internalPOsList = querySnapshot.docs.map(doc => {
                 const data = doc.data();
-                const customId = data.customId || generateCustomId();
-                const currency = data.currency || 'USD';
-                
                 return {
-                    ...data,
                     id: doc.id,
-                    customId: customId,
-                    clientName: data.clientName || 'Unnamed Client',
-                    description: data.description || 'No description',
-                    status: data.status || 'draft',
-                    total: data.total || 0,
-                    currency: currency,
-                    paymentDue: data.paymentDue || new Date(),
-                    createdAt: data.createdAt || new Date()
+                    ...data,
+                    createdAt: data.createdAt?.toDate() || new Date(),
+                    paymentDue: data.paymentDue?.toDate() || new Date()
                 };
             });
             
@@ -275,141 +266,115 @@ const List = ({ internalPOs, isLoading, variant }) => {
 
     if (isLoading) {
         return (
-            <StyledList
-                variants={variant('list', 0)}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-            >
-                <LoadingContainer>
-                    <Icon name="loading" size={24} color={colors.purple} style={{ marginRight: '12px' }} />
-                    Loading internal POs...
-                </LoadingContainer>
-            </StyledList>
+            <LoadingContainer>
+                <div>Loading internal POs...</div>
+            </LoadingContainer>
         );
     }
 
     if (isEmpty) {
         return (
             <EmptyContainer>
-                <h3>No Internal POs Found</h3>
-                <p>There are no internal POs to display at this time. Create a new internal PO to get started.</p>
+                <h3>No Internal POs</h3>
+                <p>There are no internal POs to display. Create a new internal PO to get started.</p>
             </EmptyContainer>
         );
     }
 
     return (
         <>
-            <ListHeader>
-                <HeaderItem 
-                    className={`date ${sortConfig.key === 'createdAt' ? 'active' : ''}`}
-                    onClick={() => handleSort('createdAt')}
-                    style={{ cursor: 'pointer' }}
-                >
-                    Internal PO Date
-                    <SortIcon 
-                        name={sortConfig.key === 'createdAt' 
-                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
-                            : 'arrow-up-down'
-                        } 
-                        size={12}
-                        className="sort-icon"
-                    />
-                </HeaderItem>
-                <HeaderItem 
-                    className={`client ${sortConfig.key === 'clientName' ? 'active' : ''}`}
-                    onClick={() => handleSort('clientName')}
-                    style={{ cursor: 'pointer' }}
-                >
-                    Client
-                    <SortIcon 
-                        name={sortConfig.key === 'clientName' 
-                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
-                            : 'arrow-up-down'
-                        } 
-                        size={12}
-                        className="sort-icon"
-                    />
-                </HeaderItem>
-                <HeaderItem 
-                    className={`project ${sortConfig.key === 'description' ? 'active' : ''}`}
-                    onClick={() => handleSort('description')}
-                    style={{ cursor: 'pointer' }}
-                >
-                    Project
-                    <SortIcon 
-                        name={sortConfig.key === 'description' 
-                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
-                            : 'arrow-up-down'
-                        } 
-                        size={12}
-                        className="sort-icon"
-                    />
-                </HeaderItem>
-                <HeaderItem 
-                    className={`id ${sortConfig.key === 'customId' ? 'active' : ''}`}
-                    onClick={() => handleSort('customId')}
-                    style={{ cursor: 'pointer' }}
-                >
-                    Internal PO ID
-                    <SortIcon 
-                        name={sortConfig.key === 'customId' 
-                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
-                            : 'arrow-up-down'
-                        } 
-                        size={12}
-                        className="sort-icon"
-                    />
-                </HeaderItem>
-                <HeaderItem 
-                    className={`price ${sortConfig.key === 'total' ? 'active' : ''}`}
-                    onClick={() => handleSort('total')}
-                    style={{ cursor: 'pointer' }}
-                >
-                    Amount
-                    <SortIcon 
-                        name={sortConfig.key === 'total' 
-                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
-                            : 'arrow-up-down'
-                        } 
-                        size={12}
-                        className="sort-icon"
-                    />
-                </HeaderItem>
-                <HeaderItem 
-                    className={`status ${sortConfig.key === 'status' ? 'active' : ''}`}
-                    onClick={() => handleSort('status')}
-                    style={{ cursor: 'pointer' }}
-                >
-                    Status
-                    <SortIcon 
-                        name={sortConfig.key === 'status' 
-                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
-                            : 'arrow-up-down'
-                        } 
-                        size={12}
-                        className="sort-icon"
-                    />
-                </HeaderItem>
-            </ListHeader>
+            {isDesktop && (
+                <ListHeader>
+                    <HeaderItem 
+                        className="date"
+                        onClick={() => handleSort('createdAt')}
+                    >
+                        Date
+                        <SortIcon 
+                            name={sortConfig.key === 'createdAt' ? 
+                                (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down') : 
+                                'arrow-up-down'}
+                            size={12}
+                            className="sort-icon"
+                        />
+                    </HeaderItem>
+                    <HeaderItem 
+                        className="client"
+                        onClick={() => handleSort('clientName')}
+                    >
+                        Client
+                        <SortIcon 
+                            name={sortConfig.key === 'clientName' ? 
+                                (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down') : 
+                                'arrow-up-down'}
+                            size={12}
+                            className="sort-icon"
+                        />
+                    </HeaderItem>
+                    <HeaderItem 
+                        className="project"
+                        onClick={() => handleSort('description')}
+                    >
+                        Project
+                        <SortIcon 
+                            name={sortConfig.key === 'description' ? 
+                                (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down') : 
+                                'arrow-up-down'}
+                            size={12}
+                            className="sort-icon"
+                        />
+                    </HeaderItem>
+                    <HeaderItem 
+                        className="id"
+                        onClick={() => handleSort('id')}
+                    >
+                        ID
+                        <SortIcon 
+                            name={sortConfig.key === 'id' ? 
+                                (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down') : 
+                                'arrow-up-down'}
+                            size={12}
+                            className="sort-icon"
+                        />
+                    </HeaderItem>
+                    <HeaderItem 
+                        className="price"
+                        onClick={() => handleSort('total')}
+                    >
+                        Amount
+                        <SortIcon 
+                            name={sortConfig.key === 'total' ? 
+                                (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down') : 
+                                'arrow-up-down'}
+                            size={12}
+                            className="sort-icon"
+                        />
+                    </HeaderItem>
+                    <HeaderItem 
+                        className="status"
+                        onClick={() => handleSort('status')}
+                    >
+                        Status
+                        <SortIcon 
+                            name={sortConfig.key === 'status' ? 
+                                (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down') : 
+                                'arrow-up-down'}
+                            size={12}
+                            className="sort-icon"
+                        />
+                    </HeaderItem>
+                </ListHeader>
+            )}
             <StyledList>
                 {sortedInternalPOs.map((internalPO, index) => (
                     <Item
                         key={internalPO.id}
-                        layout
                         variants={variant('list', index)}
                         initial="hidden"
                         animate="visible"
                         exit="exit"
-                        whileHover={{ scale: 1.01 }}
-                        transition={{ 
-                            type: "spring", 
-                            stiffness: 300, 
-                            damping: 20,
-                            delay: index * 0.03
-                        }}
                     >
-                        <Link to={`/internal-pos/${internalPO.id}`}>
+                        <RouterLink to={`/internal-pos/${internalPO.id}`}>
                             <PaymentDue>
                                 {formatDate(internalPO.createdAt)}
                             </PaymentDue>
@@ -433,7 +398,7 @@ const List = ({ internalPOs, isLoading, variant }) => {
                                     color={colors.purple}
                                 />
                             )}
-                        </Link>
+                        </RouterLink>
                     </Item>
                 ))}
             </StyledList>
