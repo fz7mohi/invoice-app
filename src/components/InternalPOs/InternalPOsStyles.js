@@ -353,4 +353,59 @@ export const SpinnerContainer = styled.div`
         color: ${({ theme }) => theme.textSecondary};
         font-size: 1.6rem;
     }
+`;
+
+export const Actions = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    @media (max-width: 480px) {
+        gap: 12px;
+    }
+`;
+
+export const NewButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 24px;
+    height: 48px;
+    border-radius: 24px;
+    background-color: ${({ theme }) => theme.colors.purple};
+    color: ${({ theme }) => theme.colors.white};
+    font-size: 15px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+
+    &::before {
+        content: '+';
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-right: 8px;
+        color: ${({ theme }) => theme.colors.white};
+    }
+
+    &:hover {
+        background-color: ${({ theme }) => theme.colors.lightPurple};
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    @media (max-width: 767px) {
+        padding: 8px 16px;
+        font-size: 14px;
+        
+        span {
+            display: none;
+        }
+    }
 `; 

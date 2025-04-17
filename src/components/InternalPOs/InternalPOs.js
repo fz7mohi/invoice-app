@@ -3,7 +3,6 @@ import { useReducedMotion } from 'framer-motion';
 import { useGlobalContext } from '../App/context';
 import Filter from './Filter/Filter';
 import List from './List/List';
-import Button from '../shared/Button/Button';
 import Icon from '../shared/Icon/Icon';
 import internalPOLengthMessage from '../../utilities/internalPOLengthMessage';
 import { internalPOVariants } from '../../utilities/framerVariants';
@@ -17,7 +16,9 @@ import {
     SearchBar,
     SearchContainer,
     SearchInput,
-    SearchIcon
+    SearchIcon,
+    Actions,
+    NewButton
 } from './InternalPOsStyles';
 
 const InternalPOs = () => {
@@ -112,10 +113,17 @@ const InternalPOs = () => {
                         </Text>
                     </Info>
                     
-                    <Filter 
-                        filterType={filterType} 
-                        setFilterType={setFilterType} 
-                    />
+                    <Actions>
+                        <Filter 
+                            filterType={filterType} 
+                            setFilterType={setFilterType} 
+                        />
+                        <NewButton
+                            onClick={() => createInternalPO()}
+                        >
+                            <span>New Internal PO</span>
+                        </NewButton>
+                    </Actions>
                 </HeaderTop>
 
                 <SearchBar>
