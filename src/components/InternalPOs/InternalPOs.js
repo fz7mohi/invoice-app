@@ -3,6 +3,7 @@ import { useReducedMotion } from 'framer-motion';
 import { useGlobalContext } from '../App/context';
 import Filter from './Filter/Filter';
 import List from './List/List';
+import CreateInternalPO from './CreateInternalPO/CreateInternalPO';
 import Icon from '../shared/Icon/Icon';
 import internalPOLengthMessage from '../../utilities/internalPOLengthMessage';
 import { internalPOVariants } from '../../utilities/framerVariants';
@@ -24,8 +25,9 @@ import {
 const InternalPOs = () => {
     const [filterType, setFilterType] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const shouldReduceMotion = useReducedMotion();
-    const { windowWidth, internalPOState, createInternalPO } = useGlobalContext();
+    const { windowWidth, internalPOState, createInternalPOFromInvoice } = useGlobalContext();
     
     const isLoading = internalPOState?.isLoading || false;
     const rawInternalPOs = internalPOState?.internalPOs || [];
@@ -119,7 +121,7 @@ const InternalPOs = () => {
                             setFilterType={setFilterType} 
                         />
                         <NewButton
-                            onClick={() => createInternalPO()}
+                            onClick={() => setIsCreateModalOpen(true)}
                         >
                             <span>New Internal PO</span>
                         </NewButton>
@@ -146,6 +148,11 @@ const InternalPOs = () => {
                 isLoading={isLoading}
                 internalPOs={filteredInternalPOs} 
                 variant={variant}
+            />
+
+            <CreateInternalPO 
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
             />
         </Container>
     );

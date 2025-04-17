@@ -1,8 +1,11 @@
 import { useState, useEffect, useReducer } from 'react';
 import { internalPOReducer } from '../store/reducers/internalPOReducer';
 import * as ACTIONS from '../store/actions/internalPOActions';
+import * as ACTION_TYPES from '../store/actions/action_type';
 import allowOnlyNumbers from '../utilities/allowOnlyNumbers';
 import formValidation from '../utilities/formValidation';
+import { generateCustomId } from '../utilities/generateCustomId';
+import { calculatePaymentDueDate as calculatePaymentDueDateUtil } from '../utilities/calculatePaymentDueDate';
 import { 
     collection, 
     addDoc, 
@@ -13,7 +16,8 @@ import {
     orderBy, 
     query,
     where,
-    Timestamp 
+    Timestamp,
+    getDoc
 } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 
@@ -402,6 +406,97 @@ const useManageInternalPOs = () => {
         dispatch(ACTIONS.modal(index, name));
     };
 
+    const createFromInvoice = async (invoiceId) => {
+        try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+
+            // Get the invoice from Firestore
+            const invoiceDoc = await getDoc(doc(db, 'invoices', invoiceId));
+            if (!invoiceDoc.exists()) {
+                throw new Error('Invoice not found');
+            }
+
+            const invoice = invoiceDoc.data();
+            const customId = generateCustomId('PO');
+            
+            // Ensure we have valid dates
+            const invoiceDate = invoice.date ? new Date(invoice.date) : new Date();
+            const paymentTerms = invoice.paymentTerms || 'Net 30';
+            const paymentDueDate = new Date(calculatePaymentDueDateUtil(invoiceDate, paymentTerms));
+            const now = new Date();
+
+            // Create new internal PO object
+            const newInternalPO = {
+                // Copy all invoice data first
+                ...invoice,
+                // Override with internal PO specific values
+                customId,
+                date: invoiceDate.toISOString(),
+                paymentDueDate: paymentDueDate.toISOString(),
+                status: 'pending',
+                type: 'internal',
+                createdAt: now.toISOString(),
+                updatedAt: now.toISOString(),
+                // Remove invoice-specific fields by setting them to null instead of undefined
+                invoiceId: null,
+                invoiceStatus: null,
+                // Ensure all required fields have values
+                items: (invoice.items || []).map(item => ({
+                    name: item.name || '',
+                    quantity: item.quantity || 1,
+                    price: item.price || 0,
+                    total: (item.quantity || 1) * (item.price || 0)
+                })),
+                total: (invoice.items || []).reduce((sum, item) => {
+                    return sum + ((item.quantity || 1) * (item.price || 0));
+                }, 0),
+                paymentTerms: paymentTerms,
+                description: invoice.description || '',
+                clientName: invoice.clientName || '',
+                clientEmail: invoice.clientEmail || '',
+                clientAddress: {
+                    street: invoice.clientAddress?.street || '',
+                    city: invoice.clientAddress?.city || '',
+                    postCode: invoice.clientAddress?.postCode || '',
+                    country: invoice.clientAddress?.country || ''
+                },
+                senderAddress: {
+                    street: invoice.senderAddress?.street || '',
+                    city: invoice.senderAddress?.city || '',
+                    postCode: invoice.senderAddress?.postCode || '',
+                    country: invoice.senderAddress?.country || ''
+                }
+            };
+
+            // Save to Firestore
+            const docRef = await addDoc(collection(db, 'internalPOs'), {
+                ...newInternalPO,
+                createdAt: Timestamp.fromDate(now),
+                paymentDue: Timestamp.fromDate(paymentDueDate)
+            });
+
+            // Update the ID with the Firestore document ID
+            newInternalPO.id = docRef.id;
+
+            // Dispatch to Redux state
+            dispatch({
+                type: ACTION_TYPES.ADD_INTERNAL_PO,
+                payload: newInternalPO
+            });
+
+            dispatch({ type: 'SET_LOADING', payload: false });
+            return newInternalPO;
+        } catch (error) {
+            console.error('Error creating internal PO:', error);
+            dispatch({ 
+                type: 'SET_FIREBASE_ERROR', 
+                payload: error.message 
+            });
+            dispatch({ type: 'SET_LOADING', payload: false });
+            throw error;
+        }
+    };
+
     return {
         state,
         internalPO,
@@ -418,6 +513,7 @@ const useManageInternalPOs = () => {
         createInternalPO,
         discardChanges,
         toggleModal,
+        createFromInvoice
     };
 };
 

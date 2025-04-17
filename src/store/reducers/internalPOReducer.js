@@ -34,18 +34,16 @@ export const internalPOReducer = (state = initialState, action) => {
     }
 
     if (action.type === ACTION_TYPES.ADD_INTERNAL_PO) {
+        const newInternalPO = action.payload;
+        const total = newInternalPO.items.reduce((sum, item) => {
+            return sum + (parseFloat(item.total) || 0);
+        }, 0);
+
         const newList = [
             {
-                ...action.payload.internalPO,
-                id: action.payload.id,
-                paymentDue: action.payload.paymentDue,
-                status: action.payload.status,
-                total: action.payload.internalPO.items.reduce((sum, item) => {
-                    return sum + (parseFloat(item.total) || 0);
-                }, 0),
-                grandTotal: action.payload.internalPO.grandTotal || action.payload.internalPO.totalVat + action.payload.internalPO.items.reduce((sum, item) => {
-                    return sum + (parseFloat(item.total) || 0);
-                }, 0)
+                ...newInternalPO,
+                total,
+                grandTotal: newInternalPO.grandTotal || total
             },
             ...state.internalPOs,
         ];
@@ -56,12 +54,14 @@ export const internalPOReducer = (state = initialState, action) => {
     if (action.type === ACTION_TYPES.SAVE_CHANGES) {
         const newList = state.internalPOs.map((item) => {
             if (item.id === state.currInternalPOIndex) {
+                const total = action.payload.items.reduce((sum, item) => {
+                    return sum + (parseFloat(item.total) || 0);
+                }, 0);
                 return { 
-                    ...action.payload.internalPO, 
+                    ...action.payload, 
                     status: 'pending',
-                    grandTotal: action.payload.internalPO.grandTotal || action.payload.internalPO.totalVat + action.payload.internalPO.items.reduce((sum, item) => {
-                        return sum + (parseFloat(item.total) || 0);
-                    }, 0)
+                    total,
+                    grandTotal: action.payload.grandTotal || total
                 };
             }
             return item;

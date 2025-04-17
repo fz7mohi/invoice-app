@@ -7,6 +7,7 @@ import useManageQuotations from '../../hooks/useManageQuotations';
 import useManageDeliveryOrders from '../../hooks/useManageDeliveryOrders';
 import useManageInternalPOs from '../../hooks/useManageInternalPOs';
 import useFilter from '../../hooks/useFilter';
+import { useHistory } from 'react-router-dom';
 
 // Fortune Gifts brand colors
 export const fortuneGiftsTheme = {
@@ -54,6 +55,7 @@ const AppProvider = ({ children }) => {
         removeInternalPOItem,
         handleItemsAdd,
         handleItemsRemove,
+        createFromInvoice
     } = useManageInternalPOs();
 
     const {
@@ -98,6 +100,7 @@ const AppProvider = ({ children }) => {
 
     const { filteredInvoices, filterType, changeFilterType } = useFilter(invoiceState);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const history = useHistory();
 
     /**
      * Listen for window resize and call handleResize function
@@ -166,6 +169,7 @@ const AppProvider = ({ children }) => {
                 removeInternalPOItem,
                 handleItemsAdd,
                 handleItemsRemove,
+                createFromInvoice,
                 quotationState,
                 quotation,
                 handleQuotationChange,
@@ -200,7 +204,8 @@ const AppProvider = ({ children }) => {
                 refreshDeliveryOrders,
                 createDeliveryOrder,
                 updateDeliveryOrder,
-                fortuneGiftsTheme
+                fortuneGiftsTheme,
+                createFromInvoice
             }}
         >
             <Provider themeColor={theme}>{children}</Provider>
@@ -209,7 +214,11 @@ const AppProvider = ({ children }) => {
 };
 
 export const useGlobalContext = () => {
-    return useContext(AppContext);
+    const context = useContext(AppContext);
+    if (context === undefined) {
+        throw new Error('useGlobalContext must be used within an AppProvider');
+    }
+    return context;
 };
 
 export { AppProvider };

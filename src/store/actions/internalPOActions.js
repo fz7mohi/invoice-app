@@ -1,6 +1,10 @@
 import * as ACTION_TYPES from '../actions/action_type';
 import generateUniqueId from '../../utilities/generateUniqueID';
 import generatePaymentDueDate from '../../utilities/generatePaymentDueDate';
+import { generateCustomId } from '../../utilities/generateCustomId';
+import { calculatePaymentDueDate as calculatePaymentDueDateUtil } from '../../utilities/calculatePaymentDueDate';
+import { addDoc, collection, Timestamp } from 'firebase/firestore';
+import { db } from '../../firebase/firebase';
 
 // REDUCER ACTIONS
 /**
@@ -10,21 +14,18 @@ import generatePaymentDueDate from '../../utilities/generatePaymentDueDate';
  * @param    {string} state    Object of state
  * @param    {string} type    String with type of internal PO. (available: 'new' or 'draft')
  */
-export const add = (internalPO, state, type) => {
-    // Ensure state.internalPOs exists, default to empty array if not
-    const internalPOs = state?.internalPOs || [];
-    
+export const add = (internalPO, type) => {
+    const customId = generateCustomId('PO');
+    const paymentDueDate = calculatePaymentDueDateUtil(internalPO.date, internalPO.paymentTerms);
+
     return {
         type: ACTION_TYPES.ADD_INTERNAL_PO,
         payload: {
-            internalPO: internalPO,
-            id: generateUniqueId(internalPOs),
-            paymentDue: generatePaymentDueDate(
-                internalPO.createdAt,
-                internalPO.paymentTerms
-            ),
-            status: type === 'new' ? 'pending' : 'draft',
-        },
+            ...internalPO,
+            customId,
+            paymentDueDate,
+            status: type === 'new' ? 'pending' : 'draft'
+        }
     };
 };
 
@@ -33,25 +34,25 @@ export const add = (internalPO, state, type) => {
  * @param    {object} internalPO    Object of edited internal PO
  */
 export const change = (internalPO) => {
+    const paymentDueDate = calculatePaymentDueDateUtil(internalPO.date, internalPO.paymentTerms);
+
     return {
         type: ACTION_TYPES.SAVE_INTERNAL_PO_CHANGES,
         payload: {
-            internalPO: internalPO,
-            paymentDue: generatePaymentDueDate(
-                internalPO.createdAt,
-                internalPO.paymentTerms
-            ),
-            status: 'pending',
-        },
+            ...internalPO,
+            paymentDueDate,
+            status: 'pending'
+        }
     };
 };
 
 /**
  * Function to delete internal PO.
  */
-export const remove = () => {
+export const remove = (id) => {
     return {
         type: ACTION_TYPES.DELETE_INTERNAL_PO,
+        payload: id
     };
 };
 
@@ -114,5 +115,83 @@ export const errors = (err, msg) => {
     return {
         type: ACTION_TYPES.SET_INTERNAL_PO_ERRORS,
         payload: { err, msg },
+    };
+};
+
+export const createFromInvoice = (invoiceId) => {
+    return async (dispatch, getState) => {
+        try {
+            dispatch({ type: ACTION_TYPES.SET_LOADING, payload: true });
+
+            const { invoiceState } = getState();
+            const invoice = invoiceState.invoices.find(inv => inv.id === invoiceId);
+
+            if (!invoice) {
+                throw new Error('Invoice not found');
+            }
+
+            // Generate new internal PO data
+            const customId = generateCustomId('PO');
+            const paymentDueDate = calculatePaymentDueDateUtil(invoice.date, invoice.paymentTerms);
+            const now = new Date();
+
+            // Create new internal PO object
+            const newInternalPO = {
+                ...invoice,
+                customId,
+                paymentDueDate,
+                status: 'pending',
+                type: 'internal',
+                createdAt: now.toISOString(),
+                updatedAt: now.toISOString(),
+                // Remove invoice-specific fields
+                invoiceId: undefined,
+                invoiceStatus: undefined,
+                // Add internal PO specific fields
+                items: invoice.items.map(item => ({
+                    ...item,
+                    quantity: item.quantity || 1,
+                    price: item.price || 0
+                })),
+                total: invoice.total || 0,
+                paymentTerms: invoice.paymentTerms || 'Net 30',
+                description: invoice.description || '',
+                clientName: invoice.clientName || '',
+                clientEmail: invoice.clientEmail || '',
+                clientAddress: invoice.clientAddress || {
+                    street: '',
+                    city: '',
+                    postCode: '',
+                    country: ''
+                }
+            };
+
+            // Save to Firestore
+            const docRef = await addDoc(collection(db, 'internalPOs'), {
+                ...newInternalPO,
+                createdAt: Timestamp.fromDate(now),
+                paymentDue: Timestamp.fromDate(new Date(paymentDueDate))
+            });
+
+            // Update the ID with the Firestore document ID
+            newInternalPO.id = docRef.id;
+
+            // Dispatch to Redux state
+            dispatch({
+                type: ACTION_TYPES.ADD_INTERNAL_PO,
+                payload: newInternalPO
+            });
+
+            dispatch({ type: ACTION_TYPES.SET_LOADING, payload: false });
+            return newInternalPO;
+        } catch (error) {
+            console.error('Error creating internal PO:', error);
+            dispatch({ 
+                type: ACTION_TYPES.SET_FIREBASE_ERROR, 
+                payload: error.message 
+            });
+            dispatch({ type: ACTION_TYPES.SET_LOADING, payload: false });
+            throw error;
+        }
     };
 }; 
