@@ -4,6 +4,13 @@
  * @returns {string} - The generated custom ID
  */
 export const generateCustomId = (type) => {
+    // Special case for internal POs
+    if (type === 'PO') {
+        const random = Math.floor(1000 + Math.random() * 9000);
+        return `FTPO-${random}`;
+    }
+
+    // Default format for other document types
     const now = new Date();
     const year = now.getFullYear().toString().slice(-2);
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
