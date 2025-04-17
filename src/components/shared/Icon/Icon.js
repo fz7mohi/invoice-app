@@ -26,6 +26,8 @@ import {
     faEdit,
     faChevronLeft,
     faChevronRight,
+    faChevronUp,
+    faChevronDown,
     faSpinner
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -57,6 +59,8 @@ const iconMap = {
     'edit': faEdit,
     'chevron-left': faChevronLeft,
     'chevron-right': faChevronRight,
+    'chevron-up': faChevronUp,
+    'chevron-down': faChevronDown,
     'x': faTimes,
     'spinner': faSpinner,
     'loading': faSpinner

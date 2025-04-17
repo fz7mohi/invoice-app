@@ -1,116 +1,145 @@
-import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useMemo } from 'react';
+import { useReducedMotion } from 'framer-motion';
 import { useGlobalContext } from '../App/context';
-import { Search, Plus } from 'react-feather';
-import emptyListImage from '../../assets/empty-list.svg';
-import {
-    StyledInternalPOs,
-    Header,
+import Filter from './Filter/Filter';
+import List from './List/List';
+import Button from '../shared/Button/Button';
+import Icon from '../shared/Icon/Icon';
+import internalPOLengthMessage from '../../utilities/internalPOLengthMessage';
+import { internalPOVariants } from '../../utilities/framerVariants';
+import { 
+    Container, 
+    Header, 
     HeaderTop,
-    Info,
-    Title,
-    Subtitle,
-    Filter,
+    Info, 
+    Title, 
+    Text,
     SearchBar,
     SearchContainer,
-    SearchIcon,
     SearchInput,
-    List,
-    EmptyList,
-    EmptyListImage,
-    EmptyListTitle,
-    EmptyListText,
-    NewButton
+    SearchIcon
 } from './InternalPOsStyles';
-import InternalPOItem from './InternalPOItem';
 
 const InternalPOs = () => {
-    const history = useHistory();
-    const { internalPOState, loading, error, createInternalPO } = useGlobalContext();
-    const [filter, setFilter] = useState('all');
-    const [searchTerm, setSearchTerm] = useState('');
+    const [filterType, setFilterType] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const shouldReduceMotion = useReducedMotion();
+    const { windowWidth, internalPOState, createInternalPO } = useGlobalContext();
+    
+    const isLoading = internalPOState?.isLoading || false;
+    const rawInternalPOs = internalPOState?.internalPOs || [];
+    const isDesktop = windowWidth >= 768;
 
-    const filteredInternalPOs = internalPOState?.internalPOs?.filter(internalPO => {
-        const matchesFilter = filter === 'all' || internalPO.status === filter;
-        const matchesSearch = internalPO.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            internalPO.id.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesFilter && matchesSearch;
-    }) || [];
+    // Define searchable fields
+    const searchableFields = ['customId', 'id', 'clientName', 'description'];
 
-    const handleFilterChange = (e) => {
-        setFilter(e.target.value);
+    // Filter internal POs based on status and search query
+    const filteredInternalPOs = useMemo(() => {
+        let filtered = rawInternalPOs.filter(internalPO => {
+            const matchesStatus = filterType === 'all' || internalPO.status === filterType;
+            const matchesSearch = !searchQuery || searchableFields.some(field => {
+                const value = internalPO[field]?.toString().toLowerCase() || '';
+                return value.includes(searchQuery.toLowerCase());
+            });
+            return matchesStatus && matchesSearch;
+        });
+
+        // Apply search filter if there's a search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(internalPO => {
+                const searchableFields = [
+                    internalPO.customId || internalPO.id, // Internal PO ID
+                    internalPO.clientName,              // Client Name
+                    internalPO.description              // Project Description
+                ].filter(Boolean);
+                
+                return searchableFields.some(field => 
+                    field.toLowerCase().includes(query)
+                );
+            });
+        }
+
+        return filtered;
+    }, [rawInternalPOs, filterType, searchQuery]);
+
+    // Update document title based on filter
+    useEffect(() => {
+        const message = internalPOLengthMessage(
+            filteredInternalPOs.length,
+            filterType,
+            windowWidth
+        );
+        document.title = `Fordox App | ${message}`;
+    }, [filteredInternalPOs.length, filterType, windowWidth]);
+
+    // Define variant based on element type and reduced motion preference
+    const variant = (type, index) => {
+        if (shouldReduceMotion) return internalPOVariants.reduced;
+        
+        if (type === 'container') return internalPOVariants.container;
+        if (type === 'header') return internalPOVariants.header;
+        if (type === 'list') return internalPOVariants.list(index);
+        if (type === 'error') return internalPOVariants.errorMessage;
+        
+        return {};
     };
 
-    const handleSearchChange = (e) => {
-        setSearchTerm(e.target.value);
+    const handleSearch = (e) => {
+        setSearchQuery(e.target.value);
     };
-
-    const handleNewInternalPO = () => {
-        createInternalPO();
-    };
-
-    if (loading) {
-        return <div>Loading...</div>;
-    }
-
-    if (error) {
-        return <div>Error: {error}</div>;
-    }
 
     return (
-        <StyledInternalPOs
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-        >
-            <Header>
+        <Container>
+            <Header
+                variants={variant('header')}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+            >
                 <HeaderTop>
                     <Info>
                         <Title>Internal POs</Title>
-                        <Subtitle>There are {filteredInternalPOs.length} total internal POs</Subtitle>
+                        <Text>
+                            {isLoading 
+                                ? "Loading internal POs..."
+                                : internalPOLengthMessage(
+                                    filteredInternalPOs,
+                                    filterType,
+                                    windowWidth
+                                )
+                            }
+                        </Text>
                     </Info>
-                    <NewButton onClick={handleNewInternalPO}>
-                        <Plus size={16} />
-                        New Internal PO
-                    </NewButton>
+                    
+                    <Filter 
+                        filterType={filterType} 
+                        setFilterType={setFilterType} 
+                    />
                 </HeaderTop>
+
                 <SearchBar>
                     <SearchContainer>
                         <SearchIcon>
-                            <Search size={16} />
+                            <Icon name="search" size={16} />
                         </SearchIcon>
                         <SearchInput
                             type="text"
-                            placeholder="Search by client name or ID..."
-                            value={searchTerm}
-                            onChange={handleSearchChange}
+                            placeholder="Search by Internal PO ID, Client Name, or Project Description"
+                            value={searchQuery}
+                            onChange={handleSearch}
+                            aria-label="Search internal POs by ID, client name, or project description"
                         />
                     </SearchContainer>
                 </SearchBar>
-                <Filter value={filter} onChange={handleFilterChange}>
-                    <option value="all">All</option>
-                    <option value="draft">Draft</option>
-                    <option value="pending">Pending</option>
-                    <option value="paid">Paid</option>
-                </Filter>
             </Header>
-            <List>
-                {filteredInternalPOs.length > 0 ? (
-                    filteredInternalPOs.map(internalPO => (
-                        <InternalPOItem key={internalPO.id} internalPO={internalPO} />
-                    ))
-                ) : (
-                    <EmptyList>
-                        <EmptyListImage src={emptyListImage} alt="Empty list" />
-                        <EmptyListTitle>There is nothing here</EmptyListTitle>
-                        <EmptyListText>
-                            Create a new internal PO by clicking the New Internal PO button and get started
-                        </EmptyListText>
-                    </EmptyList>
-                )}
-            </List>
-        </StyledInternalPOs>
+
+            <List 
+                isLoading={isLoading}
+                internalPOs={filteredInternalPOs} 
+                variant={variant}
+            />
+        </Container>
     );
 };
 

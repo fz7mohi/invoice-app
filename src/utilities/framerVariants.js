@@ -441,3 +441,92 @@ export const receiptsViewVariants = {
         exit: { opacity: 0 },
     },
 };
+
+export const internalPOVariants = {
+    container: {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2
+            }
+        },
+        exit: {
+            opacity: 0,
+            transition: {
+                staggerChildren: 0.1,
+                staggerDirection: -1
+            }
+        }
+    },
+    header: {
+        hidden: { y: -20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 20
+            }
+        },
+        exit: {
+            y: -20,
+            opacity: 0,
+            transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 20
+            }
+        }
+    },
+    list: (index) => ({
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 20,
+                delay: index * 0.05
+            }
+        },
+        exit: {
+            y: 20,
+            opacity: 0,
+            transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 20
+            }
+        }
+    }),
+    errorMessage: {
+        hidden: { scale: 0.8, opacity: 0 },
+        visible: {
+            scale: 1,
+            opacity: 1,
+            transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 20
+            }
+        },
+        exit: {
+            scale: 0.8,
+            opacity: 0,
+            transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 20
+            }
+        }
+    },
+    reduced: {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1 },
+        exit: { opacity: 0 }
+    }
+};
