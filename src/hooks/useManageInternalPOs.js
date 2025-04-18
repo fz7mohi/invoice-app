@@ -443,6 +443,7 @@ const useManageInternalPOs = () => {
                 // Ensure all required fields have values
                 items: (invoice.items || []).map(item => ({
                     name: item.name || '',
+                    description: item.description || '',
                     quantity: item.quantity || 1,
                     price: item.price || 0,
                     total: (item.quantity || 1) * (item.price || 0)

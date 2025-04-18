@@ -124,7 +124,41 @@ const InternalPOView = () => {
     const [voidReason, setVoidReason] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDirectlyFetching, setIsDirectlyFetching] = useState(false);
+    const [clientData, setClientData] = useState(null);
+    const [clientHasVAT, setClientHasVAT] = useState(false);
+    const [invoiceData, setInvoiceData] = useState(null);
     const isDesktop = windowWidth >= 768;
+
+    const fetchClientData = async (clientId, fallbackName) => {
+        if (!clientId) return;
+
+        try {
+            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+            if (clientDoc.exists()) {
+                const data = clientDoc.data();
+                setClientData(data);
+                const isUAE = data.country?.toLowerCase().includes('emirates') || 
+                             data.country?.toLowerCase().includes('uae');
+                setClientHasVAT(isUAE || data.hasVAT || false);
+                return;
+            }
+
+            // If no direct match, try searching by name
+            const clientsRef = collection(db, 'clients');
+            const q = query(clientsRef, where('name', '>=', fallbackName), where('name', '<=', fallbackName + '\uf8ff'));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const data = querySnapshot.docs[0].data();
+                setClientData(data);
+                const isUAE = data.country?.toLowerCase().includes('emirates') || 
+                             data.country?.toLowerCase().includes('uae');
+                setClientHasVAT(isUAE || data.hasVAT || false);
+            }
+        } catch (err) {
+            console.error('Error fetching client data:', err);
+        }
+    };
 
     useEffect(() => {
         const fetchInternalPOData = async () => {
@@ -146,6 +180,25 @@ const InternalPOView = () => {
                     createdAt: data.createdAt?.toDate(),
                     paymentDue: data.paymentDue?.toDate()
                 });
+
+                // Fetch invoice data if available
+                if (data.invoiceId) {
+                    const invoiceDoc = await getDoc(doc(db, 'invoices', data.invoiceId));
+                    if (invoiceDoc.exists()) {
+                        const invoiceData = invoiceDoc.data();
+                        setInvoiceData({
+                            ...invoiceData,
+                            id: invoiceDoc.id,
+                            createdAt: invoiceData.createdAt?.toDate(),
+                            paymentDue: invoiceData.paymentDue?.toDate()
+                        });
+                    }
+                }
+
+                // Fetch client data if available
+                if (data.clientId) {
+                    await fetchClientData(data.clientId, data.clientName);
+                }
 
                 // Fetch related receipts
                 const receiptsQuery = query(
@@ -513,51 +566,49 @@ const InternalPOView = () => {
                     </InfoHeader>
 
                     <InfoAddresses>
-                        <AddressGroup>
-                                                        <AddressText>
-                                {companyProfile?.name}<br />
-                                {companyProfile?.address?.street}<br />
-                                {companyProfile?.address?.city}<br />
-                                {companyProfile?.address?.country}<br />
-                                {companyProfile?.phone}
-                            </AddressText>
-                        </AddressGroup>
-
-                        <AddressGroup align="right">
+                        <AddressGroup align="left">
                             <AddressTitle>Bill To</AddressTitle>
                             <AddressText>
-                                {internalPO.clientName}<br />
-                                {internalPO.clientAddress?.street}<br />
-                                {internalPO.clientAddress?.city}<br />
-                                {internalPO.clientAddress?.country}<br />
-                                {internalPO.clientPhone}
+                                <strong>{clientData?.name || internalPO.clientName}</strong><br />
+                                {clientData?.address}<br />
+                                {clientData?.country}<br />
+                                {clientData?.phone}<br />
+                                {clientHasVAT && clientData?.trnNumber && (
+                                    <span style={{ fontWeight: '600' }}>
+                                        TRN: {clientData.trnNumber}
+                                    </span>
+                                )}
                             </AddressText>
                         </AddressGroup>
                     </InfoAddresses>
 
-                    <Details>
-                        <ItemsHeader showVat>
+                    <Details className="Details">
+                        <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
                             <HeaderCell>Item Name</HeaderCell>
                             <HeaderCell>QTY.</HeaderCell>
                             <HeaderCell>Price</HeaderCell>
-                            <HeaderCell>VAT (15%)</HeaderCell>
+                            {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
                             <HeaderCell>Total</HeaderCell>
                         </ItemsHeader>
                         
                         <Items>
                             {internalPO.items?.map((item, index) => {
-                                const itemVAT = item.price * item.quantity * 0.15;
+                                const itemVAT = item.vat || 0;
+                                // Get the corresponding invoice item description
+                                const invoiceItem = invoiceData?.items?.find(invItem => invItem.name === item.name);
                                 return (
-                                    <Item key={index} showVat>
+                                    <Item key={index} showVat={clientHasVAT}>
                                         <div className="item-details">
                                             <ItemName>{item.name}</ItemName>
-                                            {item.description && (
-                                                <ItemDescription>{item.description}</ItemDescription>
+                                            {(item.description || invoiceItem?.description) && (
+                                                <ItemDescription>
+                                                    {item.description || invoiceItem?.description}
+                                                </ItemDescription>
                                             )}
                                             <div className="item-mobile-details">
                                                 <span>
                                                     {item.quantity || 0} × {formatPrice(item.price || 0, internalPO.currency)}
-                                                    {` (+${formatPrice(itemVAT, internalPO.currency)} VAT)`}
+                                                    {clientHasVAT && ` (+${formatPrice(itemVAT, internalPO.currency)} VAT)`}
                                                 </span>
                                             </div>
                                         </div>
@@ -565,11 +616,13 @@ const InternalPOView = () => {
                                         <ItemPrice>
                                             {formatPrice(item.price || 0, internalPO.currency)}
                                         </ItemPrice>
-                                        <ItemVat>
-                                            {formatPrice(itemVAT, internalPO.currency)}
-                                        </ItemVat>
+                                        {clientHasVAT && (
+                                            <ItemVat>
+                                                {formatPrice(itemVAT, internalPO.currency)}
+                                            </ItemVat>
+                                        )}
                                         <ItemTotal>
-                                            {formatPrice(item.price * item.quantity, internalPO.currency)}
+                                            {formatPrice(item.total || 0, internalPO.currency)}
                                         </ItemTotal>
                                     </Item>
                                 );
@@ -579,15 +632,17 @@ const InternalPOView = () => {
                         <Total>
                             <div>
                                 <TotalText>Subtotal</TotalText>
-                                <TotalAmount>{formatPrice(subtotal, internalPO.currency)}</TotalAmount>
+                                <TotalAmount>{formatPrice(internalPO.subtotal || 0, internalPO.currency)}</TotalAmount>
                             </div>
-                            <div>
-                                <TotalText>VAT (15%)</TotalText>
-                                <TotalAmount>{formatPrice(vatAmount, internalPO.currency)}</TotalAmount>
-                            </div>
+                            {clientHasVAT && (
+                                <div>
+                                    <TotalText>VAT (5%)</TotalText>
+                                    <TotalAmount>{formatPrice(internalPO.totalVat || 0, internalPO.currency)}</TotalAmount>
+                                </div>
+                            )}
                             <div className="grand-total">
                                 <TotalText>Total</TotalText>
-                                <TotalAmount>{formatPrice(grandTotal, internalPO.currency)}</TotalAmount>
+                                <TotalAmount>{formatPrice(internalPO.total || 0, internalPO.currency)}</TotalAmount>
                             </div>
                         </Total>
                     </Details>

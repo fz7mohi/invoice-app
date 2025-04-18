@@ -254,6 +254,12 @@ export const Item = styled.div`
         align-items: center;
         padding: 16px 0;
     }
+
+    .item-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
 `;
 
 export const ItemName = styled.h3`
@@ -267,10 +273,12 @@ export const ItemDescription = styled.p`
     font-size: 12px;
     color: ${({ theme }) => theme.colors.textTertiary};
     margin: 4px 0 0;
-    display: -webkit-box;
+    display: block;
+    line-height: 1.4;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    text-overflow: ellipsis;
 `;
 
 export const ItemQty = styled.div`
