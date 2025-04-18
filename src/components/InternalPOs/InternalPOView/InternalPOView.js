@@ -166,6 +166,10 @@ const InternalPOView = () => {
     const isDesktop = windowWidth >= 768;
     const [showShippingModal, setShowShippingModal] = useState(false);
     const [additionalShippingCost, setAdditionalShippingCost] = useState('');
+    const [showPrintingModal, setShowPrintingModal] = useState(false);
+    const [additionalPrintingCost, setAdditionalPrintingCost] = useState('');
+    const [showDeliveryDateModal, setShowDeliveryDateModal] = useState(false);
+    const [deliveryDate, setDeliveryDate] = useState('');
 
     const fetchClientData = async (clientId, fallbackName) => {
         if (!clientId) return;
@@ -303,16 +307,21 @@ const InternalPOView = () => {
             const currentPaid = internalPO.paid || 0;
             const totalPaid = currentPaid + newAmount;
             const status = totalPaid >= internalPO.total ? 'paid' : 'partially_paid';
+            const netProfit = calculateNetProfit();
 
             await updateDoc(doc(db, 'internalPOs', id), {
                 paid: totalPaid,
-                status
+                status,
+                netProfit,
+                updatedAt: new Date()
             });
 
             setInternalPO(prev => ({
                 ...prev,
                 paid: totalPaid,
-                status
+                status,
+                netProfit,
+                updatedAt: new Date()
             }));
             setShowPaymentModal(false);
             setPaymentAmount('');
@@ -324,10 +333,18 @@ const InternalPOView = () => {
 
     const handleEditTerms = async (terms) => {
         try {
+            const netProfit = calculateNetProfit();
             await updateDoc(doc(db, 'internalPOs', id), {
-                terms
+                terms,
+                netProfit,
+                updatedAt: new Date()
             });
-            setInternalPO(prev => ({ ...prev, terms }));
+            setInternalPO(prev => ({ 
+                ...prev, 
+                terms,
+                netProfit,
+                updatedAt: new Date()
+            }));
             setShowEditModal(false);
             setNewTerms('');
         } catch (err) {
@@ -486,6 +503,66 @@ const InternalPOView = () => {
         };
     };
 
+    const calculateNetProfit = () => {
+        if (!internalPO?.items) return 0;
+
+        const totalCost = internalPO.items.reduce((sum, item) => {
+            const orderQty = item.orderQuantity || item.quantity || 0;
+            const unitCost = item.unitCost || item.price || 0;
+            const printingCost = item.printingCost || 0;
+            const shippingCost = item.shippingCost || 0;
+            return sum + (orderQty * (unitCost + printingCost + shippingCost));
+        }, 0);
+
+        const additionalShippingCost = internalPO.additionalShippingCost || 0;
+        const grandTotal = calculateTotals().grandTotal;
+
+        return grandTotal - totalCost - additionalShippingCost;
+    };
+
+    const updateNetProfit = async () => {
+        try {
+            const netProfit = calculateNetProfit();
+            await updateDoc(doc(db, 'internalPOs', id), {
+                netProfit
+            });
+            setInternalPO(prev => ({
+                ...prev,
+                netProfit
+            }));
+        } catch (err) {
+            console.error('Error updating net profit:', err);
+        }
+    };
+
+    const handleShippingCostSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const additionalShippingCostValue = parseFloat(additionalShippingCost) || 0;
+            const netProfit = calculateNetProfit();
+            
+            await updateDoc(doc(db, 'internalPOs', id), {
+                additionalShippingCost: additionalShippingCostValue,
+                netProfit,
+                updatedAt: new Date()
+            });
+
+            setInternalPO(prev => ({
+                ...prev,
+                additionalShippingCost: additionalShippingCostValue,
+                netProfit,
+                updatedAt: new Date()
+            }));
+
+            setShowShippingModal(false);
+            setAdditionalShippingCost('');
+            toast.success('Additional shipping cost updated successfully');
+        } catch (err) {
+            console.error('Error updating shipping cost:', err);
+            toast.error('Failed to update shipping cost');
+        }
+    };
+
     const handleSupplierClick = (item) => {
         setEditingSupplier({
             ...item,
@@ -533,7 +610,6 @@ const InternalPOView = () => {
             if (!editingSupplier) return;
 
             const updatedItems = internalPO.items.map(item => {
-                // Match by both id and name to ensure we're updating the correct item
                 if ((item.id === editingSupplier.id) || 
                     (!item.id && item.name === editingSupplier.name)) {
                     const { subtotal, totalPrintingCost, totalShippingCost, total } = calculateSupplierTotal();
@@ -547,19 +623,26 @@ const InternalPOView = () => {
                         subtotal,
                         totalPrintingCost,
                         totalShippingCost,
-                        total
+                        total,
+                        updatedAt: new Date()
                     };
                 }
                 return item;
             });
 
+            const netProfit = calculateNetProfit();
+
             await updateDoc(doc(db, 'internalPOs', id), {
-                items: updatedItems
+                items: updatedItems,
+                netProfit,
+                updatedAt: new Date()
             });
 
             setInternalPO(prev => ({
                 ...prev,
-                items: updatedItems
+                items: updatedItems,
+                netProfit,
+                updatedAt: new Date()
             }));
 
             setEditingSupplier(null);
@@ -577,27 +660,47 @@ const InternalPOView = () => {
         }
     };
 
-    const handleShippingCostSubmit = async (e) => {
+    const handlePrintingCostSubmit = async (e) => {
         e.preventDefault();
         try {
-            const additionalShippingCostValue = parseFloat(additionalShippingCost) || 0;
+            const additionalPrintingCostValue = parseFloat(additionalPrintingCost) || 0;
             
-            // Update the internalPO with the additional shipping cost
             await updateDoc(doc(db, 'internalPOs', id), {
-                additionalShippingCost: additionalShippingCostValue
+                additionalPrintingCost: additionalPrintingCostValue
             });
 
             setInternalPO(prev => ({
                 ...prev,
-                additionalShippingCost: additionalShippingCostValue
+                additionalPrintingCost: additionalPrintingCostValue
             }));
 
-            setShowShippingModal(false);
-            setAdditionalShippingCost('');
-            toast.success('Additional shipping cost updated successfully');
+            setShowPrintingModal(false);
+            setAdditionalPrintingCost('');
+            toast.success('Additional printing cost updated successfully');
         } catch (err) {
-            console.error('Error updating shipping cost:', err);
-            toast.error('Failed to update shipping cost');
+            console.error('Error updating printing cost:', err);
+            toast.error('Failed to update printing cost');
+        }
+    };
+
+    const handleDeliveryDateSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await updateDoc(doc(db, 'internalPOs', id), {
+                deliveryDate: deliveryDate
+            });
+
+            setInternalPO(prev => ({
+                ...prev,
+                deliveryDate: deliveryDate
+            }));
+
+            setShowDeliveryDateModal(false);
+            setDeliveryDate('');
+            toast.success('Delivery date updated successfully');
+        } catch (err) {
+            console.error('Error updating delivery date:', err);
+            toast.error('Failed to update delivery date');
         }
     };
 
@@ -785,16 +888,52 @@ const InternalPOView = () => {
                                 </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Sub Total</PaymentDetailLabel>
+                                <PaymentDetailLabel>Shipping Cost</PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {formatPrice(
                                         internalPO.items?.reduce((sum, item) => {
                                             const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const unitCost = item.unitCost || item.price || 0;
-                                            const printingCost = item.printingCost || 0;
                                             const shippingCost = item.shippingCost || 0;
-                                            return sum + (orderQty * (unitCost + printingCost + shippingCost));
+                                            return sum + (orderQty * shippingCost);
                                         }, 0),
+                                        internalPO.currency
+                                    )}
+                                </PaymentDetailValue>
+                            </PaymentDetailItem>
+                            <PaymentDetailItem onClick={() => setShowPrintingModal(true)} style={{ cursor: 'pointer' }}>
+                                <PaymentDetailLabel>Additional Printing Cost</PaymentDetailLabel>
+                                <PaymentDetailValue>
+                                    {formatPrice(internalPO.additionalPrintingCost || 0, internalPO.currency)}
+                                </PaymentDetailValue>
+                            </PaymentDetailItem>
+                            <PaymentDetailItem onClick={() => setShowDeliveryDateModal(true)} style={{ cursor: 'pointer' }}>
+                                <PaymentDetailLabel>Date of Delivery</PaymentDetailLabel>
+                                <PaymentDetailValue>
+                                    {internalPO.deliveryDate ? formatDate(internalPO.deliveryDate) : 'Not set'}
+                                </PaymentDetailValue>
+                            </PaymentDetailItem>
+                            <PaymentDetailItem>
+                                <PaymentDetailLabel>Net Total (Cost)</PaymentDetailLabel>
+                                <PaymentDetailValue>
+                                    {formatPrice(
+                                        // Total cost of items
+                                        internalPO.items?.reduce((sum, item) => {
+                                            const orderQty = item.orderQuantity || item.quantity || 0;
+                                            const unitCost = item.unitCost || item.price || 0;
+                                            return sum + (orderQty * unitCost);
+                                        }, 0) +
+                                        // Total printing cost (per item + additional)
+                                        internalPO.items?.reduce((sum, item) => {
+                                            const orderQty = item.orderQuantity || item.quantity || 0;
+                                            const printingCost = item.printingCost || 0;
+                                            return sum + (orderQty * printingCost);
+                                        }, 0) + (internalPO.additionalPrintingCost || 0) +
+                                        // Total shipping cost (per item + additional)
+                                        internalPO.items?.reduce((sum, item) => {
+                                            const orderQty = item.orderQuantity || item.quantity || 0;
+                                            const shippingCost = item.shippingCost || 0;
+                                            return sum + (orderQty * shippingCost);
+                                        }, 0) + (internalPO.additionalShippingCost || 0),
                                         internalPO.currency
                                     )}
                                 </PaymentDetailValue>
@@ -803,13 +942,26 @@ const InternalPOView = () => {
                                 <PaymentDetailLabel>Net Profit</PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {formatPrice(
-                                        grandTotal - internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const unitCost = item.unitCost || item.price || 0;
-                                            const printingCost = item.printingCost || 0;
-                                            const shippingCost = item.shippingCost || 0;
-                                            return sum + (orderQty * (unitCost + printingCost + shippingCost));
-                                        }, 0) - (internalPO.additionalShippingCost || 0),
+                                        grandTotal - (
+                                            // Total cost of items
+                                            internalPO.items?.reduce((sum, item) => {
+                                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                                const unitCost = item.unitCost || item.price || 0;
+                                                return sum + (orderQty * unitCost);
+                                            }, 0) +
+                                            // Total printing cost (per item + additional)
+                                            internalPO.items?.reduce((sum, item) => {
+                                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                                const printingCost = item.printingCost || 0;
+                                                return sum + (orderQty * printingCost);
+                                            }, 0) + (internalPO.additionalPrintingCost || 0) +
+                                            // Total shipping cost (per item + additional)
+                                            internalPO.items?.reduce((sum, item) => {
+                                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                                const shippingCost = item.shippingCost || 0;
+                                                return sum + (orderQty * shippingCost);
+                                            }, 0) + (internalPO.additionalShippingCost || 0)
+                                        ),
                                         internalPO.currency
                                     )}
                                 </PaymentDetailValue>
@@ -1252,6 +1404,102 @@ const InternalPOView = () => {
                                 <Button
                                     type="button"
                                     onClick={() => setShowShippingModal(false)}
+                                    $secondary
+                                >
+                                    Cancel
+                                </Button>
+                                <Button type="submit" $primary>
+                                    Save Changes
+                                </Button>
+                            </SupplierFormActions>
+                        </SupplierEditForm>
+                    </SupplierEditModal>
+                </ModalOverlay>
+            )}
+
+            {showPrintingModal && (
+                <ModalOverlay>
+                    <SupplierEditModal>
+                        <ModalHeader>
+                            <ModalIconWrapper>
+                                <Icon name="print" size={20} />
+                            </ModalIconWrapper>
+                            <ModalTitle>Add Additional Printing Cost</ModalTitle>
+                        </ModalHeader>
+                        
+                        <SupplierEditForm onSubmit={handlePrintingCostSubmit}>
+                            <SupplierFormSection>
+                                <SupplierFormTitle>Additional Printing Cost</SupplierFormTitle>
+                                <SupplierFormRow>
+                                    <SupplierFormLabel>Additional Printing Cost</SupplierFormLabel>
+                                    <SupplierFormInput
+                                        type="number"
+                                        name="printingCost"
+                                        value={additionalPrintingCost}
+                                        onChange={(e) => setAdditionalPrintingCost(e.target.value)}
+                                        placeholder="Enter additional printing cost"
+                                        min="0"
+                                        step="0.01"
+                                        required
+                                    />
+                                </SupplierFormRow>
+                            </SupplierFormSection>
+
+                            <CostBreakdown>
+                                <CostItem>
+                                    <CostLabel>Additional Printing Cost</CostLabel>
+                                    <CostValue>
+                                        {formatPrice(parseFloat(additionalPrintingCost) || 0, internalPO.currency)}
+                                    </CostValue>
+                                </CostItem>
+                            </CostBreakdown>
+
+                            <SupplierFormActions>
+                                <Button
+                                    type="button"
+                                    onClick={() => setShowPrintingModal(false)}
+                                    $secondary
+                                >
+                                    Cancel
+                                </Button>
+                                <Button type="submit" $primary>
+                                    Save Changes
+                                </Button>
+                            </SupplierFormActions>
+                        </SupplierEditForm>
+                    </SupplierEditModal>
+                </ModalOverlay>
+            )}
+
+            {showDeliveryDateModal && (
+                <ModalOverlay>
+                    <SupplierEditModal>
+                        <ModalHeader>
+                            <ModalIconWrapper>
+                                <Icon name="calendar" size={20} />
+                            </ModalIconWrapper>
+                            <ModalTitle>Set Delivery Date</ModalTitle>
+                        </ModalHeader>
+                        
+                        <SupplierEditForm onSubmit={handleDeliveryDateSubmit}>
+                            <SupplierFormSection>
+                                <SupplierFormTitle>Delivery Date</SupplierFormTitle>
+                                <SupplierFormRow>
+                                    <SupplierFormLabel>Date</SupplierFormLabel>
+                                    <SupplierFormInput
+                                        type="date"
+                                        name="deliveryDate"
+                                        value={deliveryDate}
+                                        onChange={(e) => setDeliveryDate(e.target.value)}
+                                        required
+                                    />
+                                </SupplierFormRow>
+                            </SupplierFormSection>
+
+                            <SupplierFormActions>
+                                <Button
+                                    type="button"
+                                    onClick={() => setShowDeliveryDateModal(false)}
                                     $secondary
                                 >
                                     Cancel
