@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, deleteDoc, doc, getDocs, query, limit, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Your Firebase configuration
 // Replace these with your actual Firebase project config
@@ -22,6 +23,9 @@ const db = initializeFirestore(app, {
     { tabManager: persistentMultipleTabManager() }
   )
 });
+
+// Initialize Firebase Storage
+const storage = getStorage(app);
 
 // Test Firebase write functionality
 const testFirebaseWrite = async () => {
@@ -50,4 +54,4 @@ setTimeout(() => {
   testFirebaseWrite();
 }, 2000);
 
-export { db };
+export { db, storage };

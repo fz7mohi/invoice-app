@@ -1400,4 +1400,86 @@ export const CostLabel = styled.span`
 export const CostValue = styled.span`
     font-weight: 500;
     color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const ImageUploadContainer = styled.div`
+    width: 100%;
+    min-height: 200px;
+    border: 2px dashed ${props => props.theme.colors.border || '#ddd'};
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: ${props => props.theme.colors.backgroundSecondary || '#f9f9f9'};
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+        border-color: ${props => props.theme.colors.primary || '#000'};
+        background-color: ${props => props.theme.colors.backgroundHover || '#f0f0f0'};
+    }
+
+    ${props => props.hasImage && `
+        border-style: solid;
+        padding: 0;
+    `}
+`;
+
+export const ImagePreview = styled.div`
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+        max-width: 100%;
+        max-height: 200px;
+        object-fit: contain;
+    }
+`;
+
+export const RemoveImageButton = styled.button`
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.7);
+    }
+`;
+
+export const ImageUploadPlaceholder = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+
+    span {
+        color: ${props => props.theme.colors.text || '#333'};
+        font-size: 14px;
+    }
+`;
+
+export const ImageUploadHint = styled.div`
+    margin-top: 8px;
+    font-size: 12px;
+    color: ${props => props.theme.colors.textSecondary || '#666'};
+    text-align: center;
 `; 

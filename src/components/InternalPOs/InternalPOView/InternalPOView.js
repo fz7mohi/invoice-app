@@ -117,8 +117,15 @@ import {
     CostLabel,
     CostValue,
     FormSection,
-    ButtonGroup
+    ButtonGroup,
+    ImageUploadContainer,
+    ImagePreview,
+    RemoveImageButton,
+    ImageUploadPlaceholder,
+    ImageUploadHint
 } from './InternalPOViewStyles';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../../firebase/firebase';
 
 const defaultTermsAndConditions = `1. Payment is due within 30 days
 2. Please include invoice number on payment
@@ -161,7 +168,8 @@ const InternalPOView = () => {
         orderQuantity: '',
         unitCost: '',
         printingCost: '',
-        shippingCost: ''
+        shippingCost: '',
+        image: null
     });
     const isDesktop = windowWidth >= 768;
     const [showShippingModal, setShowShippingModal] = useState(false);
@@ -170,6 +178,7 @@ const InternalPOView = () => {
     const [additionalPrintingCost, setAdditionalPrintingCost] = useState('');
     const [showDeliveryDateModal, setShowDeliveryDateModal] = useState(false);
     const [deliveryDate, setDeliveryDate] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fetchClientData = async (clientId, fallbackName) => {
         if (!clientId) return;
@@ -635,7 +644,10 @@ const InternalPOView = () => {
             orderQuantity: item.orderQuantity || item.quantity || '',
             unitCost: item.unitCost || item.price || '',
             printingCost: item.printingCost || '',
-            shippingCost: item.shippingCost || ''
+            shippingCost: item.shippingCost || '',
+            image: null, // Always set to null initially
+            imageUrl: item.imageUrl || null,
+            shouldRemoveImage: false
         });
     };
 
@@ -666,10 +678,68 @@ const InternalPOView = () => {
         };
     };
 
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                toast.error('Image size should be less than 5MB');
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                toast.error('Please upload an image file');
+                return;
+            }
+            setSupplierFormData(prev => ({
+                ...prev,
+                image: file
+            }));
+        }
+    };
+
+    const handleImageDrop = (e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('Image size should be less than 5MB');
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                toast.error('Please upload an image file');
+                return;
+            }
+            setSupplierFormData(prev => ({
+                ...prev,
+                image: file
+            }));
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
+
     const handleSupplierFormSubmit = async (e) => {
         e.preventDefault();
         try {
             if (!editingSupplier) return;
+            setIsSubmitting(true);
+
+            let imageUrl = null;
+            if (supplierFormData.image) {
+                // Upload new image to storage and get URL
+                const timestamp = Date.now();
+                const fileName = `${editingSupplier.name.replace(/\s+/g, '_')}_${timestamp}`;
+                const storageRef = ref(storage, `supplier-images/${fileName}`);
+                await uploadBytes(storageRef, supplierFormData.image);
+                imageUrl = await getDownloadURL(storageRef);
+            } else if (supplierFormData.shouldRemoveImage) {
+                // If image should be removed, set imageUrl to null
+                imageUrl = null;
+            } else {
+                // Keep existing imageUrl if no changes
+                imageUrl = editingSupplier.imageUrl;
+            }
 
             const updatedItems = internalPO.items.map(item => {
                 if ((item.id === editingSupplier.id) || 
@@ -682,6 +752,7 @@ const InternalPOView = () => {
                         unitCost: parseFloat(supplierFormData.unitCost),
                         printingCost: parseFloat(supplierFormData.printingCost) || 0,
                         shippingCost: parseFloat(supplierFormData.shippingCost) || 0,
+                        imageUrl: imageUrl,
                         subtotal,
                         totalPrintingCost,
                         totalShippingCost,
@@ -710,12 +781,17 @@ const InternalPOView = () => {
                 orderQuantity: '',
                 unitCost: '',
                 printingCost: '',
-                shippingCost: ''
+                shippingCost: '',
+                image: null,
+                imageUrl: null,
+                shouldRemoveImage: false
             });
             toast.success('Supplier details updated successfully');
         } catch (err) {
             console.error('Error updating supplier details:', err);
             toast.error('Failed to update supplier details');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -1388,6 +1464,63 @@ const InternalPOView = () => {
                                         required
                                     />
                                 </SupplierFormRow>
+                                <SupplierFormRow>
+                                    <SupplierFormLabel>Product Image</SupplierFormLabel>
+                                    <ImageUploadContainer
+                                        onDrop={handleImageDrop}
+                                        onDragOver={handleDragOver}
+                                        hasImage={!!supplierFormData.image || !!supplierFormData.imageUrl}
+                                        onClick={() => {
+                                            if (!supplierFormData.image && !supplierFormData.imageUrl) {
+                                                document.getElementById('image-upload').click();
+                                            }
+                                        }}
+                                    >
+                                        {supplierFormData.image || supplierFormData.imageUrl ? (
+                                            <ImagePreview>
+                                                <img 
+                                                    src={supplierFormData.image ? URL.createObjectURL(supplierFormData.image) : supplierFormData.imageUrl} 
+                                                    alt="Product preview" 
+                                                />
+                                                <RemoveImageButton 
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        if (supplierFormData.image) {
+                                                            URL.revokeObjectURL(supplierFormData.image);
+                                                        }
+                                                        setSupplierFormData(prev => ({ 
+                                                            ...prev, 
+                                                            image: null,
+                                                            imageUrl: null,
+                                                            shouldRemoveImage: true
+                                                        }));
+                                                    }}
+                                                >
+                                                    <Icon name="close" size={16} color="#fff" />
+                                                </RemoveImageButton>
+                                            </ImagePreview>
+                                        ) : (
+                                            <ImageUploadPlaceholder>
+                                                <Icon name="image" size={32} color={theme?.colors?.primary || '#000'} />
+                                                <span>Drag & drop an image here</span>
+                                                <span style={{ fontSize: '12px', color: theme?.colors?.textSecondary || '#666' }}>
+                                                    or click to browse
+                                                </span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                    style={{ display: 'none' }}
+                                                    id="image-upload"
+                                                />
+                                            </ImageUploadPlaceholder>
+                                        )}
+                                    </ImageUploadContainer>
+                                    <ImageUploadHint>
+                                        Supported formats: JPG, PNG, GIF (Max 5MB)
+                                    </ImageUploadHint>
+                                </SupplierFormRow>
                             </SupplierFormSection>
 
                             <SupplierFormSection>
@@ -1440,11 +1573,23 @@ const InternalPOView = () => {
                                     type="button"
                                     onClick={() => setEditingSupplier(null)}
                                     $secondary
+                                    disabled={isSubmitting}
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" $primary>
-                                    Save Changes
+                                <Button 
+                                    type="submit" 
+                                    $primary
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <div style={{ marginRight: '8px', width: '16px', height: '16px' }} className="loading-spinner"></div>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        'Save Changes'
+                                    )}
                                 </Button>
                             </SupplierFormActions>
                         </SupplierEditForm>
