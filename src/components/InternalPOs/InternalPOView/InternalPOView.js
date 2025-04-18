@@ -586,11 +586,18 @@ const InternalPOView = () => {
             `;
             costAnalysisSection.innerHTML = `
                 <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Cost Analysis</h2>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                    <!-- Row 1: Basic Information -->
                     <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
                         <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Items</div>
                         <div style="color: #004359; font-size: 18px; font-weight: bold;">
                             ${internalPO.items?.reduce((sum, item) => sum + (item.orderQuantity || item.quantity || 0), 0)}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Date of Delivery</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${internalPO.deliveryDate ? formatDate(internalPO.deliveryDate) : 'Not set'}
                         </div>
                     </div>
                     <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
@@ -606,8 +613,29 @@ const InternalPOView = () => {
                             )}
                         </div>
                     </div>
+
+                    <!-- Row 2: Printing Costs -->
                     <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
                         <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Printing Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const printingCost = item.printingCost || 0;
+                                    return sum + (orderQty * printingCost);
+                                }, 0),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Additional Printing Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(internalPO.additionalPrintingCost || 0, internalPO.currency)}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Printing Cost</div>
                         <div style="color: #004359; font-size: 18px; font-weight: bold;">
                             ${formatPrice(
                                 internalPO.items?.reduce((sum, item) => {
@@ -619,6 +647,8 @@ const InternalPOView = () => {
                             )}
                         </div>
                     </div>
+
+                    <!-- Row 3: Shipping and Final Costs -->
                     <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
                         <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Shipping Cost</div>
                         <div style="color: #004359; font-size: 18px; font-weight: bold;">
@@ -627,7 +657,41 @@ const InternalPOView = () => {
                                     const orderQty = item.orderQuantity || item.quantity || 0;
                                     const shippingCost = item.shippingCost || 0;
                                     return sum + (orderQty * shippingCost);
-                                }, 0) + (internalPO.additionalShippingCost || 0),
+                                }, 0),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Additional Shipping Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(internalPO.additionalShippingCost || 0, internalPO.currency)}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Net Profit</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                grandTotal - (
+                                    // Total cost of items
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const unitCost = item.unitCost || item.price || 0;
+                                        return sum + (orderQty * unitCost);
+                                    }, 0) +
+                                    // Total printing cost (per item + additional)
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const printingCost = item.printingCost || 0;
+                                        return sum + (orderQty * printingCost);
+                                    }, 0) + (internalPO.additionalPrintingCost || 0) +
+                                    // Total shipping cost (per item + additional)
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const shippingCost = item.shippingCost || 0;
+                                        return sum + (orderQty * shippingCost);
+                                    }, 0) + (internalPO.additionalShippingCost || 0)
+                                ),
                                 internalPO.currency
                             )}
                         </div>
@@ -1468,6 +1532,7 @@ const InternalPOView = () => {
                         </PaymentDetailsHeader>
 
                         <PaymentDetailsGrid>
+                            {/* Row 1: Basic Information */}
                             <PaymentDetailItem>
                                 <PaymentDetailLabel>
                                     <Icon name="cube" size={16} style={{ marginRight: '8px' }} />
