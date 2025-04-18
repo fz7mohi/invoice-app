@@ -36,7 +36,10 @@ import {
     faStore,
     faPrint,
     faTruckFast,
-    faCalculator
+    faCalculator,
+    faCube,
+    faMoneyBill,
+    faChartLine
 } from '@fortawesome/free-solid-svg-icons';
 
 const iconMap = {
@@ -79,7 +82,12 @@ const iconMap = {
     'supplier': faStore,
     'print': faPrint,
     'shipping': faTruckFast,
-    'total': faCalculator
+    'total': faCalculator,
+    'cube': faCube,
+    'money-bill': faMoneyBill,
+    'truck-fast': faTruckFast,
+    'calculator': faCalculator,
+    'chart-line': faChartLine
 };
 
 const getFontAwesomeSize = (size) => {

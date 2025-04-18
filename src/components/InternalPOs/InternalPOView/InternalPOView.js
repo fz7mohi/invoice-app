@@ -912,13 +912,19 @@ const InternalPOView = () => {
 
                         <PaymentDetailsGrid>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Total Items</PaymentDetailLabel>
+                                <PaymentDetailLabel>
+                                    <Icon name="cube" size={16} style={{ marginRight: '8px' }} />
+                                    Total Items
+                                </PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {internalPO.items?.reduce((sum, item) => sum + (item.orderQuantity || item.quantity || 0), 0)}
                                 </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Total Cost</PaymentDetailLabel>
+                                <PaymentDetailLabel>
+                                    <Icon name="money-bill" size={16} style={{ marginRight: '8px' }} />
+                                    Total Cost
+                                </PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {formatPrice(
                                         internalPO.items?.reduce((sum, item) => {
@@ -931,7 +937,10 @@ const InternalPOView = () => {
                                 </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Printing Cost</PaymentDetailLabel>
+                                <PaymentDetailLabel>
+                                    <Icon name="print" size={16} style={{ marginRight: '8px' }} />
+                                    Printing Cost
+                                </PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {formatPrice(
                                         internalPO.items?.reduce((sum, item) => {
@@ -944,13 +953,19 @@ const InternalPOView = () => {
                                 </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem onClick={() => setShowShippingModal(true)} style={{ cursor: 'pointer' }}>
-                                <PaymentDetailLabel>Additional Shipping Cost</PaymentDetailLabel>
+                                <PaymentDetailLabel>
+                                    <Icon name="shipping" size={16} style={{ marginRight: '8px' }} />
+                                    Additional Shipping Cost
+                                </PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {formatPrice(internalPO.additionalShippingCost || 0, internalPO.currency)}
                                 </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Shipping Cost</PaymentDetailLabel>
+                                <PaymentDetailLabel>
+                                    <Icon name="truck-fast" size={16} style={{ marginRight: '8px' }} />
+                                    Shipping Cost
+                                </PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {formatPrice(
                                         internalPO.items?.reduce((sum, item) => {
@@ -963,19 +978,28 @@ const InternalPOView = () => {
                                 </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem onClick={() => setShowPrintingModal(true)} style={{ cursor: 'pointer' }}>
-                                <PaymentDetailLabel>Additional Printing Cost</PaymentDetailLabel>
+                                <PaymentDetailLabel>
+                                    <Icon name="print" size={16} style={{ marginRight: '8px' }} />
+                                    Additional Printing Cost
+                                </PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {formatPrice(internalPO.additionalPrintingCost || 0, internalPO.currency)}
                                 </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem onClick={() => setShowDeliveryDateModal(true)} style={{ cursor: 'pointer' }}>
-                                <PaymentDetailLabel>Date of Delivery</PaymentDetailLabel>
+                                <PaymentDetailLabel>
+                                    <Icon name="calendar" size={16} style={{ marginRight: '8px' }} />
+                                    Date of Delivery
+                                </PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {internalPO.deliveryDate ? formatDate(internalPO.deliveryDate) : 'Not set'}
                                 </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Net Total (Cost)</PaymentDetailLabel>
+                                <PaymentDetailLabel>
+                                    <Icon name="calculator" size={16} style={{ marginRight: '8px' }} />
+                                    Net Total (Cost)
+                                </PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {formatPrice(
                                         // Total cost of items
@@ -1001,7 +1025,10 @@ const InternalPOView = () => {
                                 </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Net Profit</PaymentDetailLabel>
+                                <PaymentDetailLabel>
+                                    <Icon name="chart-line" size={16} style={{ marginRight: '8px' }} />
+                                    Net Profit
+                                </PaymentDetailLabel>
                                 <PaymentDetailValue>
                                     {formatPrice(
                                         grandTotal - (
@@ -1320,7 +1347,7 @@ const InternalPOView = () => {
                             <ModalIconWrapper>
                                 <Icon name="supplier" size={20} />
                             </ModalIconWrapper>
-                            <ModalTitle>Edit Supplier Details</ModalTitle>
+                            <ModalTitle>Edit Supplier Details - {editingSupplier.name}</ModalTitle>
                         </ModalHeader>
                         
                         <SupplierEditForm onSubmit={handleSupplierFormSubmit}>

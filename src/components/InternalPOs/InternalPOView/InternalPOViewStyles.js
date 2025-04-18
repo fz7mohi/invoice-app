@@ -1248,12 +1248,16 @@ export const FormInput = styled.input`
     border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
     border-radius: 4px;
     background-color: ${({ theme }) => theme?.backgrounds?.input || '#1E2139'};
-    color: ${({ theme }) => theme?.colors?.text || '#DFE3FA'};
+    color: #FFFFFF;
     font-size: 14px;
 
     &:focus {
         outline: none;
         border-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
+    }
+
+    &::placeholder {
+        color: rgba(255, 255, 255, 0.5);
     }
 `;
 
@@ -1348,7 +1352,7 @@ export const SupplierFormInput = styled.input`
     border: 1px solid ${({ theme }) => theme.colors.border};
     border-radius: 4px;
     background-color: ${({ theme }) => theme.colors.background};
-    color: ${({ theme }) => theme.colors.text};
+    color: #FFFFFF;
     font-size: 14px;
     transition: all 0.2s ease;
 
@@ -1359,8 +1363,7 @@ export const SupplierFormInput = styled.input`
     }
 
     &::placeholder {
-        color: ${({ theme }) => theme.colors.textSecondary};
-        opacity: 0.7;
+        color: rgba(255, 255, 255, 0.5);
     }
 `;
 
