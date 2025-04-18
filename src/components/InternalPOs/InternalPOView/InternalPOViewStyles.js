@@ -44,8 +44,9 @@ export const StyledInternalPOView = styled.main`
 
 export const Container = styled.div`
     width: 100%;
-    max-width: 780px;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 0 24px;
 `;
 
 export const Link = styled(RouterLink)`
@@ -214,6 +215,122 @@ export const Details = styled.div`
     overflow: hidden;
 `;
 
+export const SupplierSection = styled.div`
+    padding: 24px;
+    background-color: ${({ theme }) => theme.colors.backgroundSecondary};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+export const SupplierGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+export const SupplierItem = styled.div`
+    padding: 16px;
+    background-color: ${({ theme }) => theme.colors.background};
+    border-radius: 8px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: ${({ theme }) => theme.colors.purple};
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        border-top: 2px solid ${({ theme }) => theme.colors.textSecondary};
+        border-right: 2px solid ${({ theme }) => theme.colors.textSecondary};
+        transform: translateY(-50%) rotate(45deg);
+        opacity: 0;
+        transition: all 0.2s ease;
+    }
+
+    &:hover::after {
+        opacity: 1;
+        right: 12px;
+    }
+`;
+
+export const SupplierHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+`;
+
+export const SupplierTitle = styled.h3`
+    font-size: 16px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    margin: 0;
+`;
+
+export const SupplierName = styled.div`
+    font-size: 14px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    .supplier-icon {
+        color: ${({ theme }) => theme.colors.primary};
+    }
+`;
+
+export const SupplierDetails = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+export const SupplierRow = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+`;
+
+export const SupplierLabel = styled.span`
+    font-size: 13px;
+    color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+export const SupplierValue = styled.span`
+    font-size: 13px;
+    font-weight: 500;
+    color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const SupplierTotal = styled.div`
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid ${({ theme }) => theme.colors.border};
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const ItemsSection = styled.div`
+    padding: 24px;
+`;
+
 export const ItemsHeader = styled.div`
     display: none;
     
@@ -234,7 +351,7 @@ export const HeaderCell = styled.div`
 `;
 
 export const Items = styled.div`
-    padding: 24px;
+    padding: 24px 0;
 `;
 
 export const Item = styled.div`
@@ -1201,4 +1318,112 @@ export const FormTextArea = styled.textarea`
         outline: none;
         border-color: ${({ theme }) => theme?.colors?.purple || '#7C5DFA'};
     }
+`;
+
+export const SupplierEditModal = styled(ModalContent)`
+    max-width: 480px;
+    width: 90%;
+    padding: 24px;
+`;
+
+export const SupplierEditForm = styled.form`
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+`;
+
+export const SupplierFormSection = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+`;
+
+export const SupplierFormTitle = styled.h4`
+    font-size: 14px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+        content: '';
+        display: block;
+        width: 4px;
+        height: 16px;
+        background-color: ${({ theme }) => theme.colors.purple};
+        border-radius: 2px;
+    }
+`;
+
+export const SupplierFormRow = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+`;
+
+export const SupplierFormLabel = styled.label`
+    font-size: 12px;
+    font-weight: 500;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+`;
+
+export const SupplierFormInput = styled.input`
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    border-radius: 4px;
+    background-color: ${({ theme }) => theme.colors.background};
+    color: ${({ theme }) => theme.colors.text};
+    font-size: 14px;
+    transition: all 0.2s ease;
+
+    &:focus {
+        outline: none;
+        border-color: ${({ theme }) => theme.colors.purple};
+        box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.purple}20;
+    }
+
+    &::placeholder {
+        color: ${({ theme }) => theme.colors.textSecondary};
+        opacity: 0.7;
+    }
+`;
+
+export const SupplierFormActions = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+`;
+
+export const CostBreakdown = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+export const CostItem = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const CostLabel = styled.span`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+`;
+
+export const CostValue = styled.span`
+    font-weight: 500;
+    color: ${({ theme }) => theme.colors.textPrimary};
 `; 

@@ -30,7 +30,13 @@ import {
     faChevronRight,
     faChevronUp,
     faChevronDown,
-    faSpinner
+    faSpinner,
+    faBan,
+    faCreditCard,
+    faStore,
+    faPrint,
+    faTruckFast,
+    faCalculator
 } from '@fortawesome/free-solid-svg-icons';
 
 const iconMap = {
@@ -67,7 +73,13 @@ const iconMap = {
     'chevron-down': faChevronDown,
     'x': faTimes,
     'spinner': faSpinner,
-    'loading': faSpinner
+    'loading': faSpinner,
+    'void': faBan,
+    'payment': faCreditCard,
+    'supplier': faStore,
+    'print': faPrint,
+    'shipping': faTruckFast,
+    'total': faCalculator
 };
 
 const getFontAwesomeSize = (size) => {

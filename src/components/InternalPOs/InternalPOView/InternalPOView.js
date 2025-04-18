@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useHistory, Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { doc, getDoc, updateDoc, collection, getDocs, addDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '../../../firebase/firebase';
@@ -10,6 +10,8 @@ import Icon from '../../shared/Icon/Icon';
 import { useTheme } from 'styled-components';
 import EmailPreviewModal from '../../shared/EmailPreviewModal/EmailPreviewModal';
 import Button from '../../shared/Button/Button';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {
     Container,
     StyledInternalPOView,
@@ -29,6 +31,9 @@ import {
     AddressTitle,
     AddressText,
     Details,
+    ItemsSection,
+    SupplierSection,
+    SupplierGrid,
     ItemsHeader,
     HeaderCell,
     Items,
@@ -39,6 +44,15 @@ import {
     ItemPrice,
     ItemVat,
     ItemTotal,
+    SupplierHeader,
+    SupplierTitle,
+    SupplierItem,
+    SupplierName,
+    SupplierDetails,
+    SupplierRow,
+    SupplierLabel,
+    SupplierValue,
+    SupplierTotal,
     Total,
     TotalText,
     TotalAmount,
@@ -89,7 +103,19 @@ import {
     TermsSection,
     TermsHeader,
     TermsTitle,
-    TermsActions
+    TermsActions,
+    SupplierEditModal,
+    SupplierEditForm,
+    SupplierFormSection,
+    SupplierFormTitle,
+    SupplierFormRow,
+    SupplierFormLabel,
+    SupplierFormInput,
+    SupplierFormActions,
+    CostBreakdown,
+    CostItem,
+    CostLabel,
+    CostValue
 } from './InternalPOViewStyles';
 
 const defaultTermsAndConditions = `1. Payment is due within 30 days
@@ -127,6 +153,14 @@ const InternalPOView = () => {
     const [clientData, setClientData] = useState(null);
     const [clientHasVAT, setClientHasVAT] = useState(false);
     const [invoiceData, setInvoiceData] = useState(null);
+    const [editingSupplier, setEditingSupplier] = useState(null);
+    const [supplierFormData, setSupplierFormData] = useState({
+        supplierName: '',
+        orderQuantity: '',
+        unitCost: '',
+        printingCost: '',
+        shippingCost: ''
+    });
     const isDesktop = windowWidth >= 768;
 
     const fetchClientData = async (clientId, fallbackName) => {
@@ -435,7 +469,10 @@ const InternalPOView = () => {
             return sum + (item.price * item.quantity);
         }, 0);
 
-        const vatAmount = subtotal * 0.15; // 15% VAT
+        // Only apply VAT if client's country is United Arab Emirates
+        const isUAE = clientData?.country?.toLowerCase().includes('emirates') || 
+                     clientData?.country?.toLowerCase().includes('uae');
+        const vatAmount = isUAE ? subtotal * 0.05 : 0; // 5% VAT only for UAE
         const grandTotal = subtotal + vatAmount;
 
         return {
@@ -445,10 +482,102 @@ const InternalPOView = () => {
         };
     };
 
+    const handleSupplierClick = (item) => {
+        setEditingSupplier({
+            ...item,
+            id: item.id || item.name // Use name as fallback ID if id doesn't exist
+        });
+        setSupplierFormData({
+            supplierName: item.supplierName || '',
+            orderQuantity: item.orderQuantity || item.quantity || '',
+            unitCost: item.unitCost || item.price || '',
+            printingCost: item.printingCost || '',
+            shippingCost: item.shippingCost || ''
+        });
+    };
+
+    const handleSupplierFormChange = (e) => {
+        const { name, value } = e.target;
+        setSupplierFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const calculateSupplierTotal = () => {
+        const orderQty = parseFloat(supplierFormData.orderQuantity) || 0;
+        const unitCost = parseFloat(supplierFormData.unitCost) || 0;
+        const printingCostPerUnit = parseFloat(supplierFormData.printingCost) || 0;
+        const shippingCostPerUnit = parseFloat(supplierFormData.shippingCost) || 0;
+        
+        const subtotal = orderQty * unitCost;
+        const totalPrintingCost = orderQty * printingCostPerUnit;
+        const totalShippingCost = orderQty * shippingCostPerUnit;
+        const total = subtotal + totalPrintingCost + totalShippingCost;
+        
+        return {
+            subtotal,
+            totalPrintingCost,
+            totalShippingCost,
+            total
+        };
+    };
+
+    const handleSupplierFormSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (!editingSupplier) return;
+
+            const updatedItems = internalPO.items.map(item => {
+                // Match by both id and name to ensure we're updating the correct item
+                if ((item.id === editingSupplier.id) || 
+                    (!item.id && item.name === editingSupplier.name)) {
+                    const { subtotal, totalPrintingCost, totalShippingCost, total } = calculateSupplierTotal();
+                    return {
+                        ...item,
+                        supplierName: supplierFormData.supplierName,
+                        orderQuantity: parseFloat(supplierFormData.orderQuantity),
+                        unitCost: parseFloat(supplierFormData.unitCost),
+                        printingCost: parseFloat(supplierFormData.printingCost) || 0,
+                        shippingCost: parseFloat(supplierFormData.shippingCost) || 0,
+                        subtotal,
+                        totalPrintingCost,
+                        totalShippingCost,
+                        total
+                    };
+                }
+                return item;
+            });
+
+            await updateDoc(doc(db, 'internalPOs', id), {
+                items: updatedItems
+            });
+
+            setInternalPO(prev => ({
+                ...prev,
+                items: updatedItems
+            }));
+
+            setEditingSupplier(null);
+            setSupplierFormData({
+                supplierName: '',
+                orderQuantity: '',
+                unitCost: '',
+                printingCost: '',
+                shippingCost: ''
+            });
+            toast.success('Supplier details updated successfully');
+        } catch (err) {
+            console.error('Error updating supplier details:', err);
+            toast.error('Failed to update supplier details');
+        }
+    };
+
     // Show loading state
     if (loading || !internalPO) {
         return (
             <StyledInternalPOView>
+                <ToastContainer position="top-right" autoClose={3000} />
                 <Container>
                     <Link
                         to="/internal-pos"
@@ -482,6 +611,7 @@ const InternalPOView = () => {
 
     return (
         <StyledInternalPOView>
+            <ToastContainer position="top-right" autoClose={3000} />
             <Container>
                 <Link
                     to="/internal-pos"
@@ -582,69 +712,192 @@ const InternalPOView = () => {
                         </AddressGroup>
                     </InfoAddresses>
 
-                    <Details className="Details">
-                        <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
-                            <HeaderCell>Item Name</HeaderCell>
-                            <HeaderCell>QTY.</HeaderCell>
-                            <HeaderCell>Price</HeaderCell>
-                            {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
-                            <HeaderCell>Total</HeaderCell>
-                        </ItemsHeader>
-                        
-                        <Items>
-                            {internalPO.items?.map((item, index) => {
-                                const itemVAT = item.vat || 0;
-                                // Get the corresponding invoice item description
-                                const invoiceItem = invoiceData?.items?.find(invItem => invItem.name === item.name);
-                                return (
-                                    <Item key={index} showVat={clientHasVAT}>
-                                        <div className="item-details">
-                                            <ItemName>{item.name}</ItemName>
-                                            {(item.description || invoiceItem?.description) && (
-                                                <ItemDescription>
-                                                    {item.description || invoiceItem?.description}
-                                                </ItemDescription>
-                                            )}
-                                            <div className="item-mobile-details">
-                                                <span>
-                                                    {item.quantity || 0} × {formatPrice(item.price || 0, internalPO.currency)}
-                                                    {clientHasVAT && ` (+${formatPrice(itemVAT, internalPO.currency)} VAT)`}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <ItemQty>{item.quantity || 0}</ItemQty>
-                                        <ItemPrice>
-                                            {formatPrice(item.price || 0, internalPO.currency)}
-                                        </ItemPrice>
-                                        {clientHasVAT && (
-                                            <ItemVat>
-                                                {formatPrice(itemVAT, internalPO.currency)}
-                                            </ItemVat>
-                                        )}
-                                        <ItemTotal>
-                                            {formatPrice(item.total || 0, internalPO.currency)}
-                                        </ItemTotal>
-                                    </Item>
-                                );
-                            })}
-                        </Items>
-                        
-                        <Total>
-                            <div>
-                                <TotalText>Subtotal</TotalText>
-                                <TotalAmount>{formatPrice(internalPO.subtotal || 0, internalPO.currency)}</TotalAmount>
-                            </div>
-                            {clientHasVAT && (
-                                <div>
-                                    <TotalText>VAT (5%)</TotalText>
-                                    <TotalAmount>{formatPrice(internalPO.totalVat || 0, internalPO.currency)}</TotalAmount>
-                                </div>
+                    <PaymentDetailsSection>
+                        <PaymentDetailsHeader>
+                            <PaymentDetailsTitle>Payment Details</PaymentDetailsTitle>
+                            {internalPO.status !== 'paid' && (
+                                <CreateReceiptButton onClick={handleCreateReceipt}>
+                                    <Icon name="plus" size={13} />
+                                    Create Receipt
+                                </CreateReceiptButton>
                             )}
-                            <div className="grand-total">
-                                <TotalText>Total</TotalText>
-                                <TotalAmount>{formatPrice(internalPO.total || 0, internalPO.currency)}</TotalAmount>
-                            </div>
-                        </Total>
+                        </PaymentDetailsHeader>
+
+                        <PaymentDetailsGrid>
+                            <PaymentDetailItem>
+                                <PaymentDetailLabel>Total Amount</PaymentDetailLabel>
+                                <PaymentDetailValue>{formatPrice(grandTotal, internalPO.currency)}</PaymentDetailValue>
+                            </PaymentDetailItem>
+                            <PaymentDetailItem>
+                                <PaymentDetailLabel>Amount Paid</PaymentDetailLabel>
+                                <PaymentDetailValue>{formatPrice(internalPO.paid || 0, internalPO.currency)}</PaymentDetailValue>
+                            </PaymentDetailItem>
+                            <PaymentDetailItem>
+                                <PaymentDetailLabel>Amount Due</PaymentDetailLabel>
+                                <PaymentDetailValue>{formatPrice(grandTotal - (internalPO.paid || 0), internalPO.currency)}</PaymentDetailValue>
+                            </PaymentDetailItem>
+                        </PaymentDetailsGrid>
+
+                        {receipts.length > 0 && (
+                            <ReceiptTimeline>
+                                <ReceiptTimelineTitle>Created Receipts</ReceiptTimelineTitle>
+                                {receipts.map((receipt) => (
+                                    <ReceiptItem
+                                        key={receipt.id}
+                                        onClick={() => history.push(`/receipt/${receipt.id}`)}
+                                    >
+                                        <ReceiptInfo>
+                                            <ReceiptNumber>{receipt.customId}</ReceiptNumber>
+                                            <ReceiptDetails>
+                                                {formatDate(receipt.date, 'MMM DD, YYYY h:mm A')}
+                                            </ReceiptDetails>
+                                        </ReceiptInfo>
+                                        <ReceiptAmount>
+                                            {formatPrice(receipt.amount, internalPO.currency)}
+                                        </ReceiptAmount>
+                                    </ReceiptItem>
+                                ))}
+                            </ReceiptTimeline>
+                        )}
+                    </PaymentDetailsSection>
+
+                    <Details className="Details">
+                        <SupplierSection>
+                            <SupplierHeader>
+                                <Icon name="supplier" size={16} color={theme?.colors?.primary} />
+                                <SupplierTitle>Supplier Details</SupplierTitle>
+                            </SupplierHeader>
+                            
+                            <SupplierGrid>
+                                {internalPO.items?.map((item, index) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const unitCost = item.unitCost || item.price || 0;
+                                    const printingCost = item.printingCost || 0;
+                                    const shippingCost = item.shippingCost || 0;
+                                    const subtotal = orderQty * unitCost;
+                                    const totalPrintingCost = orderQty * printingCost;
+                                    const totalShippingCost = orderQty * shippingCost;
+                                    const total = subtotal + totalPrintingCost + totalShippingCost;
+                                    
+                                    return (
+                                        <SupplierItem 
+                                            key={index}
+                                            onClick={() => handleSupplierClick(item)}
+                                        >
+                                            <SupplierName>
+                                                <Icon name="supplier" size={14} className="supplier-icon" />
+                                                {item.supplierName || 'Not assigned'}
+                                            </SupplierName>
+                                            <SupplierDetails>
+                                                <SupplierRow>
+                                                    <SupplierLabel>Item:</SupplierLabel>
+                                                    <SupplierValue>{item.name}</SupplierValue>
+                                                </SupplierRow>
+                                                <SupplierRow>
+                                                    <SupplierLabel>Order Quantity:</SupplierLabel>
+                                                    <SupplierValue>{orderQty}</SupplierValue>
+                                                </SupplierRow>
+                                                <SupplierRow>
+                                                    <SupplierLabel>Unit Cost:</SupplierLabel>
+                                                    <SupplierValue>{formatPrice(unitCost, internalPO.currency)}</SupplierValue>
+                                                </SupplierRow>
+                                                <CostBreakdown>
+                                                    <CostItem>
+                                                        <CostLabel>
+                                                            <Icon name="print" size={12} />
+                                                            Printing Cost (Per Unit)
+                                                        </CostLabel>
+                                                        <CostValue>{formatPrice(printingCost, internalPO.currency)}</CostValue>
+                                                    </CostItem>
+                                                    <CostItem>
+                                                        <CostLabel>
+                                                            <Icon name="shipping" size={12} />
+                                                            Shipping Cost (Per Unit)
+                                                        </CostLabel>
+                                                        <CostValue>{formatPrice(shippingCost, internalPO.currency)}</CostValue>
+                                                    </CostItem>
+                                                    <CostItem>
+                                                        <CostLabel>
+                                                            <Icon name="total" size={12} />
+                                                            Total
+                                                        </CostLabel>
+                                                        <CostValue>{formatPrice(total, internalPO.currency)}</CostValue>
+                                                    </CostItem>
+                                                </CostBreakdown>
+                                            </SupplierDetails>
+                                        </SupplierItem>
+                                    );
+                                })}
+                            </SupplierGrid>
+                        </SupplierSection>
+
+                        <ItemsSection>
+                            <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
+                                <HeaderCell>Item Name</HeaderCell>
+                                <HeaderCell>QTY.</HeaderCell>
+                                <HeaderCell>Price</HeaderCell>
+                                {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
+                                <HeaderCell>Total</HeaderCell>
+                            </ItemsHeader>
+                            
+                            <Items>
+                                {internalPO.items?.map((item, index) => {
+                                    const itemVAT = clientHasVAT ? (item.price * item.quantity * 0.05) : 0;
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const unitCost = item.unitCost || item.price || 0;
+                                    const subtotal = orderQty * unitCost;
+                                    const total = subtotal + (clientHasVAT ? itemVAT : 0);
+                                    
+                                    // Get the corresponding invoice item description
+                                    const invoiceItem = invoiceData?.items?.find(invItem => invItem.name === item.name);
+                                    return (
+                                        <Item key={index} showVat={clientHasVAT}>
+                                            <div className="item-details">
+                                                <ItemName>{item.name}</ItemName>
+                                                {(item.description || invoiceItem?.description) && (
+                                                    <ItemDescription>
+                                                        {item.description || invoiceItem?.description}
+                                                    </ItemDescription>
+                                                )}
+                                                <div className="item-mobile-details">
+                                                    <span>
+                                                        {orderQty} × {formatPrice(unitCost, internalPO.currency)}
+                                                        {clientHasVAT && ` (+${formatPrice(itemVAT, internalPO.currency)} VAT)`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <ItemQty>{orderQty}</ItemQty>
+                                            <ItemPrice>{formatPrice(unitCost, internalPO.currency)}</ItemPrice>
+                                            {clientHasVAT && (
+                                                <ItemVat>
+                                                    {formatPrice(itemVAT, internalPO.currency)}
+                                                </ItemVat>
+                                            )}
+                                            <ItemTotal>
+                                                {formatPrice(total, internalPO.currency)}
+                                            </ItemTotal>
+                                        </Item>
+                                    );
+                                })}
+                            </Items>
+
+                            <Total>
+                                <div>
+                                    <TotalText>Subtotal</TotalText>
+                                    <TotalAmount>{formatPrice(subtotal, internalPO.currency)}</TotalAmount>
+                                </div>
+                                {clientHasVAT && (
+                                    <div>
+                                        <TotalText>VAT (5%)</TotalText>
+                                        <TotalAmount>{formatPrice(vatAmount, internalPO.currency)}</TotalAmount>
+                                    </div>
+                                )}
+                                <div className="grand-total">
+                                    <TotalText>Total</TotalText>
+                                    <TotalAmount>{formatPrice(grandTotal, internalPO.currency)}</TotalAmount>
+                                </div>
+                            </Total>
+                        </ItemsSection>
                     </Details>
 
                     <InfoSectionsGrid>
@@ -697,55 +950,6 @@ const InternalPOView = () => {
 
                         {renderBankDetails()}
                     </InfoSectionsGrid>
-
-                    <PaymentDetailsSection>
-                        <PaymentDetailsHeader>
-                            <PaymentDetailsTitle>Payment Details</PaymentDetailsTitle>
-                            {internalPO.status !== 'paid' && (
-                                <CreateReceiptButton onClick={handleCreateReceipt}>
-                                    <Icon name="plus" size={13} />
-                                    Create Receipt
-                                </CreateReceiptButton>
-                            )}
-                        </PaymentDetailsHeader>
-
-                        <PaymentDetailsGrid>
-                            <PaymentDetailItem>
-                                <PaymentDetailLabel>Total Amount</PaymentDetailLabel>
-                                <PaymentDetailValue>{formatPrice(grandTotal, internalPO.currency)}</PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem>
-                                <PaymentDetailLabel>Amount Paid</PaymentDetailLabel>
-                                <PaymentDetailValue>{formatPrice(internalPO.paid || 0, internalPO.currency)}</PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem>
-                                <PaymentDetailLabel>Amount Due</PaymentDetailLabel>
-                                <PaymentDetailValue>{formatPrice(grandTotal - (internalPO.paid || 0), internalPO.currency)}</PaymentDetailValue>
-                            </PaymentDetailItem>
-                        </PaymentDetailsGrid>
-
-                        {receipts.length > 0 && (
-                            <ReceiptTimeline>
-                                <ReceiptTimelineTitle>Created Receipts</ReceiptTimelineTitle>
-                                {receipts.map((receipt) => (
-                                    <ReceiptItem
-                                        key={receipt.id}
-                                        onClick={() => history.push(`/receipt/${receipt.id}`)}
-                                    >
-                                        <ReceiptInfo>
-                                            <ReceiptNumber>{receipt.customId}</ReceiptNumber>
-                                            <ReceiptDetails>
-                                                {formatDate(receipt.date, 'MMM DD, YYYY h:mm A')}
-                                            </ReceiptDetails>
-                                        </ReceiptInfo>
-                                        <ReceiptAmount>
-                                            {formatPrice(receipt.amount, internalPO.currency)}
-                                        </ReceiptAmount>
-                                    </ReceiptItem>
-                                ))}
-                            </ReceiptTimeline>
-                        )}
-                    </PaymentDetailsSection>
                 </InfoCard>
             </Container>
 
@@ -836,6 +1040,119 @@ const InternalPOView = () => {
                     pdfBase64={pdfData.content}
                     pdfName={pdfData.name}
                 />
+            )}
+
+            {/* Supplier Edit Modal */}
+            {editingSupplier && (
+                <ModalOverlay>
+                    <SupplierEditModal>
+                        <ModalHeader>
+                            <ModalIconWrapper>
+                                <Icon name="supplier" size={20} />
+                            </ModalIconWrapper>
+                            <ModalTitle>Edit Supplier Details</ModalTitle>
+                        </ModalHeader>
+                        
+                        <SupplierEditForm onSubmit={handleSupplierFormSubmit}>
+                            <SupplierFormSection>
+                                <SupplierFormTitle>Basic Information</SupplierFormTitle>
+                                <SupplierFormRow>
+                                    <SupplierFormLabel>Supplier Name</SupplierFormLabel>
+                                    <SupplierFormInput
+                                        type="text"
+                                        name="supplierName"
+                                        value={supplierFormData.supplierName}
+                                        onChange={handleSupplierFormChange}
+                                        placeholder="Enter supplier name"
+                                        required
+                                    />
+                                </SupplierFormRow>
+                                <SupplierFormRow>
+                                    <SupplierFormLabel>Order Quantity</SupplierFormLabel>
+                                    <SupplierFormInput
+                                        type="number"
+                                        name="orderQuantity"
+                                        value={supplierFormData.orderQuantity}
+                                        onChange={handleSupplierFormChange}
+                                        min="0"
+                                        step="1"
+                                        required
+                                    />
+                                </SupplierFormRow>
+                                <SupplierFormRow>
+                                    <SupplierFormLabel>Unit Cost</SupplierFormLabel>
+                                    <SupplierFormInput
+                                        type="number"
+                                        name="unitCost"
+                                        value={supplierFormData.unitCost}
+                                        onChange={handleSupplierFormChange}
+                                        min="0"
+                                        step="0.01"
+                                        required
+                                    />
+                                </SupplierFormRow>
+                            </SupplierFormSection>
+
+                            <SupplierFormSection>
+                                <SupplierFormTitle>Additional Costs (Per Unit)</SupplierFormTitle>
+                                <SupplierFormRow>
+                                    <SupplierFormLabel>Printing Cost (Per Unit)</SupplierFormLabel>
+                                    <SupplierFormInput
+                                        type="number"
+                                        name="printingCost"
+                                        value={supplierFormData.printingCost}
+                                        onChange={handleSupplierFormChange}
+                                        min="0"
+                                        step="0.01"
+                                    />
+                                </SupplierFormRow>
+                                <SupplierFormRow>
+                                    <SupplierFormLabel>Shipping Cost (Per Unit)</SupplierFormLabel>
+                                    <SupplierFormInput
+                                        type="number"
+                                        name="shippingCost"
+                                        value={supplierFormData.shippingCost}
+                                        onChange={handleSupplierFormChange}
+                                        min="0"
+                                        step="0.01"
+                                    />
+                                </SupplierFormRow>
+                            </SupplierFormSection>
+
+                            <CostBreakdown>
+                                <CostItem>
+                                    <CostLabel>Subtotal</CostLabel>
+                                    <CostValue>{formatPrice(calculateSupplierTotal().subtotal, internalPO.currency)}</CostValue>
+                                </CostItem>
+                                <CostItem>
+                                    <CostLabel>Total Printing Cost</CostLabel>
+                                    <CostValue>{formatPrice(calculateSupplierTotal().totalPrintingCost, internalPO.currency)}</CostValue>
+                                </CostItem>
+                                <CostItem>
+                                    <CostLabel>Total Shipping Cost</CostLabel>
+                                    <CostValue>{formatPrice(calculateSupplierTotal().totalShippingCost, internalPO.currency)}</CostValue>
+                                </CostItem>
+                                <CostItem>
+                                    <CostLabel>Total</CostLabel>
+                                    <CostValue>{formatPrice(calculateSupplierTotal().total, internalPO.currency)}</CostValue>
+                                </CostItem>
+                            </CostBreakdown>
+
+                            <SupplierFormActions>
+                                <Button
+                                    type="button"
+                                    onClick={() => setEditingSupplier(null)}
+                                    $secondary
+                                >
+                                    Cancel
+                                </Button>
+                                <Button type="submit" $primary>
+                                    Save Changes
+                                </Button>
+                            </SupplierFormActions>
+                        </SupplierEditForm>
+                    </SupplierEditModal>
+                </ModalOverlay>
             )}
         </StyledInternalPOView>
     );
