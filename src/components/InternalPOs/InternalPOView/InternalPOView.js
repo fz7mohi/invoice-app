@@ -115,7 +115,9 @@ import {
     CostBreakdown,
     CostItem,
     CostLabel,
-    CostValue
+    CostValue,
+    FormSection,
+    ButtonGroup
 } from './InternalPOViewStyles';
 
 const defaultTermsAndConditions = `1. Payment is due within 30 days
@@ -162,6 +164,8 @@ const InternalPOView = () => {
         shippingCost: ''
     });
     const isDesktop = windowWidth >= 768;
+    const [showShippingModal, setShowShippingModal] = useState(false);
+    const [additionalShippingCost, setAdditionalShippingCost] = useState('');
 
     const fetchClientData = async (clientId, fallbackName) => {
         if (!clientId) return;
@@ -573,6 +577,30 @@ const InternalPOView = () => {
         }
     };
 
+    const handleShippingCostSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const additionalShippingCostValue = parseFloat(additionalShippingCost) || 0;
+            
+            // Update the internalPO with the additional shipping cost
+            await updateDoc(doc(db, 'internalPOs', id), {
+                additionalShippingCost: additionalShippingCostValue
+            });
+
+            setInternalPO(prev => ({
+                ...prev,
+                additionalShippingCost: additionalShippingCostValue
+            }));
+
+            setShowShippingModal(false);
+            setAdditionalShippingCost('');
+            toast.success('Additional shipping cost updated successfully');
+        } catch (err) {
+            console.error('Error updating shipping cost:', err);
+            toast.error('Failed to update shipping cost');
+        }
+    };
+
     // Show loading state
     if (loading || !internalPO) {
         return (
@@ -714,51 +742,79 @@ const InternalPOView = () => {
 
                     <PaymentDetailsSection>
                         <PaymentDetailsHeader>
-                            <PaymentDetailsTitle>Payment Details</PaymentDetailsTitle>
-                            {internalPO.status !== 'paid' && (
-                                <CreateReceiptButton onClick={handleCreateReceipt}>
-                                    <Icon name="plus" size={13} />
-                                    Create Receipt
-                                </CreateReceiptButton>
-                            )}
+                            <PaymentDetailsTitle>Cost Analysis</PaymentDetailsTitle>
                         </PaymentDetailsHeader>
 
                         <PaymentDetailsGrid>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Total Amount</PaymentDetailLabel>
-                                <PaymentDetailValue>{formatPrice(grandTotal, internalPO.currency)}</PaymentDetailValue>
+                                <PaymentDetailLabel>Total Items</PaymentDetailLabel>
+                                <PaymentDetailValue>
+                                    {internalPO.items?.reduce((sum, item) => sum + (item.orderQuantity || item.quantity || 0), 0)}
+                                </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Amount Paid</PaymentDetailLabel>
-                                <PaymentDetailValue>{formatPrice(internalPO.paid || 0, internalPO.currency)}</PaymentDetailValue>
+                                <PaymentDetailLabel>Total Cost</PaymentDetailLabel>
+                                <PaymentDetailValue>
+                                    {formatPrice(
+                                        internalPO.items?.reduce((sum, item) => {
+                                            const orderQty = item.orderQuantity || item.quantity || 0;
+                                            const unitCost = item.unitCost || item.price || 0;
+                                            return sum + (orderQty * unitCost);
+                                        }, 0),
+                                        internalPO.currency
+                                    )}
+                                </PaymentDetailValue>
                             </PaymentDetailItem>
                             <PaymentDetailItem>
-                                <PaymentDetailLabel>Amount Due</PaymentDetailLabel>
-                                <PaymentDetailValue>{formatPrice(grandTotal - (internalPO.paid || 0), internalPO.currency)}</PaymentDetailValue>
+                                <PaymentDetailLabel>Printing Cost</PaymentDetailLabel>
+                                <PaymentDetailValue>
+                                    {formatPrice(
+                                        internalPO.items?.reduce((sum, item) => {
+                                            const orderQty = item.orderQuantity || item.quantity || 0;
+                                            const printingCost = item.printingCost || 0;
+                                            return sum + (orderQty * printingCost);
+                                        }, 0),
+                                        internalPO.currency
+                                    )}
+                                </PaymentDetailValue>
+                            </PaymentDetailItem>
+                            <PaymentDetailItem onClick={() => setShowShippingModal(true)} style={{ cursor: 'pointer' }}>
+                                <PaymentDetailLabel>Additional Shipping Cost</PaymentDetailLabel>
+                                <PaymentDetailValue>
+                                    {formatPrice(internalPO.additionalShippingCost || 0, internalPO.currency)}
+                                </PaymentDetailValue>
+                            </PaymentDetailItem>
+                            <PaymentDetailItem>
+                                <PaymentDetailLabel>Sub Total</PaymentDetailLabel>
+                                <PaymentDetailValue>
+                                    {formatPrice(
+                                        internalPO.items?.reduce((sum, item) => {
+                                            const orderQty = item.orderQuantity || item.quantity || 0;
+                                            const unitCost = item.unitCost || item.price || 0;
+                                            const printingCost = item.printingCost || 0;
+                                            const shippingCost = item.shippingCost || 0;
+                                            return sum + (orderQty * (unitCost + printingCost + shippingCost));
+                                        }, 0),
+                                        internalPO.currency
+                                    )}
+                                </PaymentDetailValue>
+                            </PaymentDetailItem>
+                            <PaymentDetailItem>
+                                <PaymentDetailLabel>Net Profit</PaymentDetailLabel>
+                                <PaymentDetailValue>
+                                    {formatPrice(
+                                        grandTotal - internalPO.items?.reduce((sum, item) => {
+                                            const orderQty = item.orderQuantity || item.quantity || 0;
+                                            const unitCost = item.unitCost || item.price || 0;
+                                            const printingCost = item.printingCost || 0;
+                                            const shippingCost = item.shippingCost || 0;
+                                            return sum + (orderQty * (unitCost + printingCost + shippingCost));
+                                        }, 0) - (internalPO.additionalShippingCost || 0),
+                                        internalPO.currency
+                                    )}
+                                </PaymentDetailValue>
                             </PaymentDetailItem>
                         </PaymentDetailsGrid>
-
-                        {receipts.length > 0 && (
-                            <ReceiptTimeline>
-                                <ReceiptTimelineTitle>Created Receipts</ReceiptTimelineTitle>
-                                {receipts.map((receipt) => (
-                                    <ReceiptItem
-                                        key={receipt.id}
-                                        onClick={() => history.push(`/receipt/${receipt.id}`)}
-                                    >
-                                        <ReceiptInfo>
-                                            <ReceiptNumber>{receipt.customId}</ReceiptNumber>
-                                            <ReceiptDetails>
-                                                {formatDate(receipt.date, 'MMM DD, YYYY h:mm A')}
-                                            </ReceiptDetails>
-                                        </ReceiptInfo>
-                                        <ReceiptAmount>
-                                            {formatPrice(receipt.amount, internalPO.currency)}
-                                        </ReceiptAmount>
-                                    </ReceiptItem>
-                                ))}
-                            </ReceiptTimeline>
-                        )}
                     </PaymentDetailsSection>
 
                     <Details className="Details">
@@ -1142,6 +1198,60 @@ const InternalPOView = () => {
                                 <Button
                                     type="button"
                                     onClick={() => setEditingSupplier(null)}
+                                    $secondary
+                                >
+                                    Cancel
+                                </Button>
+                                <Button type="submit" $primary>
+                                    Save Changes
+                                </Button>
+                            </SupplierFormActions>
+                        </SupplierEditForm>
+                    </SupplierEditModal>
+                </ModalOverlay>
+            )}
+
+            {showShippingModal && (
+                <ModalOverlay>
+                    <SupplierEditModal>
+                        <ModalHeader>
+                            <ModalIconWrapper>
+                                <Icon name="shipping" size={20} />
+                            </ModalIconWrapper>
+                            <ModalTitle>Add Additional Shipping Cost</ModalTitle>
+                        </ModalHeader>
+                        
+                        <SupplierEditForm onSubmit={handleShippingCostSubmit}>
+                            <SupplierFormSection>
+                                <SupplierFormTitle>Additional Shipping Cost</SupplierFormTitle>
+                                <SupplierFormRow>
+                                    <SupplierFormLabel>Additional Shipping Cost</SupplierFormLabel>
+                                    <SupplierFormInput
+                                        type="number"
+                                        name="shippingCost"
+                                        value={additionalShippingCost}
+                                        onChange={(e) => setAdditionalShippingCost(e.target.value)}
+                                        placeholder="Enter additional shipping cost"
+                                        min="0"
+                                        step="0.01"
+                                        required
+                                    />
+                                </SupplierFormRow>
+                            </SupplierFormSection>
+
+                            <CostBreakdown>
+                                <CostItem>
+                                    <CostLabel>Additional Shipping Cost</CostLabel>
+                                    <CostValue>
+                                        {formatPrice(parseFloat(additionalShippingCost) || 0, internalPO.currency)}
+                                    </CostValue>
+                                </CostItem>
+                            </CostBreakdown>
+
+                            <SupplierFormActions>
+                                <Button
+                                    type="button"
+                                    onClick={() => setShowShippingModal(false)}
                                     $secondary
                                 >
                                     Cancel

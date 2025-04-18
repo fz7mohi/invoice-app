@@ -1011,68 +1011,39 @@ export const PaymentDetailsGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
-    width: 100%;
+    margin-top: 16px;
 
-    @media (max-width: 1024px) {
-        gap: 12px;
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
     }
 
-    @media (max-width: 767px) {
+    @media (max-width: 480px) {
         grid-template-columns: 1fr;
-        gap: 8px;
     }
 `;
 
 export const PaymentDetailItem = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px;
-    background-color: ${({ theme }) => theme?.backgrounds?.input || '#1E2139'};
-    border-radius: 6px;
-    border: 1px solid ${({ theme }) => theme?.borders || '#252945'};
-    transition: all 0.2s ease;
-    min-width: 0;
+    background: ${({ theme }) => theme.colors.background};
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
 
     &:hover {
-        background-color: ${({ theme }) => theme?.backgrounds?.hover || '#252945'};
-    }
-
-    @media (max-width: 767px) {
-        padding: 10px;
+        transform: translateY(-2px);
     }
 `;
 
-export const PaymentDetailLabel = styled.label`
-    font-size: 12px;
-    font-weight: 500;
-    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    @media (max-width: 767px) {
-        font-size: 11px;
-    }
+export const PaymentDetailLabel = styled.div`
+    font-size: 14px;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    margin-bottom: 8px;
 `;
 
-export const PaymentDetailValue = styled.span`
-    font-size: 20px;
+export const PaymentDetailValue = styled.div`
+    font-size: 18px;
     font-weight: 600;
-    color: ${({ theme }) => theme?.colors?.textPrimary || '#FFFFFF'};
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    @media (max-width: 1024px) {
-        font-size: 18px;
-    }
-
-    @media (max-width: 767px) {
-        font-size: 16px;
-    }
+    color: ${({ theme }) => theme.colors.text};
 `;
 
 export const CreateReceiptButton = styled(Button)`
