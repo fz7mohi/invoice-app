@@ -50,6 +50,7 @@
         "axios": "^1.8.4",
         "browser-process-hrtime": "^1.0.0",
         "cors": "^2.8.5",
+        "cors-anywhere": "^0.4.4",
         "express": "^4.21.2",
         "firebase": "^11.5.0",
         "framer-motion": "^4.1.17",
@@ -66,5 +67,6 @@
         "react-virtualized-auto-sizer": "^1.0.26",
         "react-window": "^1.8.11",
         "styled-components": "^5.3.0"
-    }
+    },
+    "proxy": "https://firebasestorage.googleapis.com"
 }

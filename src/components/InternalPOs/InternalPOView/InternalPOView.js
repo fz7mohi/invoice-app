@@ -128,8 +128,10 @@ import {
     ImagePreviewModalContent,
     ClosePreviewButton
 } from './InternalPOViewStyles';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { storage } from '../../../firebase/firebase';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const defaultTermsAndConditions = `1. Payment is due within 30 days
 2. Please include invoice number on payment
@@ -453,10 +455,349 @@ const InternalPOView = () => {
 
     const handleDownloadPDF = async () => {
         try {
-            // Implementation for PDF generation and download
-            // This would be similar to InvoiceView's implementation
-        } catch (err) {
-            console.error('Error generating PDF:', err);
+            // Get the client's country from the invoice or client data
+            const clientCountry = internalPO?.clientAddress?.country || 
+                                clientData?.country || 
+                                'qatar';
+
+            // Determine which company profile to use
+            let companyProfile;
+            try {
+                if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
+                    companyProfile = await getCompanyProfile('uae');
+                } else {
+                    companyProfile = await getCompanyProfile('qatar');
+                }
+            } catch (profileError) {
+                companyProfile = {
+                    name: 'Fortune Gifts',
+                    address: 'Doha, Qatar',
+                    phone: '+974 1234 5678',
+                    vatNumber: 'VAT123456789',
+                    crNumber: 'CR123456789'
+                };
+            }
+
+            // Create a new container for PDF content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                width: 297mm;
+                min-height: 420mm;
+                padding: 5mm 20mm 20mm 20mm;
+                margin: 0;
+                background-color: white;
+                box-sizing: border-box;
+                position: relative;
+                font-family: Arial, sans-serif;
+                overflow: visible;
+            `;
+
+            // Function to get proxied image URL
+            const getProxiedImageUrl = (url) => {
+                if (!url) return '';
+                return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+            };
+
+            // Add header
+            pdfContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <img src="${getProxiedImageUrl(`${window.location.origin}/images/invoice-logo.png`)}" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                    </div>
+                    <div style="text-align: right; font-size: 19px; color: #000000;">
+                        <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
+                        <div>${companyProfile.address}</div>
+                        <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
+                    </div>
+                </div>
+                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
+                <div style="text-align: center; margin-top: 25px;">
+                    <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">INTERNAL PURCHASE ORDER</h1>
+                </div>
+            `;
+
+            // Add client section
+            const clientSection = document.createElement('div');
+            clientSection.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                padding: 20px;
+                background-color: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+            `;
+
+            clientSection.innerHTML = `
+                <div style="flex: 1;">
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
+                    <div style="color: black; font-size: 16px;">
+                        <strong>${internalPO.clientName}</strong><br />
+                        ${clientData?.address || internalPO.clientAddress?.street || ''}
+                        ${internalPO.clientAddress?.city ? `, ${internalPO.clientAddress.city}` : ''}
+                        ${internalPO.clientAddress?.postCode ? `, ${internalPO.clientAddress.postCode}` : ''}
+                        ${clientData?.country || internalPO.clientAddress?.country ? `, ${clientData?.country || internalPO.clientAddress?.country}` : ''}
+                        ${clientData?.phone ? `<br />${clientData.phone}` : ''}
+                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || internalPO?.clientTRN) ? 
+                            `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber || internalPO?.clientTRN}</span>` : ''}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 40px;">
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Internal PO #</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${internalPO.customId || id}</div>
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
+                        <div style="color: black; font-size: 16px;">${formatDate(internalPO.paymentDue)}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Created Date</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${formatDate(internalPO.createdAt)}</div>
+                        ${internalPO.deliveryDate ? `
+                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Delivery Date</div>
+                            <div style="color: black; font-size: 16px;">${formatDate(internalPO.deliveryDate)}</div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            pdfContainer.appendChild(clientSection);
+
+            // Add cost analysis section
+            const costAnalysisSection = document.createElement('div');
+            costAnalysisSection.style.cssText = `
+                margin-bottom: 20px;
+                padding: 20px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            costAnalysisSection.innerHTML = `
+                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Cost Analysis</h2>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Items</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${internalPO.items?.reduce((sum, item) => sum + (item.orderQuantity || item.quantity || 0), 0)}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const unitCost = item.unitCost || item.price || 0;
+                                    return sum + (orderQty * unitCost);
+                                }, 0),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Printing Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const printingCost = item.printingCost || 0;
+                                    return sum + (orderQty * printingCost);
+                                }, 0) + (internalPO.additionalPrintingCost || 0),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Shipping Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const shippingCost = item.shippingCost || 0;
+                                    return sum + (orderQty * shippingCost);
+                                }, 0) + (internalPO.additionalShippingCost || 0),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+                </div>
+            `;
+            pdfContainer.appendChild(costAnalysisSection);
+
+            // Add supplier details section
+            const supplierSection = document.createElement('div');
+            supplierSection.style.cssText = `
+                margin-bottom: 20px;
+                padding: 20px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            supplierSection.innerHTML = `
+                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Supplier Details</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                    ${internalPO.items?.map(item => `
+                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                            ${item.imageUrl ? `
+                                <div style="margin-bottom: 15px; text-align: center;">
+                                    <img src="${getProxiedImageUrl(item.imageUrl)}" alt="${item.name}" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 4px;"/>
+                                </div>
+                            ` : ''}
+                            <div style="margin-bottom: 10px;">
+                                <div style="color: #004359; font-weight: bold; font-size: 16px;">${item.name}</div>
+                                <div style="color: #666; font-size: 14px;">Supplier: ${item.supplierName || 'Not assigned'}</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Order Quantity</div>
+                                    <div style="color: #004359; font-size: 14px;">${item.orderQuantity || item.quantity || 0}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Unit Cost</div>
+                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.unitCost || item.price || 0, internalPO.currency)}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Printing Cost</div>
+                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.printingCost || 0, internalPO.currency)}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Shipping Cost</div>
+                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.shippingCost || 0, internalPO.currency)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            pdfContainer.appendChild(supplierSection);
+
+            // Add total section
+            const totalSection = document.createElement('div');
+            totalSection.style.cssText = `
+                background-color: #004359;
+                color: white;
+                padding: 15px;
+                text-align: right;
+                border-radius: 4px;
+                margin-bottom: 20px;
+            `;
+            totalSection.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
+                        <span style="font-size: 14px;">Subtotal:</span>
+                        <span style="font-size: 14px;">${formatPrice(
+                            internalPO.items?.reduce((sum, item) => {
+                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                const unitCost = item.unitCost || item.price || 0;
+                                return sum + (orderQty * unitCost);
+                            }, 0),
+                            internalPO.currency
+                        )}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
+                        <span style="font-size: 14px;">Total Printing Cost:</span>
+                        <span style="font-size: 14px;">${formatPrice(
+                            internalPO.items?.reduce((sum, item) => {
+                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                const printingCost = item.printingCost || 0;
+                                return sum + (orderQty * printingCost);
+                            }, 0) + (internalPO.additionalPrintingCost || 0),
+                            internalPO.currency
+                        )}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
+                        <span style="font-size: 14px;">Total Shipping Cost:</span>
+                        <span style="font-size: 14px;">${formatPrice(
+                            internalPO.items?.reduce((sum, item) => {
+                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                const shippingCost = item.shippingCost || 0;
+                                return sum + (orderQty * shippingCost);
+                            }, 0) + (internalPO.additionalShippingCost || 0),
+                            internalPO.currency
+                        )}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <span style="font-size: 16px;">Net Total:</span>
+                        <span style="font-size: 20px; font-weight: bold;">${formatPrice(
+                            internalPO.items?.reduce((sum, item) => {
+                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                const unitCost = item.unitCost || item.price || 0;
+                                const printingCost = item.printingCost || 0;
+                                const shippingCost = item.shippingCost || 0;
+                                return sum + (orderQty * (unitCost + printingCost + shippingCost));
+                            }, 0) + (internalPO.additionalPrintingCost || 0) + (internalPO.additionalShippingCost || 0),
+                            internalPO.currency
+                        )}</span>
+                    </div>
+                </div>
+            `;
+            pdfContainer.appendChild(totalSection);
+
+            // Add signature section
+            const signatureSection = document.createElement('div');
+            signatureSection.style.cssText = `
+                position: absolute;
+                bottom: 30mm;
+                left: 20mm;
+                right: 20mm;
+                display: flex;
+                flex-direction: column;
+                background-color: white;
+                padding: 20px;
+                border-top: 1px solid #e0e0e0;
+                z-index: 1000;
+            `;
+            signatureSection.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                        <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
+                    </div>
+                    <div style="width: 45%;">
+                        <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
+                        <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
+                    </div>
+                </div>
+                <div style="text-align: center; color: #666; font-size: 12px; font-style: italic; margin-top: 10px;">
+                    This is a computer-generated document and does not require a physical signature.
+                </div>
+            `;
+            pdfContainer.appendChild(signatureSection);
+
+            // Temporarily add to document to render
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            document.body.appendChild(pdfContainer);
+
+            // Create PDF with A3 size
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a3',
+                compress: true
+            });
+
+            // Convert to canvas with A3 dimensions
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                width: 1122.5, // 297mm in pixels at 96 DPI
+                height: 1587.4 // 420mm in pixels at 96 DPI
+            });
+
+            // Remove temporary elements
+            document.body.removeChild(pdfContainer);
+
+            // Add the image to fit A3 page
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
+
+            // Save the PDF
+            pdf.save(`Internal_PO_${internalPO.customId || id}.pdf`);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            toast.error('Failed to generate PDF. Please try again.');
         }
     };
 
@@ -683,7 +1024,7 @@ const InternalPOView = () => {
         };
     };
 
-    const handleImageUpload = (e) => {
+    const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) { // 5MB limit
@@ -694,10 +1035,42 @@ const InternalPOView = () => {
                 toast.error('Please upload an image file');
                 return;
             }
-            setSupplierFormData(prev => ({
-                ...prev,
-                image: file
-            }));
+
+            try {
+                // Create a reference to the file location in Firebase Storage
+                const timestamp = Date.now();
+                const fileName = `${editingSupplier.name.replace(/\s+/g, '_')}_${timestamp}`;
+                const storageRef = ref(storage, `supplier-images/${fileName}`);
+                
+                // Set metadata with CORS headers
+                const metadata = {
+                    contentType: file.type,
+                    customMetadata: {
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, HEAD',
+                        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+                    }
+                };
+                
+                // Upload the file with metadata
+                const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+                
+                // Wait for the upload to complete
+                await uploadTask;
+                
+                // Get the download URL using a different approach
+                const downloadURL = await getDownloadURL(storageRef);
+                
+                // Update the form data with the new image URL
+                setSupplierFormData(prev => ({
+                    ...prev,
+                    image: file,
+                    imageUrl: downloadURL
+                }));
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                toast.error('Failed to upload image');
+            }
         }
     };
 
@@ -937,6 +1310,15 @@ const InternalPOView = () => {
 
     const { subtotal, vatAmount, grandTotal } = calculateTotals();
 
+    // Update the image preview section to use a proxy if in development
+    const getImageUrl = (url) => {
+        if (process.env.NODE_ENV === 'development') {
+            // Use a proxy in development
+            return `https://cors-anywhere.herokuapp.com/${url}`;
+        }
+        return url;
+    };
+
     return (
         <StyledInternalPOView>
             <ToastContainer position="top-right" autoClose={3000} />
@@ -1107,7 +1489,7 @@ const InternalPOView = () => {
                                             const orderQty = item.orderQuantity || item.quantity || 0;
                                             const shippingCost = item.shippingCost || 0;
                                             return sum + (orderQty * shippingCost);
-                                        }, 0),
+                                        }, 0) + (internalPO.additionalShippingCost || 0),
                                         internalPO.currency
                                     )}
                                 </PaymentDetailValue>
@@ -1492,26 +1874,27 @@ const InternalPOView = () => {
                                     <ImageUploadContainer
                                         onDrop={handleImageDrop}
                                         onDragOver={handleDragOver}
-                                        hasImage={!!supplierFormData.image || !!supplierFormData.imageUrl}
+                                        hasImage={!!supplierFormData.imageUrl}
                                         onClick={() => {
-                                            if (!supplierFormData.image && !supplierFormData.imageUrl) {
+                                            if (!supplierFormData.imageUrl) {
                                                 document.getElementById('image-upload').click();
                                             }
                                         }}
                                     >
-                                        {supplierFormData.image || supplierFormData.imageUrl ? (
+                                        {supplierFormData.imageUrl ? (
                                             <ImagePreview>
                                                 <img 
-                                                    src={supplierFormData.image ? URL.createObjectURL(supplierFormData.image) : supplierFormData.imageUrl} 
+                                                    src={getImageUrl(supplierFormData.imageUrl)} 
                                                     alt="Product preview" 
+                                                    onError={(e) => {
+                                                        // Fallback to direct URL if proxy fails
+                                                        e.target.src = supplierFormData.imageUrl;
+                                                    }}
                                                 />
                                                 <RemoveImageButton 
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        if (supplierFormData.image) {
-                                                            URL.revokeObjectURL(supplierFormData.image);
-                                                        }
                                                         setSupplierFormData(prev => ({ 
                                                             ...prev, 
                                                             image: null,

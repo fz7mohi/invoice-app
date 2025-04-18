@@ -86,6 +86,28 @@ app.post('/api/send-email', async (req, res) => {
   }
 });
 
+// Image proxy endpoint
+app.get('/api/image-proxy', async (req, res) => {
+    try {
+        const imageUrl = req.query.url;
+        if (!imageUrl) {
+            return res.status(400).send('Image URL is required');
+        }
+
+        const response = await axios.get(imageUrl, {
+            responseType: 'arraybuffer'
+        });
+
+        // Set appropriate headers
+        res.set('Content-Type', response.headers['content-type']);
+        res.set('Content-Length', response.headers['content-length']);
+        res.send(response.data);
+    } catch (error) {
+        console.error('Error proxying image:', error);
+        res.status(500).send('Error fetching image');
+    }
+});
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static('dist'));
