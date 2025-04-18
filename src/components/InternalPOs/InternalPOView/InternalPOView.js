@@ -809,37 +809,6 @@ const InternalPOView = () => {
             `;
             pdfContainer.appendChild(totalSection);
 
-            // Add signature section
-            const signatureSection = document.createElement('div');
-            signatureSection.style.cssText = `
-                position: absolute;
-                bottom: 30mm;
-                left: 20mm;
-                right: 20mm;
-                display: flex;
-                flex-direction: column;
-                background-color: white;
-                padding: 20px;
-                border-top: 1px solid #e0e0e0;
-                z-index: 1000;
-            `;
-            signatureSection.innerHTML = `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                    <div style="width: 45%;">
-                        <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                        <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
-                    </div>
-                    <div style="width: 45%;">
-                        <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                        <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
-                    </div>
-                </div>
-                <div style="text-align: center; color: #666; font-size: 12px; font-style: italic; margin-top: 10px;">
-                    This is a computer-generated document and does not require a physical signature.
-                </div>
-            `;
-            pdfContainer.appendChild(signatureSection);
-
             // Temporarily add to document to render
             pdfContainer.style.position = 'absolute';
             pdfContainer.style.left = '-9999px';
