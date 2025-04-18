@@ -122,7 +122,11 @@ import {
     ImagePreview,
     RemoveImageButton,
     ImageUploadPlaceholder,
-    ImageUploadHint
+    ImageUploadHint,
+    SupplierImageThumbnail,
+    ImagePreviewModal,
+    ImagePreviewModalContent,
+    ClosePreviewButton
 } from './InternalPOViewStyles';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../../firebase/firebase';
@@ -179,6 +183,7 @@ const InternalPOView = () => {
     const [showDeliveryDateModal, setShowDeliveryDateModal] = useState(false);
     const [deliveryDate, setDeliveryDate] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [previewImage, setPreviewImage] = useState(null);
 
     const fetchClientData = async (clientId, fallbackName) => {
         if (!clientId) return;
@@ -842,6 +847,60 @@ const InternalPOView = () => {
         }
     };
 
+    const renderSupplierDetails = (item) => {
+        return (
+            <SupplierDetails>
+                {item.imageUrl && (
+                    <SupplierImageThumbnail onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewImage(item.imageUrl);
+                    }}>
+                        <img src={item.imageUrl} alt={`${item.name} image`} />
+                    </SupplierImageThumbnail>
+                )}
+                <SupplierRow>
+                    <SupplierLabel>Item:</SupplierLabel>
+                    <SupplierValue>{item.name}</SupplierValue>
+                </SupplierRow>
+                <SupplierRow>
+                    <SupplierLabel>Order Quantity:</SupplierLabel>
+                    <SupplierValue>{item.orderQuantity || item.quantity || 0}</SupplierValue>
+                </SupplierRow>
+                <SupplierRow>
+                    <SupplierLabel>Unit Cost:</SupplierLabel>
+                    <SupplierValue>{formatPrice(item.unitCost || item.price || 0, internalPO.currency)}</SupplierValue>
+                </SupplierRow>
+                <CostBreakdown>
+                    <CostItem>
+                        <CostLabel>
+                            <Icon name="print" size={12} />
+                            Printing Cost (Per Unit)
+                        </CostLabel>
+                        <CostValue>{formatPrice(item.printingCost || 0, internalPO.currency)}</CostValue>
+                    </CostItem>
+                    <CostItem>
+                        <CostLabel>
+                            <Icon name="shipping" size={12} />
+                            Shipping Cost (Per Unit)
+                        </CostLabel>
+                        <CostValue>{formatPrice(item.shippingCost || 0, internalPO.currency)}</CostValue>
+                    </CostItem>
+                    <CostItem>
+                        <CostLabel>
+                            <Icon name="total" size={12} />
+                            Total
+                        </CostLabel>
+                        <CostValue>{formatPrice(
+                            (item.orderQuantity || item.quantity || 0) * 
+                            ((item.unitCost || item.price || 0) + (item.printingCost || 0) + (item.shippingCost || 0)),
+                            internalPO.currency
+                        )}</CostValue>
+                    </CostItem>
+                </CostBreakdown>
+            </SupplierDetails>
+        );
+    };
+
     // Show loading state
     if (loading || !internalPO) {
         return (
@@ -1161,43 +1220,7 @@ const InternalPOView = () => {
                                                 <Icon name="supplier" size={14} className="supplier-icon" />
                                                 {item.supplierName || 'Not assigned'}
                                             </SupplierName>
-                                            <SupplierDetails>
-                                                <SupplierRow>
-                                                    <SupplierLabel>Item:</SupplierLabel>
-                                                    <SupplierValue>{item.name}</SupplierValue>
-                                                </SupplierRow>
-                                                <SupplierRow>
-                                                    <SupplierLabel>Order Quantity:</SupplierLabel>
-                                                    <SupplierValue>{orderQty}</SupplierValue>
-                                                </SupplierRow>
-                                                <SupplierRow>
-                                                    <SupplierLabel>Unit Cost:</SupplierLabel>
-                                                    <SupplierValue>{formatPrice(unitCost, internalPO.currency)}</SupplierValue>
-                                                </SupplierRow>
-                                                <CostBreakdown>
-                                                    <CostItem>
-                                                        <CostLabel>
-                                                            <Icon name="print" size={12} />
-                                                            Printing Cost (Per Unit)
-                                                        </CostLabel>
-                                                        <CostValue>{formatPrice(printingCost, internalPO.currency)}</CostValue>
-                                                    </CostItem>
-                                                    <CostItem>
-                                                        <CostLabel>
-                                                            <Icon name="shipping" size={12} />
-                                                            Shipping Cost (Per Unit)
-                                                        </CostLabel>
-                                                        <CostValue>{formatPrice(shippingCost, internalPO.currency)}</CostValue>
-                                                    </CostItem>
-                                                    <CostItem>
-                                                        <CostLabel>
-                                                            <Icon name="total" size={12} />
-                                                            Total
-                                                        </CostLabel>
-                                                        <CostValue>{formatPrice(total, internalPO.currency)}</CostValue>
-                                                    </CostItem>
-                                                </CostBreakdown>
-                                            </SupplierDetails>
+                                            {renderSupplierDetails(item)}
                                         </SupplierItem>
                                     );
                                 })}
@@ -1744,6 +1767,21 @@ const InternalPOView = () => {
                             </SupplierFormActions>
                         </SupplierEditForm>
                     </SupplierEditModal>
+                </ModalOverlay>
+            )}
+
+            {previewImage && (
+                <ModalOverlay onClick={() => setPreviewImage(null)}>
+                    <ImagePreviewModal onClick={e => e.stopPropagation()}>
+                        <ImagePreviewModalContent>
+                            <img src={previewImage} alt="Preview" />
+                            <ClosePreviewButton onClick={() => setPreviewImage(null)}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 6L6 18M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </ClosePreviewButton>
+                        </ImagePreviewModalContent>
+                    </ImagePreviewModal>
                 </ModalOverlay>
             )}
         </StyledInternalPOView>

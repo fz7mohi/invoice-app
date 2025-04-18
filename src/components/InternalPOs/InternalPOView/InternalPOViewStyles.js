@@ -301,6 +301,30 @@ export const SupplierDetails = styled.div`
     gap: 8px;
 `;
 
+export const SupplierImageThumbnail = styled.div`
+    width: 100%;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    background-color: ${({ theme }) => theme.colors.background};
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: ${({ theme }) => theme.colors.purple};
+    }
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+`;
+
 export const SupplierRow = styled.div`
     display: flex;
     justify-content: space-between;
@@ -1405,20 +1429,21 @@ export const CostValue = styled.span`
 export const ImageUploadContainer = styled.div`
     width: 100%;
     min-height: 200px;
-    border: 2px dashed ${props => props.theme.colors.border || '#ddd'};
+    border: 2px dashed ${props => props.theme.borders || '#252945'};
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    background-color: ${props => props.theme.colors.backgroundSecondary || '#f9f9f9'};
+    background-color: ${props => props.theme.backgrounds.input || '#1E2139'};
     position: relative;
     overflow: hidden;
+    margin-top: 8px;
 
     &:hover {
-        border-color: ${props => props.theme.colors.primary || '#000'};
-        background-color: ${props => props.theme.colors.backgroundHover || '#f0f0f0'};
+        border-color: ${props => props.theme.colors.purple || '#7c5dfa'};
+        background-color: ${props => props.theme.backgrounds.hoveredItem || '#252945'};
     }
 
     ${props => props.hasImage && `
@@ -1434,11 +1459,14 @@ export const ImagePreview = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+    background-color: ${props => props.theme.backgrounds.input || '#1E2139'};
+    padding: 16px;
 
     img {
         max-width: 100%;
         max-height: 200px;
         object-fit: contain;
+        border-radius: 4px;
     }
 `;
 
@@ -1449,16 +1477,17 @@ export const RemoveImageButton = styled.button`
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: ${props => props.theme.colors.red || '#EC5757'};
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
+    z-index: 1;
 
     &:hover {
-        background-color: rgba(0, 0, 0, 0.7);
+        background-color: ${props => props.theme.colors.red || '#EC5757'}90;
     }
 `;
 
@@ -1472,7 +1501,7 @@ export const ImageUploadPlaceholder = styled.div`
     text-align: center;
 
     span {
-        color: ${props => props.theme.colors.text || '#333'};
+        color: ${props => props.theme.colors.textSecondary || '#DFE3FA'};
         font-size: 14px;
     }
 `;
@@ -1480,6 +1509,54 @@ export const ImageUploadPlaceholder = styled.div`
 export const ImageUploadHint = styled.div`
     margin-top: 8px;
     font-size: 12px;
-    color: ${props => props.theme.colors.textSecondary || '#666'};
+    color: ${props => props.theme.colors.textTertiary || '#888eb0'};
     text-align: center;
+`;
+
+export const ImagePreviewModal = styled(ModalContent)`
+    max-width: 90%;
+    max-height: 90vh;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+`;
+
+export const ImagePreviewModalContent = styled.div`
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background-color: ${({ theme }) => theme.colors.backgroundAlt};
+    border-radius: 8px;
+    overflow: hidden;
+
+    img {
+        max-width: 100%;
+        max-height: 90vh;
+        object-fit: contain;
+    }
+`;
+
+export const ClosePreviewButton = styled.button`
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: ${({ theme }) => theme.colors.red};
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1;
+
+    &:hover {
+        background-color: ${({ theme }) => theme.colors.red}90;
+    }
 `; 
