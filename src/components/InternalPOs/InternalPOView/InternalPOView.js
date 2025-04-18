@@ -132,6 +132,7 @@ import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase
 import { storage } from '../../../firebase/firebase';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { getBase64FromUrl } from '../../../utilities/imageUtils';
 
 const defaultTermsAndConditions = `1. Payment is due within 30 days
 2. Please include invoice number on payment
@@ -478,6 +479,22 @@ const InternalPOView = () => {
                 };
             }
 
+            // Convert all images to base64 with error handling
+            const imagePromises = internalPO.items?.map(async (item) => {
+                if (item.imageUrl) {
+                    try {
+                        const base64Image = await getBase64FromUrl(item.imageUrl);
+                        return { ...item, base64Image };
+                    } catch (error) {
+                        console.warn(`Failed to load image for item ${item.name}:`, error);
+                        return { ...item, base64Image: null };
+                    }
+                }
+                return item;
+            }) || [];
+
+            const itemsWithBase64Images = await Promise.all(imagePromises);
+
             // Create a new container for PDF content
             const pdfContainer = document.createElement('div');
             pdfContainer.style.cssText = `
@@ -492,17 +509,11 @@ const InternalPOView = () => {
                 overflow: visible;
             `;
 
-            // Function to get proxied image URL
-            const getProxiedImageUrl = (url) => {
-                if (!url) return '';
-                return `/api/image-proxy?url=${encodeURIComponent(url)}`;
-            };
-
             // Add header
             pdfContainer.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div>
-                        <img src="${getProxiedImageUrl(`${window.location.origin}/images/invoice-logo.png`)}" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                        <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
                     </div>
                     <div style="text-align: right; font-size: 19px; color: #000000;">
                         <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
@@ -511,56 +522,93 @@ const InternalPOView = () => {
                         <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
                     </div>
                 </div>
-                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
-                <div style="text-align: center; margin-top: 25px;">
-                    <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">INTERNAL PURCHASE ORDER</h1>
-                </div>
             `;
 
-            // Add client section
+            // Add client information section
             const clientSection = document.createElement('div');
             clientSection.style.cssText = `
-                display: flex;
-                justify-content: space-between;
                 margin-bottom: 20px;
                 padding: 20px;
-                background-color: white;
+                background-color: #f5f7fa;
+                border-radius: 8px;
                 border: 1px solid #e0e0e0;
-                border-radius: 4px;
             `;
-
             clientSection.innerHTML = `
-                <div style="flex: 1;">
-                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
-                    <div style="color: black; font-size: 16px;">
-                        <strong>${internalPO.clientName}</strong><br />
-                        ${clientData?.address || internalPO.clientAddress?.street || ''}
-                        ${internalPO.clientAddress?.city ? `, ${internalPO.clientAddress.city}` : ''}
-                        ${internalPO.clientAddress?.postCode ? `, ${internalPO.clientAddress.postCode}` : ''}
-                        ${clientData?.country || internalPO.clientAddress?.country ? `, ${clientData?.country || internalPO.clientAddress?.country}` : ''}
-                        ${clientData?.phone ? `<br />${clientData.phone}` : ''}
-                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || internalPO?.clientTRN) ? 
-                            `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber || internalPO?.clientTRN}</span>` : ''}
+                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Client Information</h2>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div>
+                        <div style="margin-bottom: 10px;">
+                            <div style="color: #666; font-size: 14px;">Client Name</div>
+                            <div style="color: #004359; font-weight: bold; font-size: 16px;">${internalPO.clientName || 'Not specified'}</div>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <div style="color: #666; font-size: 14px;">Client Email</div>
+                            <div style="color: #004359; font-weight: bold; font-size: 16px;">${internalPO.clientEmail || 'Not specified'}</div>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <div style="color: #666; font-size: 14px;">Client Phone</div>
+                            <div style="color: #004359; font-weight: bold; font-size: 16px;">${internalPO.clientPhone || 'Not specified'}</div>
+                        </div>
                     </div>
-                </div>
-                <div style="display: flex; gap: 40px;">
-                    <div style="text-align: right;">
-                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Internal PO #</div>
-                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${internalPO.customId || id}</div>
-                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
-                        <div style="color: black; font-size: 16px;">${formatDate(internalPO.paymentDue)}</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Created Date</div>
-                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${formatDate(internalPO.createdAt)}</div>
-                        ${internalPO.deliveryDate ? `
-                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Delivery Date</div>
-                            <div style="color: black; font-size: 16px;">${formatDate(internalPO.deliveryDate)}</div>
-                        ` : ''}
+                    <div>
+                        <div style="margin-bottom: 10px;">
+                            <div style="color: #666; font-size: 14px;">Client Address</div>
+                            <div style="color: #004359; font-weight: bold; font-size: 16px;">${internalPO.clientAddress?.street || 'Not specified'}</div>
+                            <div style="color: #004359; font-size: 16px;">${internalPO.clientAddress?.city || ''} ${internalPO.clientAddress?.state || ''} ${internalPO.clientAddress?.postalCode || ''}</div>
+                            <div style="color: #004359; font-size: 16px;">${internalPO.clientAddress?.country || ''}</div>
+                        </div>
                     </div>
                 </div>
             `;
             pdfContainer.appendChild(clientSection);
+
+            // Add supplier section with base64 images
+            const supplierSection = document.createElement('div');
+            supplierSection.style.cssText = `
+                margin-bottom: 20px;
+                padding: 20px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            supplierSection.innerHTML = `
+                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Supplier Details</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                    ${itemsWithBase64Images.map(item => `
+                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                            ${item.base64Image ? `
+                                <div style="margin-bottom: 15px; text-align: center;">
+                                    <img src="${item.base64Image}" alt="${item.name}" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 4px;"/>
+                                </div>
+                            ` : ''}
+                            <div style="margin-bottom: 10px;">
+                                <div style="color: #004359; font-weight: bold; font-size: 16px;">${item.name}</div>
+                                <div style="color: #666; font-size: 14px;">Supplier: ${item.supplierName || 'Not assigned'}</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Order Quantity</div>
+                                    <div style="color: #004359; font-size: 14px;">${item.orderQuantity || item.quantity || 0}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Unit Cost</div>
+                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.unitCost || item.price || 0, internalPO.currency)}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Printing Cost</div>
+                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.printingCost || 0, internalPO.currency)}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Shipping Cost</div>
+                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.shippingCost || 0, internalPO.currency)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            pdfContainer.appendChild(supplierSection);
 
             // Add cost analysis section
             const costAnalysisSection = document.createElement('div');
@@ -622,53 +670,6 @@ const InternalPOView = () => {
                 </div>
             `;
             pdfContainer.appendChild(costAnalysisSection);
-
-            // Add supplier details section
-            const supplierSection = document.createElement('div');
-            supplierSection.style.cssText = `
-                margin-bottom: 20px;
-                padding: 20px;
-                background-color: #f5f7fa;
-                border-radius: 8px;
-                border: 1px solid #e0e0e0;
-            `;
-            supplierSection.innerHTML = `
-                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Supplier Details</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-                    ${internalPO.items?.map(item => `
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            ${item.imageUrl ? `
-                                <div style="margin-bottom: 15px; text-align: center;">
-                                    <img src="${getProxiedImageUrl(item.imageUrl)}" alt="${item.name}" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 4px;"/>
-                                </div>
-                            ` : ''}
-                            <div style="margin-bottom: 10px;">
-                                <div style="color: #004359; font-weight: bold; font-size: 16px;">${item.name}</div>
-                                <div style="color: #666; font-size: 14px;">Supplier: ${item.supplierName || 'Not assigned'}</div>
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                                <div>
-                                    <div style="color: #666; font-size: 12px;">Order Quantity</div>
-                                    <div style="color: #004359; font-size: 14px;">${item.orderQuantity || item.quantity || 0}</div>
-                                </div>
-                                <div>
-                                    <div style="color: #666; font-size: 12px;">Unit Cost</div>
-                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.unitCost || item.price || 0, internalPO.currency)}</div>
-                                </div>
-                                <div>
-                                    <div style="color: #666; font-size: 12px;">Printing Cost</div>
-                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.printingCost || 0, internalPO.currency)}</div>
-                                </div>
-                                <div>
-                                    <div style="color: #666; font-size: 12px;">Shipping Cost</div>
-                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.shippingCost || 0, internalPO.currency)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            pdfContainer.appendChild(supplierSection);
 
             // Add total section
             const totalSection = document.createElement('div');
