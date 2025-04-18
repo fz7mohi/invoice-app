@@ -260,6 +260,9 @@ const InternalPOView = () => {
                     setCompanyProfile(companyProfileDoc.data());
                 }
 
+                // Fix net profit calculation immediately after loading data
+                await fixNetProfitCalculation(data);
+
             } catch (err) {
                 console.error('Error fetching internal PO:', err);
                 setError('Failed to load internal PO');
@@ -270,6 +273,51 @@ const InternalPOView = () => {
 
         fetchInternalPOData();
     }, [id]);
+
+    const fixNetProfitCalculation = async (data) => {
+        try {
+            // Calculate net total cost
+            const netTotalCost = data.items?.reduce((sum, item) => {
+                const orderQty = item.orderQuantity || item.quantity || 0;
+                const unitCost = item.unitCost || item.price || 0;
+                const printingCost = item.printingCost || 0;
+                const shippingCost = item.shippingCost || 0;
+                return sum + (orderQty * (unitCost + printingCost + shippingCost));
+            }, 0) + (data.additionalShippingCost || 0) + (data.additionalPrintingCost || 0);
+
+            // Calculate grand total
+            const subtotal = data.items?.reduce((sum, item) => {
+                return sum + (item.price * item.quantity);
+            }, 0) || 0;
+
+            const vatAmount = clientHasVAT ? subtotal * 0.05 : 0;
+            const grandTotal = subtotal + vatAmount;
+
+            // Calculate correct net profit
+            const correctNetProfit = Number((grandTotal - netTotalCost).toFixed(2));
+
+            // Update database if net profit is different
+            if (data.netProfit !== correctNetProfit) {
+                console.log('Fixing net profit from', data.netProfit, 'to', correctNetProfit);
+                await updateDoc(doc(db, 'internalPOs', id), {
+                    netProfit: correctNetProfit,
+                    updatedAt: new Date()
+                });
+
+                // Update local state
+                setInternalPO(prev => ({
+                    ...prev,
+                    netProfit: correctNetProfit,
+                    updatedAt: new Date()
+                }));
+
+                toast.success('Net profit calculation has been fixed');
+            }
+        } catch (err) {
+            console.error('Error fixing net profit:', err);
+            toast.error('Failed to fix net profit calculation');
+        }
+    };
 
     const handleDelete = async () => {
         try {
@@ -506,32 +554,45 @@ const InternalPOView = () => {
     const calculateNetProfit = () => {
         if (!internalPO?.items) return 0;
 
-        const totalCost = internalPO.items.reduce((sum, item) => {
+        // Calculate total cost (including all costs)
+        const netTotalCost = internalPO.items.reduce((sum, item) => {
             const orderQty = item.orderQuantity || item.quantity || 0;
             const unitCost = item.unitCost || item.price || 0;
             const printingCost = item.printingCost || 0;
             const shippingCost = item.shippingCost || 0;
             return sum + (orderQty * (unitCost + printingCost + shippingCost));
-        }, 0);
+        }, 0) + (internalPO.additionalShippingCost || 0) + (internalPO.additionalPrintingCost || 0);
 
-        const additionalShippingCost = internalPO.additionalShippingCost || 0;
-        const grandTotal = calculateTotals().grandTotal;
+        // Get subtotal and VAT from calculateTotals
+        const { subtotal, vatAmount } = calculateTotals();
+        const grandTotal = subtotal + (vatAmount || 0);
 
-        return grandTotal - totalCost - additionalShippingCost;
+        // Calculate net profit
+        return Number((grandTotal - netTotalCost).toFixed(2));
     };
 
     const updateNetProfit = async () => {
         try {
             const netProfit = calculateNetProfit();
-            await updateDoc(doc(db, 'internalPOs', id), {
-                netProfit
-            });
+            console.log('Updating net profit to:', netProfit); // Debug log
+
+            // First update local state to ensure UI reflects changes immediately
             setInternalPO(prev => ({
                 ...prev,
-                netProfit
+                netProfit,
+                updatedAt: new Date()
             }));
+
+            // Then update the database
+            await updateDoc(doc(db, 'internalPOs', id), {
+                netProfit,
+                updatedAt: new Date()
+            });
+
+            toast.success('Net profit updated successfully');
         } catch (err) {
             console.error('Error updating net profit:', err);
+            toast.error('Failed to update net profit');
         }
     };
 
@@ -539,21 +600,22 @@ const InternalPOView = () => {
         e.preventDefault();
         try {
             const additionalShippingCostValue = parseFloat(additionalShippingCost) || 0;
-            const netProfit = calculateNetProfit();
             
+            // First update shipping cost
             await updateDoc(doc(db, 'internalPOs', id), {
                 additionalShippingCost: additionalShippingCostValue,
-                netProfit,
                 updatedAt: new Date()
             });
 
             setInternalPO(prev => ({
                 ...prev,
                 additionalShippingCost: additionalShippingCostValue,
-                netProfit,
                 updatedAt: new Date()
             }));
 
+            // Then update net profit
+            await updateNetProfit();
+            
             setShowShippingModal(false);
             setAdditionalShippingCost('');
             toast.success('Additional shipping cost updated successfully');
@@ -630,21 +692,18 @@ const InternalPOView = () => {
                 return item;
             });
 
-            const netProfit = calculateNetProfit();
-
             await updateDoc(doc(db, 'internalPOs', id), {
                 items: updatedItems,
-                netProfit,
                 updatedAt: new Date()
             });
 
             setInternalPO(prev => ({
                 ...prev,
                 items: updatedItems,
-                netProfit,
                 updatedAt: new Date()
             }));
 
+            await updateNetProfit();
             setEditingSupplier(null);
             setSupplierFormData({
                 supplierName: '',
@@ -666,14 +725,17 @@ const InternalPOView = () => {
             const additionalPrintingCostValue = parseFloat(additionalPrintingCost) || 0;
             
             await updateDoc(doc(db, 'internalPOs', id), {
-                additionalPrintingCost: additionalPrintingCostValue
+                additionalPrintingCost: additionalPrintingCostValue,
+                updatedAt: new Date()
             });
 
             setInternalPO(prev => ({
                 ...prev,
-                additionalPrintingCost: additionalPrintingCostValue
+                additionalPrintingCost: additionalPrintingCostValue,
+                updatedAt: new Date()
             }));
 
+            await updateNetProfit();
             setShowPrintingModal(false);
             setAdditionalPrintingCost('');
             toast.success('Additional printing cost updated successfully');
