@@ -187,6 +187,7 @@ const InternalPOView = () => {
     const [deliveryDate, setDeliveryDate] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
     const fetchClientData = async (clientId, fallbackName) => {
         if (!clientId) return;
@@ -456,6 +457,7 @@ const InternalPOView = () => {
 
     const handleDownloadPDF = async () => {
         try {
+            setIsGeneratingPDF(true);
             // Get the client's country from the invoice or client data
             const clientCountry = internalPO?.clientAddress?.country || 
                                 clientData?.country || 
@@ -522,93 +524,56 @@ const InternalPOView = () => {
                         <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
                     </div>
                 </div>
+                <div style="margin: 30px 0;">
+                    <div style="height: 2px; background-color: #004359; width: 100%; margin-bottom: 15px;"></div>
+                    <h1 style="color: #004359; font-size: 28px; font-weight: bold; margin: 0; text-align: center;">Internal Purchase Order</h1>
+                </div>
             `;
 
             // Add client information section
             const clientSection = document.createElement('div');
             clientSection.style.cssText = `
+                display: flex;
+                justify-content: space-between;
                 margin-bottom: 20px;
                 padding: 20px;
-                background-color: #f5f7fa;
-                border-radius: 8px;
+                background-color: white;
                 border: 1px solid #e0e0e0;
+                border-radius: 4px;
             `;
+
             clientSection.innerHTML = `
-                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Client Information</h2>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-                    <div>
-                        <div style="margin-bottom: 10px;">
-                            <div style="color: #666; font-size: 14px;">Client Name</div>
-                            <div style="color: #004359; font-weight: bold; font-size: 16px;">${internalPO.clientName || 'Not specified'}</div>
-                        </div>
-                        <div style="margin-bottom: 10px;">
-                            <div style="color: #666; font-size: 14px;">Client Email</div>
-                            <div style="color: #004359; font-weight: bold; font-size: 16px;">${internalPO.clientEmail || 'Not specified'}</div>
-                        </div>
-                        <div style="margin-bottom: 10px;">
-                            <div style="color: #666; font-size: 14px;">Client Phone</div>
-                            <div style="color: #004359; font-weight: bold; font-size: 16px;">${internalPO.clientPhone || 'Not specified'}</div>
-                        </div>
+                <div style="flex: 1;">
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
+                    <div style="color: black; font-size: 16px;">
+                        <strong>${internalPO.clientName}</strong><br />
+                        ${clientData?.address || internalPO.clientAddress?.street || ''}
+                        ${internalPO.clientAddress?.city ? `, ${internalPO.clientAddress.city}` : ''}
+                        ${internalPO.clientAddress?.postalCode ? `, ${internalPO.clientAddress.postalCode}` : ''}
+                        ${clientData?.country || internalPO.clientAddress?.country ? `, ${clientData?.country || internalPO.clientAddress?.country}` : ''}
+                        ${clientData?.phone ? `<br />${clientData.phone}` : ''}
+                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber) ? 
+                            `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber}</span>` : ''}
                     </div>
-                    <div>
-                        <div style="margin-bottom: 10px;">
-                            <div style="color: #666; font-size: 14px;">Client Address</div>
-                            <div style="color: #004359; font-weight: bold; font-size: 16px;">${internalPO.clientAddress?.street || 'Not specified'}</div>
-                            <div style="color: #004359; font-size: 16px;">${internalPO.clientAddress?.city || ''} ${internalPO.clientAddress?.state || ''} ${internalPO.clientAddress?.postalCode || ''}</div>
-                            <div style="color: #004359; font-size: 16px;">${internalPO.clientAddress?.country || ''}</div>
-                        </div>
+                </div>
+                <div style="display: flex; gap: 40px;">
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Internal PO #</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${internalPO.customId}</div>
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
+                        <div style="color: black; font-size: 16px;">${formatDate(internalPO.paymentDue)}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Created Date</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${formatDate(internalPO.createdAt)}</div>
+                        ${internalPO.lpoNumber ? `
+                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">LPO Number</div>
+                            <div style="color: black; font-size: 16px;">${internalPO.lpoNumber}</div>
+                        ` : ''}
                     </div>
                 </div>
             `;
             pdfContainer.appendChild(clientSection);
-
-            // Add supplier section with base64 images
-            const supplierSection = document.createElement('div');
-            supplierSection.style.cssText = `
-                margin-bottom: 20px;
-                padding: 20px;
-                background-color: #f5f7fa;
-                border-radius: 8px;
-                border: 1px solid #e0e0e0;
-            `;
-            supplierSection.innerHTML = `
-                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Supplier Details</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-                    ${itemsWithBase64Images.map(item => `
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            ${item.base64Image ? `
-                                <div style="margin-bottom: 15px; text-align: center;">
-                                    <img src="${item.base64Image}" alt="${item.name}" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 4px;"/>
-                                </div>
-                            ` : ''}
-                            <div style="margin-bottom: 10px;">
-                                <div style="color: #004359; font-weight: bold; font-size: 16px;">${item.name}</div>
-                                <div style="color: #666; font-size: 14px;">Supplier: ${item.supplierName || 'Not assigned'}</div>
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                                <div>
-                                    <div style="color: #666; font-size: 12px;">Order Quantity</div>
-                                    <div style="color: #004359; font-size: 14px;">${item.orderQuantity || item.quantity || 0}</div>
-                                </div>
-                                <div>
-                                    <div style="color: #666; font-size: 12px;">Unit Cost</div>
-                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.unitCost || item.price || 0, internalPO.currency)}</div>
-                                </div>
-                                <div>
-                                    <div style="color: #666; font-size: 12px;">Printing Cost</div>
-                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.printingCost || 0, internalPO.currency)}</div>
-                                </div>
-                                <div>
-                                    <div style="color: #666; font-size: 12px;">Shipping Cost</div>
-                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.shippingCost || 0, internalPO.currency)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-
-            pdfContainer.appendChild(supplierSection);
 
             // Add cost analysis section
             const costAnalysisSection = document.createElement('div');
@@ -670,6 +635,53 @@ const InternalPOView = () => {
                 </div>
             `;
             pdfContainer.appendChild(costAnalysisSection);
+
+            // Add supplier section with base64 images
+            const supplierSection = document.createElement('div');
+            supplierSection.style.cssText = `
+                margin-bottom: 20px;
+                padding: 20px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            supplierSection.innerHTML = `
+                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Supplier Details</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                    ${itemsWithBase64Images.map(item => `
+                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                            ${item.base64Image ? `
+                                <div style="margin-bottom: 15px; text-align: center;">
+                                    <img src="${item.base64Image}" alt="${item.name}" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 4px;"/>
+                                </div>
+                            ` : ''}
+                            <div style="margin-bottom: 10px;">
+                                <div style="color: #004359; font-weight: bold; font-size: 16px;">${item.name}</div>
+                                <div style="color: #666; font-size: 14px;">Supplier: ${item.supplierName || 'Not assigned'}</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Order Quantity</div>
+                                    <div style="color: #004359; font-size: 14px;">${item.orderQuantity || item.quantity || 0}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Unit Cost</div>
+                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.unitCost || item.price || 0, internalPO.currency)}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Printing Cost</div>
+                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.printingCost || 0, internalPO.currency)}</div>
+                                </div>
+                                <div>
+                                    <div style="color: #666; font-size: 12px;">Shipping Cost</div>
+                                    <div style="color: #004359; font-size: 14px;">${formatPrice(item.shippingCost || 0, internalPO.currency)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            pdfContainer.appendChild(supplierSection);
 
             // Add total section
             const totalSection = document.createElement('div');
@@ -799,6 +811,8 @@ const InternalPOView = () => {
         } catch (error) {
             console.error('Error generating PDF:', error);
             toast.error('Failed to generate PDF. Please try again.');
+        } finally {
+            setIsGeneratingPDF(false);
         }
     };
 
@@ -1354,9 +1368,34 @@ const InternalPOView = () => {
                                  internalPO.status === 'void' ? 'Void' : 'Draft'}
                             </span>
                         </StatusBadge>
-                        <DownloadButton onClick={handleDownloadPDF}>
-                            <Icon name="download" size={13} />
-                            Share
+                        <DownloadButton 
+                            onClick={handleDownloadPDF}
+                            disabled={isGeneratingPDF}
+                            style={{ 
+                                opacity: isGeneratingPDF ? 0.7 : 1,
+                                cursor: isGeneratingPDF ? 'wait' : 'pointer'
+                            }}
+                        >
+                            {isGeneratingPDF ? (
+                                <>
+                                    <div style={{ 
+                                        display: 'inline-block',
+                                        width: '16px',
+                                        height: '16px',
+                                        border: '2px solid rgba(255, 255, 255, 0.3)',
+                                        borderRadius: '50%',
+                                        borderTopColor: '#fff',
+                                        animation: 'spin 1s linear infinite',
+                                        marginRight: '8px'
+                                    }} />
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <Icon name="download" size={13} />
+                                    Share
+                                </>
+                            )}
                         </DownloadButton>
                     </div>
 
