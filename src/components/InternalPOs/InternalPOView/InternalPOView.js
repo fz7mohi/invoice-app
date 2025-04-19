@@ -481,50 +481,12 @@ const InternalPOView = () => {
                 };
             }
 
-            // Convert all images to base64 with error handling and size optimization
+            // Convert all images to base64 with error handling
             const imagePromises = internalPO.items?.map(async (item) => {
                 if (item.imageUrl) {
                     try {
                         const base64Image = await getBase64FromUrl(item.imageUrl);
-                        // Create a temporary image element to resize
-                        const img = new Image();
-                        img.src = base64Image;
-                        
-                        return new Promise((resolve) => {
-                            img.onload = () => {
-                                // Create a canvas to resize the image
-                                const canvas = document.createElement('canvas');
-                                const maxWidth = 400; // Maximum width for images
-                                const maxHeight = 300; // Maximum height for images
-                                
-                                let width = img.width;
-                                let height = img.height;
-                                
-                                // Calculate new dimensions while maintaining aspect ratio
-                                if (width > maxWidth) {
-                                    height = (maxWidth * height) / width;
-                                    width = maxWidth;
-                                }
-                                if (height > maxHeight) {
-                                    width = (maxHeight * width) / height;
-                                    height = maxHeight;
-                                }
-                                
-                                canvas.width = width;
-                                canvas.height = height;
-                                
-                                // Draw and resize the image
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0, width, height);
-                                
-                                // Convert to base64 with reduced quality
-                                const resizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                                resolve({ ...item, base64Image: resizedBase64 });
-                            };
-                            img.onerror = () => {
-                                resolve({ ...item, base64Image: null });
-                            };
-                        });
+                        return { ...item, base64Image };
                     } catch (error) {
                         console.warn(`Failed to load image for item ${item.name}:`, error);
                         return { ...item, base64Image: null };
@@ -535,6 +497,306 @@ const InternalPOView = () => {
 
             const itemsWithBase64Images = await Promise.all(imagePromises);
 
+            // Create a new container for PDF content
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                width: 297mm;
+                min-height: 420mm;
+                padding: 5mm 20mm 20mm 20mm;
+                margin: 0;
+                background-color: white;
+                box-sizing: border-box;
+                position: relative;
+                font-family: Arial, sans-serif;
+                overflow: visible;
+            `;
+
+            // Add header
+            pdfContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                    </div>
+                    <div style="text-align: right; font-size: 19px; color: #000000;">
+                        <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
+                        <div>${companyProfile.address}</div>
+                        <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
+                    </div>
+                </div>
+                <div style="margin: 30px 0;">
+                    <div style="height: 2px; background-color: #004359; width: 100%; margin-bottom: 15px;"></div>
+                    <h1 style="color: #004359; font-size: 28px; font-weight: bold; margin: 0; text-align: center;">Internal Purchase Order</h1>
+                </div>
+            `;
+
+            // Add client information section
+            const clientSection = document.createElement('div');
+            clientSection.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                padding: 20px;
+                background-color: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+            `;
+
+            clientSection.innerHTML = `
+                <div style="flex: 1;">
+                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
+                    <div style="color: black; font-size: 16px;">
+                        <strong>${internalPO.clientName}</strong><br />
+                        ${clientData?.address || internalPO.clientAddress?.street || ''}
+                        ${internalPO.clientAddress?.city ? `, ${internalPO.clientAddress.city}` : ''}
+                        ${internalPO.clientAddress?.postalCode ? `, ${internalPO.clientAddress.postalCode}` : ''}
+                        ${clientData?.country || internalPO.clientAddress?.country ? `, ${clientData?.country || internalPO.clientAddress?.country}` : ''}
+                        ${clientData?.phone ? `<br />${clientData.phone}` : ''}
+                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber) ? 
+                            `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber}</span>` : ''}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 40px;">
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Internal PO #</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${internalPO.customId}</div>
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
+                        <div style="color: black; font-size: 16px;">${formatDate(internalPO.paymentDue)}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Created Date</div>
+                        <div style="color: black; font-size: 16px; margin-bottom: 15px;">${formatDate(internalPO.createdAt)}</div>
+                        ${internalPO.lpoNumber ? `
+                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">LPO Number</div>
+                            <div style="color: black; font-size: 16px;">${internalPO.lpoNumber}</div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            pdfContainer.appendChild(clientSection);
+
+            // Add cost analysis section
+            const costAnalysisSection = document.createElement('div');
+            costAnalysisSection.style.cssText = `
+                margin-bottom: 20px;
+                padding: 20px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            costAnalysisSection.innerHTML = `
+                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Cost Analysis</h2>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                    <!-- Row 1: Basic Information -->
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Items</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${internalPO.items?.reduce((sum, item) => sum + (item.orderQuantity || item.quantity || 0), 0)}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Date of Delivery</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${internalPO.deliveryDate ? formatDate(internalPO.deliveryDate) : 'Not set'}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const unitCost = item.unitCost || 0;
+                                    return sum + (orderQty * unitCost);
+                                }, 0),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Printing Costs -->
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Printing Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const printingCost = item.printingCost || 0;
+                                    return sum + (orderQty * printingCost);
+                                }, 0),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Additional Printing Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(internalPO.additionalPrintingCost || 0, internalPO.currency)}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Printing Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const printingCost = item.printingCost || 0;
+                                    return sum + (orderQty * printingCost);
+                                }, 0) + (internalPO.additionalPrintingCost || 0),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Shipping and Final Costs -->
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Shipping Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const shippingCost = item.shippingCost || 0;
+                                    return sum + (orderQty * shippingCost);
+                                }, 0),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Additional Shipping Cost</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(internalPO.additionalShippingCost || 0, internalPO.currency)}
+                        </div>
+                    </div>
+                    <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Net Profit</div>
+                        <div style="color: #004359; font-size: 18px; font-weight: bold;">
+                            ${formatPrice(
+                                grandTotal - (
+                                    // Total cost of items
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const unitCost = item.unitCost || 0;
+                                        return sum + (orderQty * unitCost);
+                                    }, 0) +
+                                    // Total printing cost (per item + additional)
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const printingCost = item.printingCost || 0;
+                                        return sum + (orderQty * printingCost);
+                                    }, 0) + (internalPO.additionalPrintingCost || 0) +
+                                    // Total shipping cost (per item + additional)
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const shippingCost = item.shippingCost || 0;
+                                        return sum + (orderQty * shippingCost);
+                                    }, 0) + (internalPO.additionalShippingCost || 0)
+                                ),
+                                internalPO.currency
+                            )}
+                        </div>
+                    </div>
+                </div>
+            `;
+            pdfContainer.appendChild(costAnalysisSection);
+
+            // Add items table to the first page
+            const itemsTableSection = document.createElement('div');
+            itemsTableSection.style.cssText = `
+                margin-top: 30px;
+                padding: 20px;
+                background-color: #f5f7fa;
+                border-radius: 8px;
+                border: 1px solid #e0e0e0;
+            `;
+            itemsTableSection.innerHTML = `
+                <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Items</h2>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background-color: #004359; color: white;">
+                            <th style="padding: 12px; text-align: left; font-size: 14px;">Item Name</th>
+                            <th style="padding: 12px; text-align: center; font-size: 14px;">QTY.</th>
+                            <th style="padding: 12px; text-align: right; font-size: 14px;">Price</th>
+                            ${clientHasVAT ? '<th style="padding: 12px; text-align: right; font-size: 14px;">VAT (5%)</th>' : ''}
+                            <th style="padding: 12px; text-align: right; font-size: 14px;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${internalPO.items?.map(item => {
+                            const orderQty = item.orderQuantity || item.quantity || 0;
+                            const price = item.price || 0;
+                            const subtotal = orderQty * price;
+                            const itemVAT = clientHasVAT ? (subtotal * 0.05) : 0;
+                            const total = subtotal + itemVAT;
+                            
+                            // Get the corresponding invoice item description
+                            const invoiceItem = invoiceData?.items?.find(invItem => invItem.name === item.name);
+                            
+                            return `
+                                <tr style="border-bottom: 1px solid #e0e0e0;">
+                                    <td style="padding: 12px; color: black; font-size: 14px;">
+                                        ${item.name}
+                                        ${(item.description || invoiceItem?.description) ? 
+                                            `<div style="font-size: 12px; color: #666; margin-top: 4px;">${item.description || invoiceItem?.description}</div>` : 
+                                            ''}
+                                    </td>
+                                    <td style="padding: 12px; text-align: center; color: black; font-size: 14px;">${orderQty}</td>
+                                    <td style="padding: 12px; text-align: right; color: black; font-size: 14px;">${formatPrice(price, internalPO.currency)}</td>
+                                    ${clientHasVAT ? 
+                                        `<td style="padding: 12px; text-align: right; color: black; font-size: 14px;">${formatPrice(itemVAT, internalPO.currency)}</td>` : 
+                                        ''}
+                                    <td style="padding: 12px; text-align: right; color: black; font-size: 14px;">${formatPrice(total, internalPO.currency)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 20px; padding: 20px; background-color: #f5f7fa; border-radius: 8px; border: 1px solid #e0e0e0;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 14px; width: 70%; color: black;">Subtotal</td>
+                            <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 14px; color: black;">${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const price = item.price || 0;
+                                    return sum + (orderQty * price);
+                                }, 0),
+                                internalPO.currency
+                            )}</td>
+                        </tr>
+                        ${clientHasVAT ? `
+                            <tr>
+                                <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 14px; color: black;">VAT (5%)</td>
+                                <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 14px; color: black;">${formatPrice(
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const price = item.price || 0;
+                                        const subtotal = orderQty * price;
+                                        return sum + (subtotal * 0.05);
+                                    }, 0),
+                                    internalPO.currency
+                                )}</td>
+                            </tr>
+                        ` : ''}
+                        <tr style="border-top: 2px solid #e0e0e0;">
+                            <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 16px; color: #004359;">Total</td>
+                            <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 16px; color: #004359;">${formatPrice(
+                                internalPO.items?.reduce((sum, item) => {
+                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                    const price = item.price || 0;
+                                    const subtotal = orderQty * price;
+                                    const vat = clientHasVAT ? (subtotal * 0.05) : 0;
+                                    return sum + subtotal + vat;
+                                }, 0),
+                                internalPO.currency
+                            )}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+            pdfContainer.appendChild(itemsTableSection);
+
             // Create PDF with A3 size
             const pdf = new jsPDF({
                 orientation: 'portrait',
@@ -543,10 +805,10 @@ const InternalPOView = () => {
                 compress: true
             });
 
-            // Function to create a page with items
-            const createItemsPage = (items, pageNumber) => {
-                const itemsPage = document.createElement('div');
-                itemsPage.style.cssText = `
+            // Function to create supplier page
+            const createSupplierPage = () => {
+                const page = document.createElement('div');
+                page.style.cssText = `
                     width: 297mm;
                     min-height: 420mm;
                     padding: 5mm 20mm 20mm 20mm;
@@ -559,7 +821,7 @@ const InternalPOView = () => {
                 `;
 
                 // Add header
-                itemsPage.innerHTML = `
+                page.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <div>
                             <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
@@ -575,265 +837,12 @@ const InternalPOView = () => {
                         <div style="height: 2px; background-color: #004359; width: 100%; margin-bottom: 15px;"></div>
                         <h1 style="color: #004359; font-size: 28px; font-weight: bold; margin: 0; text-align: center;">Internal Purchase Order</h1>
                     </div>
-                `;
-
-                // Add client information section
-                const clientSection = document.createElement('div');
-                clientSection.style.cssText = `
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 20px;
-                    padding: 20px;
-                    background-color: white;
-                    border: 1px solid #e0e0e0;
-                    border-radius: 4px;
-                `;
-
-                clientSection.innerHTML = `
-                    <div style="flex: 1;">
-                        <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
-                        <div style="color: black; font-size: 16px;">
-                            <strong>${internalPO.clientName}</strong><br />
-                            ${clientData?.address || internalPO.clientAddress?.street || ''}
-                            ${internalPO.clientAddress?.city ? `, ${internalPO.clientAddress.city}` : ''}
-                            ${internalPO.clientAddress?.postalCode ? `, ${internalPO.clientAddress.postalCode}` : ''}
-                            ${clientData?.country || internalPO.clientAddress?.country ? `, ${clientData?.country || internalPO.clientAddress?.country}` : ''}
-                            ${clientData?.phone ? `<br />${clientData.phone}` : ''}
-                            ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber) ? 
-                                `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber}</span>` : ''}
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 40px;">
-                        <div style="text-align: right;">
-                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Internal PO #</div>
-                            <div style="color: black; font-size: 16px; margin-bottom: 15px;">${internalPO.customId}</div>
-                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
-                            <div style="color: black; font-size: 16px;">${formatDate(internalPO.paymentDue)}</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Created Date</div>
-                            <div style="color: black; font-size: 16px; margin-bottom: 15px;">${formatDate(internalPO.createdAt)}</div>
-                            ${internalPO.lpoNumber ? `
-                                <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">LPO Number</div>
-                                <div style="color: black; font-size: 16px;">${internalPO.lpoNumber}</div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-                itemsPage.appendChild(clientSection);
-
-                // Add cost analysis section
-                const costAnalysisSection = document.createElement('div');
-                costAnalysisSection.style.cssText = `
-                    margin-bottom: 20px;
-                    padding: 20px;
-                    background-color: #f5f7fa;
-                    border-radius: 8px;
-                    border: 1px solid #e0e0e0;
-                `;
-                costAnalysisSection.innerHTML = `
-                    <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Cost Analysis</h2>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-                        <!-- Row 1: Basic Information -->
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Items</div>
-                            <div style="color: #004359; font-size: 18px; font-weight: bold;">
-                                ${internalPO.items?.reduce((sum, item) => sum + (item.orderQuantity || item.quantity || 0), 0)}
-                            </div>
-                        </div>
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Date of Delivery</div>
-                            <div style="color: #004359; font-size: 18px; font-weight: bold;">
-                                ${internalPO.deliveryDate ? formatDate(internalPO.deliveryDate) : 'Not set'}
-                            </div>
-                        </div>
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Cost</div>
-                            <div style="color: #004359; font-size: 18px; font-weight: bold;">
-                                ${formatPrice(
-                                    internalPO.items?.reduce((sum, item) => {
-                                        const orderQty = item.orderQuantity || item.quantity || 0;
-                                        const unitCost = item.unitCost || 0;
-                                        return sum + (orderQty * unitCost);
-                                    }, 0),
-                                    internalPO.currency
-                                )}
-                            </div>
-                        </div>
-
-                        <!-- Row 2: Printing Costs -->
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Printing Cost</div>
-                            <div style="color: #004359; font-size: 18px; font-weight: bold;">
-                                ${formatPrice(
-                                    internalPO.items?.reduce((sum, item) => {
-                                        const orderQty = item.orderQuantity || item.quantity || 0;
-                                        const printingCost = item.printingCost || 0;
-                                        return sum + (orderQty * printingCost);
-                                    }, 0),
-                                    internalPO.currency
-                                )}
-                            </div>
-                        </div>
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Additional Printing Cost</div>
-                            <div style="color: #004359; font-size: 18px; font-weight: bold;">
-                                ${formatPrice(internalPO.additionalPrintingCost || 0, internalPO.currency)}
-                            </div>
-                        </div>
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Total Printing Cost</div>
-                            <div style="color: #004359; font-size: 18px; font-weight: bold;">
-                                ${formatPrice(
-                                    internalPO.items?.reduce((sum, item) => {
-                                        const orderQty = item.orderQuantity || item.quantity || 0;
-                                        const printingCost = item.printingCost || 0;
-                                        return sum + (orderQty * printingCost);
-                                    }, 0) + (internalPO.additionalPrintingCost || 0),
-                                    internalPO.currency
-                                )}
-                            </div>
-                        </div>
-
-                        <!-- Row 3: Shipping and Final Costs -->
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Shipping Cost</div>
-                            <div style="color: #004359; font-size: 18px; font-weight: bold;">
-                                ${formatPrice(
-                                    internalPO.items?.reduce((sum, item) => {
-                                        const orderQty = item.orderQuantity || item.quantity || 0;
-                                        const shippingCost = item.shippingCost || 0;
-                                        return sum + (orderQty * shippingCost);
-                                    }, 0),
-                                    internalPO.currency
-                                )}
-                            </div>
-                        </div>
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Additional Shipping Cost</div>
-                            <div style="color: #004359; font-size: 18px; font-weight: bold;">
-                                ${formatPrice(internalPO.additionalShippingCost || 0, internalPO.currency)}
-                            </div>
-                        </div>
-                        <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                            <div style="color: #666; font-size: 14px; margin-bottom: 5px;">Net Profit</div>
-                            <div style="color: #004359; font-size: 18px; font-weight: bold;">
-                                ${formatPrice(
-                                    grandTotal - (
-                                        // Total cost of items
-                                        internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const unitCost = item.unitCost || 0;
-                                            return sum + (orderQty * unitCost);
-                                        }, 0) +
-                                        // Total printing cost (per item + additional)
-                                        internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const printingCost = item.printingCost || 0;
-                                            return sum + (orderQty * printingCost);
-                                        }, 0) + (internalPO.additionalPrintingCost || 0) +
-                                        // Total shipping cost (per item + additional)
-                                        internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const shippingCost = item.shippingCost || 0;
-                                            return sum + (orderQty * shippingCost);
-                                        }, 0) + (internalPO.additionalShippingCost || 0)
-                                    ),
-                                    internalPO.currency
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                itemsPage.appendChild(costAnalysisSection);
-
-                // Only add items section if it's not the first page
-                if (pageNumber > 1) {
-                    const itemsSection = document.createElement('div');
-                    itemsSection.style.cssText = `
-                        margin-bottom: 20px;
-                        padding: 20px;
-                        background-color: #f5f7fa;
-                        border-radius: 8px;
-                        border: 1px solid #e0e0e0;
-                    `;
-                    itemsSection.innerHTML = `
-                        <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Items (Page ${pageNumber})</h2>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-                            ${items.map(item => `
-                                <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
-                                    ${item.base64Image ? `
-                                        <div style="margin-bottom: 15px; text-align: center;">
-                                            <img src="${item.base64Image}" alt="${item.name}" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 4px;"/>
-                                        </div>
-                                    ` : ''}
-                                    <div style="margin-bottom: 10px;">
-                                        <div style="color: #004359; font-weight: bold; font-size: 16px;">${item.name}</div>
-                                        <div style="color: #666; font-size: 14px;">${item.description || ''}</div>
-                                    </div>
-                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                                        <div>
-                                            <div style="color: #666; font-size: 12px;">Order Quantity</div>
-                                            <div style="color: #004359; font-size: 14px;">${item.orderQuantity || item.quantity || 0}</div>
-                                        </div>
-                                        <div>
-                                            <div style="color: #666; font-size: 12px;">Unit Cost</div>
-                                            <div style="color: #004359; font-size: 14px;">${formatPrice(item.unitCost || 0, internalPO.currency)}</div>
-                                        </div>
-                                        <div>
-                                            <div style="color: #666; font-size: 12px;">Printing Cost</div>
-                                            <div style="color: #004359; font-size: 14px;">${formatPrice(item.printingCost || 0, internalPO.currency)}</div>
-                                        </div>
-                                        <div>
-                                            <div style="color: #666; font-size: 12px;">Shipping Cost</div>
-                                            <div style="color: #004359; font-size: 14px;">${formatPrice(item.shippingCost || 0, internalPO.currency)}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    `;
-                    itemsPage.appendChild(itemsSection);
-                }
-
-                return itemsPage;
-            };
-
-            // Function to create supplier details page
-            const createSupplierPage = () => {
-                const supplierPage = document.createElement('div');
-                supplierPage.style.cssText = `
-                    width: 297mm;
-                    min-height: 420mm;
-                    padding: 5mm 20mm 20mm 20mm;
-                    margin: 0;
-                    background-color: white;
-                    box-sizing: border-box;
-                    position: relative;
-                    font-family: Arial, sans-serif;
-                    overflow: visible;
-                `;
-
-                // Add header
-                supplierPage.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <div>
-                            <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
-                        </div>
-                        <div style="text-align: right; font-size: 19px; color: #000000;">
-                            <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
-                            <div>${companyProfile.address}</div>
-                            <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
-                            <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
-                        </div>
-                    </div>
-                    <div style="margin: 30px 0;">
-                        <div style="height: 2px; background-color: #004359; width: 100%; margin-bottom: 15px;"></div>
-                        <h1 style="color: #004359; font-size: 28px; font-weight: bold; margin: 0; text-align: center;">Supplier Details</h1>
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="color: #004359; font-size: 20px; margin-bottom: 10px;">Supplier Details</h2>
                     </div>
                 `;
 
-                // Add supplier section with optimized images
+                // Add supplier section
                 const supplierSection = document.createElement('div');
                 supplierSection.style.cssText = `
                     margin-bottom: 20px;
@@ -843,7 +852,6 @@ const InternalPOView = () => {
                     border: 1px solid #e0e0e0;
                 `;
                 supplierSection.innerHTML = `
-                    <h2 style="color: #004359; font-size: 20px; margin-bottom: 20px;">Supplier Details</h2>
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
                         ${itemsWithBase64Images.map(item => `
                             <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
@@ -878,48 +886,31 @@ const InternalPOView = () => {
                         `).join('')}
                     </div>
                 `;
-                supplierPage.appendChild(supplierSection);
+                page.appendChild(supplierSection);
 
-                return supplierPage;
+                return page;
             };
 
-            // Create and add pages
-            const itemsPerPage = 6;
-            const totalItems = internalPO.items?.length || 0;
-            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            // Convert first page to canvas and add to PDF
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            document.body.appendChild(pdfContainer);
 
-            // Create items pages
-            for (let i = 0; i < totalPages; i++) {
-                const startIndex = i * itemsPerPage;
-                const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-                const pageItems = internalPO.items?.slice(startIndex, endIndex) || [];
-                
-                const itemsPage = createItemsPage(pageItems, i + 1);
-                itemsPage.style.position = 'absolute';
-                itemsPage.style.left = '-9999px';
-                document.body.appendChild(itemsPage);
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 1.5,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                width: 1122.5,
+                height: 1587.4,
+                imageTimeout: 0,
+                removeContainer: true
+            });
 
-                // Convert to canvas and add to PDF with optimized settings
-                const canvas = await html2canvas(itemsPage, {
-                    scale: 1.5, // Reduced from 2 to 1.5
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#ffffff',
-                    width: 1122.5,
-                    height: 1587.4,
-                    imageTimeout: 0, // Disable image timeout
-                    removeContainer: true // Clean up after rendering
-                });
+            const imgData = canvas.toDataURL('image/jpeg', 0.8);
+            pdf.addImage(imgData, 'JPEG', 0, 0, 297, 420);
 
-                if (i > 0) {
-                    pdf.addPage();
-                }
-
-                const imgData = canvas.toDataURL('image/jpeg', 0.8); // Using JPEG with 0.8 quality
-                pdf.addImage(imgData, 'JPEG', 0, 0, 297, 420);
-
-                document.body.removeChild(itemsPage);
-            }
+            document.body.removeChild(pdfContainer);
 
             // Add supplier page
             const supplierPage = createSupplierPage();
@@ -929,17 +920,17 @@ const InternalPOView = () => {
 
             pdf.addPage();
             const supplierCanvas = await html2canvas(supplierPage, {
-                scale: 1.5, // Reduced from 2 to 1.5
+                scale: 1.5,
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#ffffff',
                 width: 1122.5,
                 height: 1587.4,
-                imageTimeout: 0, // Disable image timeout
-                removeContainer: true // Clean up after rendering
+                imageTimeout: 0,
+                removeContainer: true
             });
 
-            const supplierImgData = supplierCanvas.toDataURL('image/jpeg', 0.8); // Using JPEG with 0.8 quality
+            const supplierImgData = supplierCanvas.toDataURL('image/jpeg', 0.8);
             pdf.addImage(supplierImgData, 'JPEG', 0, 0, 297, 420);
 
             document.body.removeChild(supplierPage);
