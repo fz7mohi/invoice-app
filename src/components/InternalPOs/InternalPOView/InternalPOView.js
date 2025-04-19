@@ -340,11 +340,11 @@ const InternalPOView = () => {
     const handleDelete = async () => {
         try {
             await deleteDoc(doc(db, 'internalPOs', id));
-            showNotification('Internal PO deleted successfully', 'success');
+            toast.success('Internal PO deleted successfully');
             history.push('/internal-pos');
         } catch (err) {
             console.error('Error deleting internal PO:', err);
-            showNotification('Failed to delete internal PO', 'error');
+            toast.error('Failed to delete internal PO');
         }
     };
 
@@ -1487,8 +1487,14 @@ const InternalPOView = () => {
                     initial="hidden"
                     animate="visible"
                     exit="exit"
+                    style={{ 
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        width: '100%'
+                    }}
                 >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div>
                         <StatusBadge status={internalPO.status}>
                             <span>
                                 {internalPO.status === 'paid' ? 'Paid' : 
@@ -1497,6 +1503,8 @@ const InternalPOView = () => {
                                  internalPO.status === 'void' ? 'Void' : 'Draft'}
                             </span>
                         </StatusBadge>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px' }}>
                         <DownloadButton 
                             onClick={handleDownloadPDF}
                             disabled={isGeneratingPDF}
@@ -1526,33 +1534,69 @@ const InternalPOView = () => {
                                 </>
                             )}
                         </DownloadButton>
+                        <DownloadButton 
+                            onClick={() => setShowDeleteModal(true)}
+                            style={{ 
+                                backgroundColor: '#dc3545',
+                                borderColor: '#dc3545'
+                            }}
+                        >
+                            <Icon name="delete" size={13} />
+                            Delete
+                        </DownloadButton>
                     </div>
-
-                    <ButtonWrapper>
-                        {internalPO.status !== 'void' && (
-                            <>
-                                <Button onClick={() => setShowEditModal(true)} $secondary>
-                                    <Icon name="edit" size={13} />
-                                    Edit
-                                </Button>
-                                <Button onClick={() => setShowDeleteModal(true)} $danger>
-                                    <Icon name="delete" size={13} />
-                                    Delete
-                                </Button>
-                                <Button onClick={() => setShowVoidModal(true)} $warning>
-                                    <Icon name="void" size={13} />
-                                    Void
-                                </Button>
-                                {internalPO.status !== 'paid' && (
-                                    <Button onClick={() => setShowPaymentModal(true)} $primary>
-                                        <Icon name="payment" size={13} />
-                                        Mark as Paid
-                                    </Button>
-                                )}
-                            </>
-                        )}
-                    </ButtonWrapper>
                 </Controller>
+
+                {/* Delete Confirmation Modal */}
+                {showDeleteModal && (
+                    <ModalOverlay>
+                        <ModalContent>
+                            <ModalHeader>
+                                <ModalIconWrapper>
+                                    <Icon name="delete" size={20} color="#dc3545" />
+                                </ModalIconWrapper>
+                                <ModalTitle>Delete Internal PO</ModalTitle>
+                            </ModalHeader>
+                            <div style={{ padding: '20px' }}>
+                                <p style={{ 
+                                    marginBottom: '20px',
+                                    color: '#666',
+                                    fontSize: '15px',
+                                    lineHeight: '1.5'
+                                }}>
+                                    Are you sure you want to delete this internal PO? This action cannot be undone.
+                                </p>
+                                <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'flex-end', 
+                                    gap: '12px',
+                                    marginTop: '24px'
+                                }}>
+                                    <DownloadButton
+                                        onClick={() => setShowDeleteModal(false)}
+                                        style={{ 
+                                            backgroundColor: '#6c757d',
+                                            borderColor: '#6c757d',
+                                            minWidth: '100px'
+                                        }}
+                                    >
+                                        Cancel
+                                    </DownloadButton>
+                                    <DownloadButton
+                                        onClick={handleDelete}
+                                        style={{ 
+                                            backgroundColor: '#dc3545',
+                                            borderColor: '#dc3545',
+                                            minWidth: '100px'
+                                        }}
+                                    >
+                                        Delete
+                                    </DownloadButton>
+                                </div>
+                            </div>
+                        </ModalContent>
+                    </ModalOverlay>
+                )}
 
                 <InfoCard>
                     <InfoHeader>
@@ -1903,24 +1947,6 @@ const InternalPOView = () => {
             </Container>
 
             {/* Modals */}
-            {showDeleteModal && (
-                <Modal
-                    isOpen={showDeleteModal}
-                    onClose={() => setShowDeleteModal(false)}
-                    title="Delete Internal PO"
-                    message="Are you sure you want to delete this internal PO? This action cannot be undone."
-                    primaryAction={{
-                        label: 'Delete',
-                        onClick: handleDelete,
-                        variant: 'danger'
-                    }}
-                    secondaryAction={{
-                        label: 'Cancel',
-                        onClick: () => setShowDeleteModal(false)
-                    }}
-                />
-            )}
-
             {showVoidModal && (
                 <Modal
                     isOpen={showVoidModal}
