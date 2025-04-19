@@ -481,12 +481,50 @@ const InternalPOView = () => {
                 };
             }
 
-            // Convert all images to base64 with error handling
+            // Convert all images to base64 with error handling and size optimization
             const imagePromises = internalPO.items?.map(async (item) => {
                 if (item.imageUrl) {
                     try {
                         const base64Image = await getBase64FromUrl(item.imageUrl);
-                        return { ...item, base64Image };
+                        // Create a temporary image element to resize
+                        const img = new Image();
+                        img.src = base64Image;
+                        
+                        return new Promise((resolve) => {
+                            img.onload = () => {
+                                // Create a canvas to resize the image
+                                const canvas = document.createElement('canvas');
+                                const maxWidth = 400; // Maximum width for images
+                                const maxHeight = 300; // Maximum height for images
+                                
+                                let width = img.width;
+                                let height = img.height;
+                                
+                                // Calculate new dimensions while maintaining aspect ratio
+                                if (width > maxWidth) {
+                                    height = (maxWidth * height) / width;
+                                    width = maxWidth;
+                                }
+                                if (height > maxHeight) {
+                                    width = (maxHeight * width) / height;
+                                    height = maxHeight;
+                                }
+                                
+                                canvas.width = width;
+                                canvas.height = height;
+                                
+                                // Draw and resize the image
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+                                
+                                // Convert to base64 with reduced quality
+                                const resizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                                resolve({ ...item, base64Image: resizedBase64 });
+                            };
+                            img.onerror = () => {
+                                resolve({ ...item, base64Image: null });
+                            };
+                        });
                     } catch (error) {
                         console.warn(`Failed to load image for item ${item.name}:`, error);
                         return { ...item, base64Image: null };
@@ -724,6 +762,11 @@ const InternalPOView = () => {
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
                             ${items.map(item => `
                                 <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                                    ${item.base64Image ? `
+                                        <div style="margin-bottom: 15px; text-align: center;">
+                                            <img src="${item.base64Image}" alt="${item.name}" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 4px;"/>
+                                        </div>
+                                    ` : ''}
                                     <div style="margin-bottom: 10px;">
                                         <div style="color: #004359; font-weight: bold; font-size: 16px;">${item.name}</div>
                                         <div style="color: #666; font-size: 14px;">${item.description || ''}</div>
@@ -790,7 +833,7 @@ const InternalPOView = () => {
                     </div>
                 `;
 
-                // Add supplier section with base64 images
+                // Add supplier section with optimized images
                 const supplierSection = document.createElement('div');
                 supplierSection.style.cssText = `
                     margin-bottom: 20px;
@@ -856,22 +899,24 @@ const InternalPOView = () => {
                 itemsPage.style.left = '-9999px';
                 document.body.appendChild(itemsPage);
 
-                // Convert to canvas and add to PDF
+                // Convert to canvas and add to PDF with optimized settings
                 const canvas = await html2canvas(itemsPage, {
-                    scale: 2,
+                    scale: 1.5, // Reduced from 2 to 1.5
                     useCORS: true,
                     logging: false,
                     backgroundColor: '#ffffff',
                     width: 1122.5,
-                    height: 1587.4
+                    height: 1587.4,
+                    imageTimeout: 0, // Disable image timeout
+                    removeContainer: true // Clean up after rendering
                 });
 
                 if (i > 0) {
                     pdf.addPage();
                 }
 
-                const imgData = canvas.toDataURL('image/png');
-                pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
+                const imgData = canvas.toDataURL('image/jpeg', 0.8); // Using JPEG with 0.8 quality
+                pdf.addImage(imgData, 'JPEG', 0, 0, 297, 420);
 
                 document.body.removeChild(itemsPage);
             }
@@ -884,16 +929,18 @@ const InternalPOView = () => {
 
             pdf.addPage();
             const supplierCanvas = await html2canvas(supplierPage, {
-                scale: 2,
+                scale: 1.5, // Reduced from 2 to 1.5
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#ffffff',
                 width: 1122.5,
-                height: 1587.4
+                height: 1587.4,
+                imageTimeout: 0, // Disable image timeout
+                removeContainer: true // Clean up after rendering
             });
 
-            const supplierImgData = supplierCanvas.toDataURL('image/png');
-            pdf.addImage(supplierImgData, 'PNG', 0, 0, 297, 420);
+            const supplierImgData = supplierCanvas.toDataURL('image/jpeg', 0.8); // Using JPEG with 0.8 quality
+            pdf.addImage(supplierImgData, 'JPEG', 0, 0, 297, 420);
 
             document.body.removeChild(supplierPage);
 
