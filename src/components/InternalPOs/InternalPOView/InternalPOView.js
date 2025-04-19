@@ -1800,7 +1800,7 @@ const InternalPOView = () => {
                             <Items>
                                 {internalPO.items?.map((item, index) => {
                                     const itemVAT = clientHasVAT ? (item.inPrice * item.inQuantity * 0.05) : 0;
-                                    const orderQty = item.orderQuantity || 0;
+                                    const orderQty = item.inQuantity || 0;
                                     const unitCost = item.unitCost || 0;
                                     const price = item.price || 0;
                                     const subtotal = orderQty * unitCost;
