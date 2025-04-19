@@ -107,7 +107,7 @@ const InternalPOs = () => {
                             {isLoading 
                                 ? "Loading internal POs..."
                                 : internalPOLengthMessage(
-                                    filteredInternalPOs,
+                                    filteredInternalPOs.length,
                                     filterType,
                                     windowWidth
                                 )
