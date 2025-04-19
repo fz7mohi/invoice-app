@@ -2582,7 +2582,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                             }}
                                             disabled={!editedLPO.trim()}
                                         >
-                                            Save LPO Number
+                                            Save LPO #
                                         </Button>
                                     </div>
                                 </div>
