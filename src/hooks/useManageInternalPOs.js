@@ -425,7 +425,7 @@ const useManageInternalPOs = () => {
             const paymentDueDate = new Date(calculatePaymentDueDateUtil(invoiceDate, paymentTerms));
             const now = new Date();
 
-            // Create new internal PO object
+            // Create new internal PO object with prefixed invoice fields
             const newInternalPO = {
                 // Copy all invoice data first
                 ...invoice,
@@ -440,17 +440,39 @@ const useManageInternalPOs = () => {
                 // Remove invoice-specific fields by setting them to null instead of undefined
                 invoiceId: null,
                 invoiceStatus: null,
-                // Ensure all required fields have values
+                // Ensure all required fields have values with 'in' prefix for invoice values
                 items: (invoice.items || []).map(item => ({
                     name: item.name || '',
                     description: item.description || '',
+                    inQuantity: item.quantity || 1,
+                    inPrice: item.price || 0,
+                    inTotal: (item.quantity || 1) * (item.price || 0),
+                    // Keep the same values for internal PO fields
                     quantity: item.quantity || 1,
                     price: item.price || 0,
-                    total: (item.quantity || 1) * (item.price || 0)
+                    total: (item.quantity || 1) * (item.price || 0),
+                    // Supplier related fields - all initialized to 0
+                    supplierName: '',
+                    orderQuantity: 0,
+                    unitCost: 0,
+                    imageUrl: null,
+                    printingCost: 0,
+                    shippingCost: 0,
+                    subtotal: 0,
+                    totalPrintingCost: 0,
+                    totalShippingCost: 0,
+                    supplierTotal: 0
                 })),
+                inTotal: (invoice.items || []).reduce((sum, item) => {
+                    return sum + ((item.quantity || 1) * (item.price || 0));
+                }, 0),
                 total: (invoice.items || []).reduce((sum, item) => {
                     return sum + ((item.quantity || 1) * (item.price || 0));
                 }, 0),
+                // Additional supplier related fields
+                additionalShippingCost: 0,
+                additionalPrintingCost: 0,
+                deliveryDate: null,
                 paymentTerms: paymentTerms,
                 description: invoice.description || '',
                 clientName: invoice.clientName || '',
