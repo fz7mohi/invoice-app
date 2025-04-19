@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGlobalContext } from '../../App/context';
 import Icon from '../../shared/Icon/Icon';
+import { formatPrice } from '../../../utilities/helpers';
 import { 
     Overlay, 
     Modal, 
@@ -80,7 +81,9 @@ const CreateInternalPO = ({ isOpen, onClose }) => {
                                 <Option value="">Select an invoice</Option>
                                 {invoiceState.invoices.map(invoice => (
                                     <Option key={invoice.id} value={invoice.id}>
-                                        {invoice.customId || invoice.id} - {invoice.clientName} - ${invoice.grandTotal}
+                                        {invoice.customId || invoice.id} - {invoice.clientName}
+                                        {invoice.description && ` - ${invoice.description}`}
+                                        {` - ${formatPrice(invoice.total, invoice.currency)}`}
                                     </Option>
                                 ))}
                             </Select>
