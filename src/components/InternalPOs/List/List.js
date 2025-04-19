@@ -8,29 +8,108 @@ import { formatDate, formatPrice } from '../../../utilities/helpers';
 import { useGlobalContext } from '../../App/context';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../firebase/firebase';
-import {
-    StyledList,
-    Item,
-    Link,
-    Uid,
-    Hashtag,
-    PaymentDue,
-    ClientName,
-    TotalPrice,
-    Description,
-    StatusBadge,
-    StatusDot
-} from './ListStyles';
 import styled from 'styled-components';
+import { motion } from 'framer-motion';
+import {
+    headingExtraSmall,
+    headingMedium,
+} from '../../../utilities/typographyStyles';
 
-// Add a header component
+const StyledList = styled.ul`
+    display: flex;
+    flex-flow: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+`;
+
+const Item = styled(motion.li)`
+    background-color: ${({ theme }) => theme.colors.bgInvoiceItem};
+    border-radius: 12px;
+    border: 1px solid rgba(223, 227, 250, 0.1);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+    }
+`;
+
+const StyledLink = styled(RouterLink)`
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    padding: 24px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    position: relative;
+
+    @media (max-width: 767px) {
+        grid-template-areas:
+            "date project"
+            "client client"
+            "cost cost"
+            "profit profit"
+            "price price";
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        padding: 20px;
+    }
+
+    @media (min-width: 768px) {
+        display: grid;
+        grid-template-areas: "date client project cost profit price arrow";
+        grid-template-columns: 110px 160px 160px 130px 130px 130px 20px;
+        align-items: center;
+        padding: 20px 32px;
+        gap: 16px;
+    }
+
+    @media (min-width: 1024px) {
+        grid-template-columns: 120px 180px 180px 140px 140px 140px 20px;
+    }
+
+    &:focus {
+        outline: none;
+    }
+
+    &:focus-visible {
+        border: 1px solid ${({ theme }) => theme.colors.purple};
+        box-shadow: 0 0 0 3px rgba(124, 93, 250, 0.2);
+    }
+
+    &:hover {
+        border: 1px solid ${({ theme }) => theme.colors.purple};
+    }
+    
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 5%;
+        width: 90%;
+        height: 1px;
+        background: linear-gradient(to right, 
+            transparent, 
+            rgba(223, 227, 250, 0.3), 
+            transparent);
+    }
+`;
+
 const ListHeader = styled.div`
     display: none;
     
     @media (min-width: 768px) {
         display: grid;
-        grid-template-areas: 'date client project id price status icon';
-        grid-template-columns: 100px 130px 130px 90px 130px 90px 20px;
+        grid-template-areas: "date client project cost profit price arrow";
+        grid-template-columns: 110px 160px 160px 130px 130px 130px 20px;
         padding: 0 32px 12px 32px;
         font-weight: 600;
         font-size: 11px;
@@ -38,44 +117,24 @@ const ListHeader = styled.div`
         margin-bottom: 12px;
         border-bottom: 1px solid rgba(223, 227, 250, 0.1);
         letter-spacing: 0.5px;
-    }
-    
-    @media (min-width: 1024px) {
-        grid-template-columns: 110px 160px 160px 100px 150px 120px 20px;
-        padding: 0 32px 12px 32px;
-    }
-    
-    @media (min-width: 1440px) {
-        grid-template-columns: 120px 180px 180px 120px 160px 140px 20px;
+        gap: 16px;
+        align-items: center;
+
+        @media (min-width: 1024px) {
+            grid-template-columns: 120px 180px 180px 140px 140px 140px 20px;
+        }
     }
 `;
 
 const HeaderItem = styled.div`
-    &.date { 
-        grid-area: date;
-        padding-left: 0;
-    }
-    &.project { 
-        grid-area: project;
-    }
-    &.id { 
-        grid-area: id;
-    }
-    &.client { 
-        grid-area: client;
-    }
-    &.price { 
-        grid-area: price; 
-        text-align: right;
-        padding-right: 24px;
-    }
-    &.status { 
-        grid-area: status; 
-        text-align: center;
-        padding-right: 20px;
-    }
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s ease;
 
-    // Add hover and active states
     &:hover {
         color: ${({ theme }) => theme.colors.primary};
         .sort-icon {
@@ -87,9 +146,79 @@ const HeaderItem = styled.div`
         color: ${({ theme }) => theme.colors.primary};
         font-weight: 600;
     }
+`;
 
-    // Add transition for smooth effects
-    transition: color 0.2s ease, font-weight 0.2s ease;
+const PaymentDue = styled.p`
+    grid-area: date;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 13px;
+    transition: color 200ms ease-in-out;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    @media (max-width: 767px) {
+        font-size: 12px;
+    }
+`;
+
+const ClientName = styled.p`
+    grid-area: client;
+    font-size: 13px;
+    font-weight: 700;
+    transition: color 200ms ease-in-out;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+
+    @media (max-width: 767px) {
+        font-size: 12px;
+        white-space: normal;
+    }
+`;
+
+const Description = styled.p`
+    grid-area: project;
+    color: ${({ theme }) => theme.colors.textTertiary};
+    font-size: 13px;
+    transition: color 200ms ease-in-out;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+
+    @media (max-width: 767px) {
+        font-size: 12px;
+        white-space: normal;
+        line-height: 1.3;
+    }
+`;
+
+const TotalPrice = styled.p`
+    ${headingMedium}
+    font-size: 14px;
+    font-weight: 700;
+    justify-self: end;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+    padding-right: 24px;
+
+    &:nth-of-type(1) {
+        grid-area: cost;
+    }
+    &:nth-of-type(2) {
+        grid-area: profit;
+    }
+    &:nth-of-type(3) {
+        grid-area: price;
+    }
+
+    @media (max-width: 767px) {
+        font-size: 13px;
+        padding-right: 0;
+    }
 `;
 
 const SortIcon = styled(Icon)`
@@ -118,6 +247,7 @@ const LoadingContainer = styled.div`
     background-color: ${({ theme }) => theme.colors.bgInvoiceItem};
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(223, 227, 250, 0.1);
     
     @media (max-width: 767px) {
         padding: 32px 16px;
@@ -134,6 +264,7 @@ const EmptyContainer = styled.div`
     background-color: ${({ theme }) => theme.colors.bgInvoiceItem};
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(223, 227, 250, 0.1);
     
     h3 {
         margin: 0 0 16px 0;
@@ -147,6 +278,7 @@ const EmptyContainer = styled.div`
         font-size: 14px;
         color: ${({ theme }) => theme.colors.textSecondary};
         max-width: 400px;
+        line-height: 1.6;
     }
 `;
 
@@ -338,13 +470,28 @@ const List = ({ internalPOs, isLoading, variant }) => {
                     />
                 </HeaderItem>
                 <HeaderItem 
-                    className={`id ${sortConfig.key === 'customId' ? 'active' : ''}`}
-                    onClick={() => handleSort('customId')}
+                    className={`cost ${sortConfig.key === 'netTotal' ? 'active' : ''}`}
+                    onClick={() => handleSort('netTotal')}
                     style={{ cursor: 'pointer' }}
                 >
-                    Internal PO ID
+                    Net Total (Cost)
                     <SortIcon 
-                        name={sortConfig.key === 'customId' 
+                        name={sortConfig.key === 'netTotal' 
+                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
+                            : 'arrow-up-down'
+                        } 
+                        size={12}
+                        className="sort-icon"
+                    />
+                </HeaderItem>
+                <HeaderItem 
+                    className={`profit ${sortConfig.key === 'netProfit' ? 'active' : ''}`}
+                    onClick={() => handleSort('netProfit')}
+                    style={{ cursor: 'pointer' }}
+                >
+                    Net Profit
+                    <SortIcon 
+                        name={sortConfig.key === 'netProfit' 
                             ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
                             : 'arrow-up-down'
                         } 
@@ -360,21 +507,6 @@ const List = ({ internalPOs, isLoading, variant }) => {
                     Amount
                     <SortIcon 
                         name={sortConfig.key === 'total' 
-                            ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
-                            : 'arrow-up-down'
-                        } 
-                        size={12}
-                        className="sort-icon"
-                    />
-                </HeaderItem>
-                <HeaderItem 
-                    className={`status ${sortConfig.key === 'status' ? 'active' : ''}`}
-                    onClick={() => handleSort('status')}
-                    style={{ cursor: 'pointer' }}
-                >
-                    Status
-                    <SortIcon 
-                        name={sortConfig.key === 'status' 
                             ? (sortConfig.direction === 'asc' ? 'arrow-up' : 'arrow-down')
                             : 'arrow-up-down'
                         } 
@@ -400,23 +532,21 @@ const List = ({ internalPOs, isLoading, variant }) => {
                             delay: index * 0.03
                         }}
                     >
-                        <Link to={`/internal-pos/${internalPO.id}`}>
+                        <StyledLink to={`/internal-pos/${internalPO.id}`}>
                             <PaymentDue>
                                 {formatDate(internalPO.createdAt)}
                             </PaymentDue>
-                            <Description>{internalPO.description || 'No Project'}</Description>
-                            <Uid>
-                                <Hashtag>#</Hashtag>
-                                {internalPO.customId || generateCustomId()}
-                            </Uid>
                             <ClientName>{internalPO.clientName}</ClientName>
+                            <Description>{internalPO.description || 'No Project'}</Description>
+                            <TotalPrice>
+                                {formatPrice(internalPO.netTotal || 0, internalPO.currency)}
+                            </TotalPrice>
+                            <TotalPrice>
+                                {formatPrice(internalPO.netProfit || 0, internalPO.currency)}
+                            </TotalPrice>
                             <TotalPrice>
                                 {formatPrice(internalPO.total, internalPO.currency)}
                             </TotalPrice>
-                            <StatusBadge currStatus={internalPO.status}>
-                                <StatusDot currStatus={internalPO.status} />
-                                {formatStatus(internalPO.status)}
-                            </StatusBadge>
                             {isDesktop && (
                                 <Icon
                                     name="arrow-right"
@@ -424,7 +554,7 @@ const List = ({ internalPOs, isLoading, variant }) => {
                                     color={colors.purple}
                                 />
                             )}
-                        </Link>
+                        </StyledLink>
                     </Item>
                 ))}
             </StyledList>
