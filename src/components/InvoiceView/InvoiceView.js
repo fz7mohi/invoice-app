@@ -270,6 +270,10 @@ const InvoiceView = () => {
     const [emailData, setEmailData] = useState(null);
     const [pdfData, setPdfData] = useState(null);
     const [isSending, setIsSending] = useState(false);
+    const [isExchanging, setIsExchanging] = useState(false);
+    const [isConvertedToQAR, setIsConvertedToQAR] = useState(false);
+    const [originalCurrency, setOriginalCurrency] = useState(null);
+    const [originalAmounts, setOriginalAmounts] = useState(null);
     
     // Add default terms and conditions
     const defaultTermsAndConditions = `50% advance payment along with the issuance of the LPO (Local Purchase Order), and the remaining 50% to be settled before the delivery of the order.
@@ -277,6 +281,16 @@ const InvoiceView = () => {
 All prices are in local currency and include VAT where applicable.
 
 Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until paid in full.`;
+
+    // Add exchange rates (using standard rates)
+    const exchangeRates = {
+        USD: 3.64,  // 1 USD = 3.64 QAR
+        EUR: 3.95,  // 1 EUR = 3.95 QAR
+        GBP: 4.62,  // 1 GBP = 4.62 QAR
+        AED: 0.99,  // 1 AED = 0.99 QAR
+        SAR: 0.97,  // 1 SAR = 0.97 QAR
+        QAR: 1.00   // 1 QAR = 1.00 QAR
+    };
 
     // Function to generate custom ID if not exists
     const generateCustomId = () => {
@@ -2014,6 +2028,116 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         }
     };
 
+    // Add this useEffect to initialize isConvertedToQAR when invoice loads
+    useEffect(() => {
+        if (invoice) {
+            // Check if the invoice has been converted to QAR
+            const hasOriginalCurrency = invoice.originalCurrency && invoice.originalCurrency !== 'QAR';
+            setIsConvertedToQAR(hasOriginalCurrency);
+            if (hasOriginalCurrency) {
+                setOriginalCurrency(invoice.originalCurrency);
+                setOriginalAmounts({
+                    items: invoice.originalItems || [],
+                    subtotal: invoice.originalSubtotal,
+                    totalVat: invoice.originalTotalVat,
+                    total: invoice.originalTotal,
+                    paidAmount: invoice.originalPaidAmount
+                });
+            }
+        }
+    }, [invoice]);
+
+    // Modify the handleCurrencyExchange function to store original values in the database
+    const handleCurrencyExchange = async () => {
+        if (isExchanging) return;
+        
+        setIsExchanging(true);
+        try {
+            if (!isConvertedToQAR) {
+                // Store original values
+                setOriginalCurrency(invoice.currency);
+                setOriginalAmounts({
+                    items: invoice.items.map(item => ({
+                        price: item.price,
+                        total: item.total,
+                        vat: item.vat
+                    })),
+                    subtotal: invoice.subtotal,
+                    totalVat: invoice.totalVat,
+                    total: invoice.total,
+                    paidAmount: invoice.paidAmount
+                });
+
+                // Convert to QAR
+                const rate = exchangeRates[invoice.currency];
+                const convertedInvoice = {
+                    ...invoice,
+                    currency: 'QAR',
+                    originalCurrency: invoice.currency,
+                    originalItems: invoice.items,
+                    originalSubtotal: invoice.subtotal,
+                    originalTotalVat: invoice.totalVat,
+                    originalTotal: invoice.total,
+                    originalPaidAmount: invoice.paidAmount,
+                    items: invoice.items.map(item => ({
+                        ...item,
+                        price: parseFloat((item.price * rate).toFixed(2)),
+                        total: parseFloat((item.total * rate).toFixed(2)),
+                        vat: item.vat ? parseFloat((item.vat * rate).toFixed(2)) : null
+                    })),
+                    subtotal: parseFloat((invoice.subtotal * rate).toFixed(2)),
+                    totalVat: invoice.totalVat ? parseFloat((invoice.totalVat * rate).toFixed(2)) : null,
+                    total: parseFloat((invoice.total * rate).toFixed(2)),
+                    paidAmount: invoice.paidAmount ? parseFloat((invoice.paidAmount * rate).toFixed(2)) : null
+                };
+
+                // Update in database
+                const invoiceRef = doc(db, 'invoices', id);
+                await updateDoc(invoiceRef, {
+                    ...convertedInvoice,
+                    lastModified: new Date()
+                });
+
+                // Update local state
+                setInvoice(convertedInvoice);
+                setIsConvertedToQAR(true);
+            } else {
+                // Revert to original currency
+                const revertedInvoice = {
+                    ...invoice,
+                    currency: originalCurrency,
+                    items: originalAmounts.items,
+                    subtotal: originalAmounts.subtotal,
+                    totalVat: originalAmounts.totalVat,
+                    total: originalAmounts.total,
+                    paidAmount: originalAmounts.paidAmount,
+                    originalCurrency: null,
+                    originalItems: null,
+                    originalSubtotal: null,
+                    originalTotalVat: null,
+                    originalTotal: null,
+                    originalPaidAmount: null
+                };
+
+                // Update in database
+                const invoiceRef = doc(db, 'invoices', id);
+                await updateDoc(invoiceRef, {
+                    ...revertedInvoice,
+                    lastModified: new Date()
+                });
+
+                // Update local state
+                setInvoice(revertedInvoice);
+                setIsConvertedToQAR(false);
+            }
+        } catch (error) {
+            console.error('Error converting currency:', error);
+            message.error('Failed to convert currency. Please try again.');
+        } finally {
+            setIsExchanging(false);
+        }
+    };
+
     // Show loading state
     if (isLoading || !invoice) {
         return (
@@ -2088,6 +2212,29 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                             <Icon name="download" size={13} />
                             Share
                         </DownloadButton>
+                        <Button
+                            onClick={handleCurrencyExchange}
+                            disabled={isExchanging || (invoice.currency === 'QAR' && !invoice.originalCurrency)}
+                            style={{
+                                backgroundColor: 'transparent',
+                                border: `1px solid ${colors.purple}`,
+                                color: colors.purple,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 16px',
+                                borderRadius: '24px',
+                                cursor: (invoice.currency === 'QAR' && !invoice.originalCurrency) ? 'not-allowed' : 'pointer',
+                                opacity: (invoice.currency === 'QAR' && !invoice.originalCurrency) ? 0.5 : 1
+                            }}
+                        >
+                            <Icon 
+                                name={isConvertedToQAR ? "refresh-cw" : "dollar-sign"} 
+                                size={13} 
+                                color={colors.purple}
+                            />
+                            {isExchanging ? 'Converting...' : (isConvertedToQAR ? 'Revert' : 'Exchange to QAR')}
+                        </Button>
                     </div>
                     
                     {isDesktop && (
