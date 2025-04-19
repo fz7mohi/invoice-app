@@ -539,7 +539,27 @@ const List = ({ internalPOs, isLoading, variant }) => {
                             <ClientName>{internalPO.clientName}</ClientName>
                             <Description>{internalPO.description || 'No Project'}</Description>
                             <TotalPrice>
-                                {formatPrice(internalPO.netTotal || 0, internalPO.currency)}
+                                {formatPrice(
+                                    // Total cost of items
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const unitCost = item.unitCost || 0;
+                                        return sum + (orderQty * unitCost);
+                                    }, 0) +
+                                    // Total printing cost (per item + additional)
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const printingCost = item.printingCost || 0;
+                                        return sum + (orderQty * printingCost);
+                                    }, 0) + (internalPO.additionalPrintingCost || 0) +
+                                    // Total shipping cost (per item + additional)
+                                    internalPO.items?.reduce((sum, item) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const shippingCost = item.shippingCost || 0;
+                                        return sum + (orderQty * shippingCost);
+                                    }, 0) + (internalPO.additionalShippingCost || 0),
+                                    internalPO.currency
+                                )}
                             </TotalPrice>
                             <TotalPrice>
                                 {formatPrice(internalPO.netProfit || 0, internalPO.currency)}
