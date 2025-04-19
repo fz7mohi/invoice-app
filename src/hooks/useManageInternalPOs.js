@@ -437,8 +437,9 @@ const useManageInternalPOs = () => {
                 type: 'internal',
                 createdAt: now.toISOString(),
                 updatedAt: now.toISOString(),
-                // Remove invoice-specific fields by setting them to null instead of undefined
-                invoiceId: null,
+                // Keep the invoice customId for reference
+                invoiceId: invoice.customId,
+                // Remove invoice-specific fields
                 invoiceStatus: null,
                 // Ensure all required fields have values with 'in' prefix for invoice values
                 items: (invoice.items || []).map(item => ({

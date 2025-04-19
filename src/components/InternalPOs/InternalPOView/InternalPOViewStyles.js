@@ -147,12 +147,22 @@ export const InfoID = styled.h1`
 `;
 
 export const InfoDesc = styled.p`
-    color: ${({ theme }) => theme.colors.textTertiary};
-    margin: 8px 0 0;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    color: ${({ theme }) => theme?.colors?.textSecondary || '#DFE3FA'};
+    font-size: 13px;
+    margin: 8px 0;
+`;
+
+export const InvoiceLink = styled(RouterLink)`
+    color: white;
+    font-weight: bold;
+    font-size: 13px;
+    text-decoration: none;
+    margin: 4px 0;
+    display: block;
+    
+    &:hover {
+        text-decoration: underline;
+    }
 `;
 
 export const LPONumber = styled.div`

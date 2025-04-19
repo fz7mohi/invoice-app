@@ -144,8 +144,9 @@ export const createFromInvoice = (invoiceId) => {
                 type: 'internal',
                 createdAt: now.toISOString(),
                 updatedAt: now.toISOString(),
+                // Keep the invoice ID for reference
+                invoiceId: invoice.customId,
                 // Remove invoice-specific fields
-                invoiceId: undefined,
                 invoiceStatus: undefined,
                 // Add internal PO specific fields
                 items: invoice.items.map(item => ({

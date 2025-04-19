@@ -126,7 +126,8 @@ import {
     SupplierImageThumbnail,
     ImagePreviewModal,
     ImagePreviewModalContent,
-    ClosePreviewButton
+    ClosePreviewButton,
+    InvoiceLink
 } from './InternalPOViewStyles';
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { storage } from '../../../firebase/firebase';
@@ -162,6 +163,7 @@ const InternalPOView = () => {
     const [editedDueDate, setEditedDueDate] = useState('');
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [emailData, setEmailData] = useState(null);
+    const [invoice, setInvoice] = useState(null);
     const [pdfData, setPdfData] = useState(null);
     const [voidReason, setVoidReason] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
@@ -243,12 +245,19 @@ const InternalPOView = () => {
 
                 // Fetch invoice data if available
                 if (data.invoiceId) {
-                    const invoiceDoc = await getDoc(doc(db, 'invoices', data.invoiceId));
-                    if (invoiceDoc.exists()) {
+                    // Query invoices collection to find the invoice with matching customId
+                    const invoicesQuery = query(
+                        collection(db, 'invoices'),
+                        where('customId', '==', data.invoiceId)
+                    );
+                    const invoicesSnapshot = await getDocs(invoicesQuery);
+                    
+                    if (!invoicesSnapshot.empty) {
+                        const invoiceDoc = invoicesSnapshot.docs[0];
                         const invoiceData = invoiceDoc.data();
-                        setInvoiceData({
+                        setInvoice({
+                            invoiceId: invoiceDoc.id,
                             ...invoiceData,
-                            id: invoiceDoc.id,
                             createdAt: invoiceData.createdAt?.toDate(),
                             paymentDue: invoiceData.paymentDue?.toDate()
                         });
@@ -560,6 +569,10 @@ const InternalPOView = () => {
                     <div style="text-align: right;">
                         <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Internal PO #</div>
                         <div style="color: black; font-size: 16px; margin-bottom: 15px;">${internalPO.customId}</div>
+                        ${invoice ? `
+                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Invoice #</div>
+                            <div style="color: black; font-size: 16px; margin-bottom: 15px;">${invoice.customId}</div>
+                        ` : ''}
                         <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
                         <div style="color: black; font-size: 16px;">${formatDate(internalPO.paymentDue)}</div>
                     </div>
@@ -1605,6 +1618,11 @@ const InternalPOView = () => {
                                 <span>Internal PO #</span>{internalPO.customId}
                             </InfoID>
                             <InfoDesc>{internalPO.description}</InfoDesc>
+                            {invoice && (
+                                <InvoiceLink to={`/invoice/${invoice.invoiceId}`}>
+                                    Invoice #: {invoice.customId}
+                                </InvoiceLink>
+                            )}
                             <MetaInfo>
                                 <MetaItem>
                                     <Icon name="calendar" size={13} />
