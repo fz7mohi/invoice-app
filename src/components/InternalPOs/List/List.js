@@ -282,6 +282,48 @@ const EmptyContainer = styled.div`
     }
 `;
 
+const StatsContainer = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 32px;
+    
+    @media (max-width: 767px) {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+`;
+
+const StatCard = styled.div`
+    background-color: ${({ theme }) => theme.colors.bgInvoiceItem};
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(223, 227, 250, 0.1);
+    transition: all 0.3s ease;
+    
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+    }
+`;
+
+const StatLabel = styled.div`
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+`;
+
+const StatValue = styled.div`
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 24px;
+    font-weight: 700;
+`;
+
 const List = ({ internalPOs, isLoading, variant }) => {
     const { colors } = useTheme();
     const { windowWidth } = useGlobalContext();
@@ -396,6 +438,41 @@ const List = ({ internalPOs, isLoading, variant }) => {
         }
     };
 
+    // Calculate totals for stat cards
+    const calculateTotals = useMemo(() => {
+        if (!internalPOs?.length) return { totalAmount: 0, totalNetCost: 0, totalNetProfit: 0 };
+
+        return internalPOs.reduce((acc, internalPO) => {
+            // Calculate Net Total Cost
+            const netTotalCost = (
+                // Total cost of items
+                internalPO.items?.reduce((sum, item) => {
+                    const orderQty = item.orderQuantity || item.quantity || 0;
+                    const unitCost = item.unitCost || 0;
+                    return sum + (orderQty * unitCost);
+                }, 0) +
+                // Total printing cost (per item + additional)
+                internalPO.items?.reduce((sum, item) => {
+                    const orderQty = item.orderQuantity || item.quantity || 0;
+                    const printingCost = item.printingCost || 0;
+                    return sum + (orderQty * printingCost);
+                }, 0) + (internalPO.additionalPrintingCost || 0) +
+                // Total shipping cost (per item + additional)
+                internalPO.items?.reduce((sum, item) => {
+                    const orderQty = item.orderQuantity || item.quantity || 0;
+                    const shippingCost = item.shippingCost || 0;
+                    return sum + (orderQty * shippingCost);
+                }, 0) + (internalPO.additionalShippingCost || 0)
+            ) || 0;
+
+            return {
+                totalAmount: acc.totalAmount + (internalPO.total || 0),
+                totalNetCost: acc.totalNetCost + netTotalCost,
+                totalNetProfit: acc.totalNetProfit + (internalPO.netProfit || 0)
+            };
+        }, { totalAmount: 0, totalNetCost: 0, totalNetProfit: 0 });
+    }, [internalPOs]);
+
     if (isLoading) {
         return (
             <StyledList
@@ -421,8 +498,34 @@ const List = ({ internalPOs, isLoading, variant }) => {
         );
     }
 
+    const currency = internalPOs?.[0]?.currency || 'QAR';
+
     return (
         <>
+            <StatsContainer>
+                <StatCard>
+                    <StatLabel>
+                        <Icon name="money-bill" size={16} color={colors.purple} />
+                        Total Amount
+                    </StatLabel>
+                    <StatValue>{formatPrice(calculateTotals.totalAmount, currency)}</StatValue>
+                </StatCard>
+                <StatCard>
+                    <StatLabel>
+                        <Icon name="calculator" size={16} color={colors.purple} />
+                        Net Total Cost
+                    </StatLabel>
+                    <StatValue>{formatPrice(calculateTotals.totalNetCost, currency)}</StatValue>
+                </StatCard>
+                <StatCard>
+                    <StatLabel>
+                        <Icon name="chart-line" size={16} color={colors.purple} />
+                        Net Profit
+                    </StatLabel>
+                    <StatValue>{formatPrice(calculateTotals.totalNetProfit, currency)}</StatValue>
+                </StatCard>
+            </StatsContainer>
+
             <ListHeader>
                 <HeaderItem 
                     className={`date ${sortConfig.key === 'createdAt' ? 'active' : ''}`}
