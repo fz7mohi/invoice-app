@@ -20,10 +20,25 @@ import {
 } from './CreateInternalPOStyles';
 
 const CreateInternalPO = ({ isOpen, onClose }) => {
-    const { invoiceState, createFromInvoice } = useGlobalContext();
+    const { invoiceState, internalPOState, createFromInvoice } = useGlobalContext();
     const [selectedInvoice, setSelectedInvoice] = useState('');
     const [error, setError] = useState('');
     const [isCreating, setIsCreating] = useState(false);
+
+    // Fetch internal POs when component mounts
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedInvoice('');
+            setError('');
+        }
+    }, [isOpen]);
+
+    // Filter out invoices that already have an internal PO
+    const availableInvoices = invoiceState.invoices.filter(invoice => {
+        return !internalPOState.internalPOs.some(internalPO => 
+            internalPO.invoiceId === invoice.customId
+        );
+    });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -79,7 +94,7 @@ const CreateInternalPO = ({ isOpen, onClose }) => {
                                 disabled={isCreating}
                             >
                                 <Option value="">Select an invoice</Option>
-                                {invoiceState.invoices.map(invoice => (
+                                {availableInvoices.map(invoice => (
                                     <Option key={invoice.id} value={invoice.id}>
                                         {invoice.customId || invoice.id} - {invoice.clientName}
                                         {invoice.description && ` - ${invoice.description}`}
