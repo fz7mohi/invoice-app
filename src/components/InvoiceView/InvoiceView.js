@@ -2041,7 +2041,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                     subtotal: invoice.originalSubtotal,
                     totalVat: invoice.originalTotalVat,
                     total: invoice.originalTotal,
-                    paidAmount: invoice.originalPaidAmount
+                    paidAmount: invoice.originalPaidAmount || 0 // Set default to 0 if undefined
                 });
             }
         }
@@ -2055,18 +2055,20 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         try {
             if (!isConvertedToQAR) {
                 // Store original values
-                setOriginalCurrency(invoice.currency);
-                setOriginalAmounts({
+                const originalValues = {
                     items: invoice.items.map(item => ({
-                        price: item.price,
-                        total: item.total,
-                        vat: item.vat
+                        price: item.price || 0,
+                        total: item.total || 0,
+                        vat: item.vat || 0
                     })),
-                    subtotal: invoice.subtotal,
-                    totalVat: invoice.totalVat,
-                    total: invoice.total,
-                    paidAmount: invoice.paidAmount
-                });
+                    subtotal: invoice.subtotal || 0,
+                    totalVat: invoice.totalVat || 0,
+                    total: invoice.total || 0,
+                    paidAmount: invoice.paidAmount || 0
+                };
+
+                setOriginalCurrency(invoice.currency);
+                setOriginalAmounts(originalValues);
 
                 // Convert to QAR
                 const rate = exchangeRates[invoice.currency];
@@ -2075,26 +2077,37 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                     currency: 'QAR',
                     originalCurrency: invoice.currency,
                     originalItems: invoice.items,
-                    originalSubtotal: invoice.subtotal,
-                    originalTotalVat: invoice.totalVat,
-                    originalTotal: invoice.total,
-                    originalPaidAmount: invoice.paidAmount,
+                    originalSubtotal: originalValues.subtotal,
+                    originalTotalVat: originalValues.totalVat,
+                    originalTotal: originalValues.total,
+                    originalPaidAmount: originalValues.paidAmount,
                     items: invoice.items.map(item => ({
                         ...item,
                         price: parseFloat((item.price * rate).toFixed(2)),
                         total: parseFloat((item.total * rate).toFixed(2)),
-                        vat: item.vat ? parseFloat((item.vat * rate).toFixed(2)) : null
+                        vat: item.vat ? parseFloat((item.vat * rate).toFixed(2)) : 0
                     })),
-                    subtotal: parseFloat((invoice.subtotal * rate).toFixed(2)),
-                    totalVat: invoice.totalVat ? parseFloat((invoice.totalVat * rate).toFixed(2)) : null,
-                    total: parseFloat((invoice.total * rate).toFixed(2)),
-                    paidAmount: invoice.paidAmount ? parseFloat((invoice.paidAmount * rate).toFixed(2)) : null
+                    subtotal: parseFloat((originalValues.subtotal * rate).toFixed(2)),
+                    totalVat: originalValues.totalVat ? parseFloat((originalValues.totalVat * rate).toFixed(2)) : 0,
+                    total: parseFloat((originalValues.total * rate).toFixed(2)),
+                    paidAmount: originalValues.paidAmount ? parseFloat((originalValues.paidAmount * rate).toFixed(2)) : 0
                 };
 
                 // Update in database
                 const invoiceRef = doc(db, 'invoices', id);
                 await updateDoc(invoiceRef, {
-                    ...convertedInvoice,
+                    currency: 'QAR',
+                    originalCurrency: invoice.currency,
+                    originalItems: invoice.items,
+                    originalSubtotal: originalValues.subtotal,
+                    originalTotalVat: originalValues.totalVat,
+                    originalTotal: originalValues.total,
+                    originalPaidAmount: originalValues.paidAmount,
+                    items: convertedInvoice.items,
+                    subtotal: convertedInvoice.subtotal,
+                    totalVat: convertedInvoice.totalVat,
+                    total: convertedInvoice.total,
+                    paidAmount: convertedInvoice.paidAmount,
                     lastModified: new Date()
                 });
 
@@ -2122,7 +2135,18 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 // Update in database
                 const invoiceRef = doc(db, 'invoices', id);
                 await updateDoc(invoiceRef, {
-                    ...revertedInvoice,
+                    currency: originalCurrency,
+                    items: originalAmounts.items,
+                    subtotal: originalAmounts.subtotal,
+                    totalVat: originalAmounts.totalVat,
+                    total: originalAmounts.total,
+                    paidAmount: originalAmounts.paidAmount,
+                    originalCurrency: null,
+                    originalItems: null,
+                    originalSubtotal: null,
+                    originalTotalVat: null,
+                    originalTotal: null,
+                    originalPaidAmount: null,
                     lastModified: new Date()
                 });
 
