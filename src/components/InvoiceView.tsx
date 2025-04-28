@@ -6,31 +6,45 @@ import { generateEmailTemplate } from '../services/emailService';
 import { format } from 'date-fns';
 import { message } from 'antd';
 
-/** @typedef {Object} Invoice
- * @property {string} id
- * @property {string} customId
- * @property {string} clientName
- * @property {string} clientEmail
- * @property {Object} [clientAddress]
- * @property {string} [clientAddress.country]
- * @property {number} total
- * @property {string} currency
- * @property {Date} paymentDue
- * @property {string} status
- * @property {Array<any>} items
- * @property {string} [termsAndConditions]
- */
+interface ClientAddress {
+    country?: string;
+}
 
-/** @typedef {Object} ClientData
- * @property {string} [country]
- */
+interface ClientData {
+    country?: string;
+}
+
+interface Invoice {
+    id: string;
+    customId: string;
+    clientName: string;
+    clientEmail: string;
+    clientAddress?: ClientAddress;
+    total: number;
+    currency: string;
+    paymentDue: Date;
+    status: string;
+    items: any[];
+    termsAndConditions?: string;
+}
+
+interface EmailData {
+    to: string;
+    subject: string;
+    content: string;
+}
+
+interface PdfData {
+    content: string;
+    name: string;
+}
 
 function InvoiceView() {
-    const [invoice, setInvoice] = useState(null);
-    const [clientData, setClientData] = useState(null);
+    const [invoice, setInvoice] = useState<Invoice | null>(null);
+    const [clientData, setClientData] = useState<ClientData | null>(null);
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-    const [emailData, setEmailData] = useState(null);
-    const [pdfData, setPdfData] = useState(null);
+    const [emailData, setEmailData] = useState<EmailData | null>(null);
+    const [pdfData, setPdfData] = useState<PdfData | null>(null);
     
     // ... rest of the component code ...
 
