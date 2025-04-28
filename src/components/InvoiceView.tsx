@@ -4,7 +4,10 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { generateEmailTemplate } from '../services/emailService';
 import { format } from 'date-fns';
-import { message } from 'antd';
+import { message, Button } from 'antd';
+import SplitInvoiceModal from './InvoiceView/SplitInvoiceModal';
+import { doc, updateDoc, addDoc, collection, writeBatch } from 'firebase/firestore';
+import { db } from '../firebase/firebase';
 
 interface ClientAddress {
     country?: string;
@@ -26,6 +29,13 @@ interface Invoice {
     status: string;
     items: any[];
     termsAndConditions?: string;
+    // Split invoice fields
+    isSplit?: boolean;
+    splitType?: 'MASTER' | 'ADVANCE' | 'FINAL';
+    masterInvoiceId?: string;
+    advanceAmount?: number;
+    remainingAmount?: number;
+    relatedInvoiceId?: string;
 }
 
 interface EmailData {
@@ -45,6 +55,7 @@ function InvoiceView() {
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [emailData, setEmailData] = useState<EmailData | null>(null);
     const [pdfData, setPdfData] = useState<PdfData | null>(null);
+    const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
     
     // ... rest of the component code ...
 
@@ -168,9 +179,105 @@ function InvoiceView() {
         }
     };
 
+    const handleSplitInvoice = async (splitType: 'amount' | 'percentage', value: number) => {
+        if (!invoice) return;
+
+        try {
+            const advanceAmount = splitType === 'percentage' 
+                ? (invoice.total * value) / 100 
+                : value;
+            
+            const remainingAmount = invoice.total - advanceAmount;
+
+            // Create advance invoice
+            const advanceInvoice: Invoice = {
+                ...invoice,
+                id: `${invoice.id}-A`,
+                customId: `${invoice.customId}-A`,
+                splitType: 'ADVANCE',
+                masterInvoiceId: invoice.id,
+                advanceAmount,
+                remainingAmount,
+                status: 'pending'
+            };
+
+            // Create final invoice
+            const finalInvoice: Invoice = {
+                ...invoice,
+                id: `${invoice.id}-F`,
+                customId: `${invoice.customId}-F`,
+                splitType: 'FINAL',
+                masterInvoiceId: invoice.id,
+                advanceAmount,
+                remainingAmount,
+                status: 'pending'
+            };
+
+            // Update master invoice
+            const updatedMasterInvoice: Invoice = {
+                ...invoice,
+                splitType: 'MASTER',
+                status: 'void',
+                relatedInvoiceId: `${invoice.id}-A`
+            };
+
+            // Save all invoices to Firestore
+            const batch = writeBatch(db);
+
+            // Update master invoice
+            const masterInvoiceRef = doc(db, 'invoices', invoice.id);
+            batch.update(masterInvoiceRef, {
+                splitType: 'MASTER',
+                status: 'void',
+                relatedInvoiceId: `${invoice.id}-A`
+            });
+
+            // Add advance invoice
+            const advanceInvoiceRef = doc(collection(db, 'invoices'));
+            batch.set(advanceInvoiceRef, {
+                ...advanceInvoice,
+                id: advanceInvoiceRef.id
+            });
+
+            // Add final invoice
+            const finalInvoiceRef = doc(collection(db, 'invoices'));
+            batch.set(finalInvoiceRef, {
+                ...finalInvoice,
+                id: finalInvoiceRef.id
+            });
+
+            // Commit the batch
+            await batch.commit();
+
+            message.success('Invoice split successfully');
+            setIsSplitModalOpen(false);
+        } catch (error) {
+            console.error('Error splitting invoice:', error);
+            message.error('Failed to split invoice');
+        }
+    };
+
     return (
-        // ... rest of the component JSX ...
-        null
+        <div>
+            {/* ... existing JSX ... */}
+            
+            {invoice && !invoice.isSplit && (
+                <Button 
+                    type="primary"
+                    onClick={() => setIsSplitModalOpen(true)}
+                    style={{ marginRight: '10px' }}
+                >
+                    Split Invoice
+                </Button>
+            )}
+            
+            <SplitInvoiceModal
+                isOpen={isSplitModalOpen}
+                onClose={() => setIsSplitModalOpen(false)}
+                onSplit={handleSplitInvoice}
+                totalAmount={invoice?.total || 0}
+            />
+        </div>
     );
 }
 

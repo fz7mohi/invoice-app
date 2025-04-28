@@ -6,7 +6,7 @@ import { useGlobalContext } from '../App/context';
 import Icon from '../shared/Icon/Icon';
 import Button from '../shared/Button/Button';
 import { formatDate, formatPrice, formatCurrency } from '../../utilities/helpers';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -92,6 +92,8 @@ import { generateEmailTemplate, generateInvoiceEmailTemplate } from '../../servi
 import EmailPreviewModal from '../shared/EmailPreviewModal/EmailPreviewModal';
 import { format } from 'date-fns';
 import { message } from 'antd';
+import { Button as AntButton } from 'antd';
+import SplitInvoiceModal from './SplitInvoiceModal';
 
 // Add ModalOverlay styled component
 const ModalOverlay = styled.div`
@@ -274,6 +276,7 @@ const InvoiceView = () => {
     const [isConvertedToQAR, setIsConvertedToQAR] = useState(false);
     const [originalCurrency, setOriginalCurrency] = useState(null);
     const [originalAmounts, setOriginalAmounts] = useState(null);
+    const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
     
     // Add default terms and conditions
     const defaultTermsAndConditions = `50% advance payment along with the issuance of the LPO (Local Purchase Order), and the remaining 50% to be settled before the delivery of the order.
@@ -1106,7 +1109,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         </div>
                     ` : ''}
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                        <span style="font-size: 16px;">Total:</span>
+                        <span style="font-size: 16px;">${invoice.paymentType || 'Total'}:</span>
                         <span style="font-size: 20px; font-weight: bold;">${formatPrice(invoice.total || 0, invoice.currency)}</span>
                     </div>
                 </div>
@@ -1862,7 +1865,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                         </div>
                     ` : ''}
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                        <span style="font-size: 16px;">Total:</span>
+                        <span style="font-size: 16px;">${invoice.paymentType || 'Total'}:</span>
                         <span style="font-size: 20px; font-weight: bold;">${formatPrice(invoice.total || 0, invoice.currency)}</span>
                     </div>
                 </div>
@@ -2162,6 +2165,71 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         }
     };
 
+    const handleSplitInvoice = async (splitType, value) => {
+        try {
+            const numValue = parseFloat(value);
+            const advanceAmount = splitType === 'percentage' 
+                ? (invoice.total * numValue) / 100 
+                : numValue;
+            const remainingAmount = invoice.total - advanceAmount;
+
+            // Create advance invoice
+            const advanceInvoice = {
+                ...invoice,
+                customId: `FTIN${Math.floor(1000 + Math.random() * 9000)}`,
+                total: advanceAmount,
+                status: 'pending',
+                isAdvance: true,
+                parentInvoiceId: invoice.id,
+                paymentType: 'Advance Payment',
+                createdAt: new Date(),
+                lastModified: new Date()
+            };
+
+            // Create final invoice
+            const finalInvoice = {
+                ...invoice,
+                customId: `FTIN${Math.floor(1000 + Math.random() * 9000)}`,
+                total: remainingAmount,
+                status: 'pending',
+                isFinal: true,
+                parentInvoiceId: invoice.id,
+                paymentType: 'Balance Payment',
+                createdAt: new Date(),
+                lastModified: new Date()
+            };
+
+            // Update original invoice to void
+            const invoiceRef = doc(db, 'invoices', invoice.id);
+            await updateDoc(invoiceRef, {
+                status: 'void',
+                voidReason: 'Split into advance and final invoices',
+                voidDate: new Date(),
+                lastModified: new Date()
+            });
+
+            // Create new invoices
+            const batch = writeBatch(db);
+            const advanceRef = doc(collection(db, 'invoices'));
+            const finalRef = doc(collection(db, 'invoices'));
+
+            // Set the IDs in the invoice objects
+            advanceInvoice.id = advanceRef.id;
+            finalInvoice.id = finalRef.id;
+
+            batch.set(advanceRef, advanceInvoice);
+            batch.set(finalRef, finalInvoice);
+
+            await batch.commit();
+
+            message.success('Invoice split successfully');
+            history.push('/invoices');
+        } catch (error) {
+            console.error('Error splitting invoice:', error);
+            message.error('Failed to split invoice. Please try again.');
+        }
+    };
+
     // Show loading state
     if (isLoading || !invoice) {
         return (
@@ -2236,7 +2304,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                             <Icon name="download" size={13} />
                             Share
                         </DownloadButton>
-                        <Button
+                        <AntButton
                             onClick={handleCurrencyExchange}
                             disabled={isExchanging || (invoice.currency === 'QAR' && !invoice.originalCurrency)}
                             style={{
@@ -2258,15 +2326,33 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                 color={colors.purple}
                             />
                             {isExchanging ? 'Converting...' : (isConvertedToQAR ? 'Revert' : 'Exchange to QAR')}
-                        </Button>
+                        </AntButton>
                     </div>
                     
                     {isDesktop && (
                         <ButtonWrapper className="ButtonWrapper">
                             {!isVoid && !isPaid && (
                                 <>
-                                    <Button
-                                        $delete
+                                    <AntButton
+                                        type="primary"
+                                        onClick={() => setIsSplitModalOpen(true)}
+                                        style={{
+                                            backgroundColor: colors.purple,
+                                            border: 'none',
+                                            color: 'white',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            padding: '8px 16px',
+                                            borderRadius: '24px',
+                                            marginRight: '10px'
+                                        }}
+                                    >
+                                        <Icon name="scissors" size={14} color="white" />
+                                        Split Invoice
+                                    </AntButton>
+                                    <AntButton
+                                        danger
                                         onClick={handleVoidClick}
                                         disabled={isLoading}
                                         data-action="void"
@@ -2282,7 +2368,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                             color={colors.red}
                                         />
                                         <span>Void</span>
-                                    </Button>
+                                    </AntButton>
                                 </>
                             )}
                         </ButtonWrapper>
@@ -2718,7 +2804,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                 </div>
                             )}
                             <div className="grand-total">
-                                <TotalText>Total</TotalText>
+                                <TotalText>{invoice.paymentType || 'Total'}</TotalText>
                                 <TotalAmount>{formatPrice(invoice.total || 0, invoice.currency)}</TotalAmount>
                             </div>
                         </Total>
@@ -2782,8 +2868,8 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 <ButtonWrapper>
                     {!isVoid && !isPaid && (
                         <>
-                            <Button
-                                $delete
+                            <AntButton
+                                danger
                                 onClick={handleVoidClick}
                                 disabled={isLoading}
                                 data-action="void"
@@ -2799,7 +2885,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                     color={colors.red}
                                 />
                                 <span>Void</span>
-                            </Button>
+                            </AntButton>
                         </>
                     )}
                 </ButtonWrapper>
@@ -2884,6 +2970,13 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                     pdfName={pdfData.name}
                 />
             )}
+
+            <SplitInvoiceModal
+                isOpen={isSplitModalOpen}
+                onClose={() => setIsSplitModalOpen(false)}
+                onSplit={handleSplitInvoice}
+                totalAmount={invoice?.total || 0}
+            />
         </StyledInvoiceView>
     );
 };

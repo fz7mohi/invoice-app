@@ -41,7 +41,8 @@ import {
     faMoneyBill,
     faChartLine,
     faDollarSign,
-    faExclamationCircle
+    faExclamationCircle,
+    faCut
 } from '@fortawesome/free-solid-svg-icons';
 
 const iconMap = {
@@ -91,7 +92,8 @@ const iconMap = {
     'calculator': faCalculator,
     'chart-line': faChartLine,
     'dollar-sign': faDollarSign,
-    'alert-circle': faExclamationCircle
+    'alert-circle': faExclamationCircle,
+    'scissors': faCut
 };
 
 const getFontAwesomeSize = (size) => {
