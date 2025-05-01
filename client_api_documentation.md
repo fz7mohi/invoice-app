@@ -3,9 +3,10 @@
 ## Overview
 This API endpoint allows you to create a new client in the Fordox system. The endpoint handles validation, data persistence, and special requirements for UAE-based clients.
 
-## Base URL
+## Base URLs
 ```
-https://fordox.netlify.app
+Production: https://fordox.netlify.app
+Development: http://localhost:3000
 ```
 
 ## Endpoint
@@ -123,7 +124,21 @@ or
 
 ### cURL
 ```bash
+# Production
 curl -X POST https://fordox.netlify.app/api/clients \
+  -H "Content-Type: application/json" \
+  -d '{
+    "companyName": "Example Company",
+    "email": "contact@example.com",
+    "phone": "+971 50 123 4567",
+    "address": "123 Business Street, Dubai",
+    "country": "United Arab Emirates",
+    "trnNumber": "123456789012345",
+    "vatPercentage": "5"
+  }'
+
+# Development
+curl -X POST http://localhost:3000/api/clients \
   -H "Content-Type: application/json" \
   -d '{
     "companyName": "Example Company",
@@ -139,13 +154,19 @@ curl -X POST https://fordox.netlify.app/api/clients \
 ### JavaScript (Fetch)
 ```javascript
 const createClient = async (clientData) => {
+  // Use the appropriate base URL based on environment
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://fordox.netlify.app'
+    : 'http://localhost:3000';
+
   try {
-    const response = await fetch('https://fordox.netlify.app/api/clients', {
+    const response = await fetch(`${baseUrl}/api/clients`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(clientData)
+      body: JSON.stringify(clientData),
+      credentials: 'include' // Important for CORS with credentials
     });
 
     if (!response.ok) {
@@ -180,9 +201,13 @@ createClient(clientData)
 ```python
 import requests
 import json
+import os
 
 def create_client(client_data):
-    url = "https://fordox.netlify.app/api/clients"
+    # Use the appropriate base URL based on environment
+    base_url = 'https://fordox.netlify.app' if os.getenv('NODE_ENV') == 'production' else 'http://localhost:3000'
+    url = f"{base_url}/api/clients"
+    
     headers = {
         "Content-Type": "application/json"
     }
@@ -222,4 +247,23 @@ except Exception as e:
    - http://localhost:5000
    - http://localhost:8082
 3. The API has a request body size limit of 50MB
-4. For UAE clients, the VAT percentage defaults to "5" if not specified 
+4. For UAE clients, the VAT percentage defaults to "5" if not specified
+
+## Troubleshooting CORS Issues
+
+If you encounter CORS errors, check the following:
+
+1. Ensure you're using the correct base URL for your environment
+2. Verify that your origin is in the allowed origins list
+3. Include the `credentials: 'include'` option in your fetch requests
+4. Make sure your server is running and accessible
+5. Check that the preflight request (OPTIONS) is being handled correctly
+
+Common CORS Error Solutions:
+1. If you see "No 'Access-Control-Allow-Origin' header":
+   - Verify your origin is in the allowed list
+   - Check that the server is properly configured to handle CORS
+2. If you see "Request header field Authorization is not allowed":
+   - Add 'Authorization' to the allowed headers list
+3. If you see "Method POST is not allowed":
+   - Verify 'POST' is in the allowed methods list 
