@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const axios = require('axios');
 const { collection, addDoc } = require('firebase/firestore');
 const { db } = require('./firebase');
+const path = require('path');
 
 // Load environment variables
 dotenv.config();
@@ -55,80 +56,11 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Email sending endpoint
-app.post('/api/send-email', async (req, res) => {
-  try {
-    const { to, subject, htmlContent, pdfBase64, pdfFileName } = req.body;
-    
-    // Validate required fields
-    if (!to || !subject || !htmlContent) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    // Create email payload
-    const emailData = {
-      sender: {
-        email: 'sales@fortunegiftz.com',
-        name: 'Fortune Giftz',
-      },
-      to: [{ email: to }],
-      subject: subject,
-      htmlContent: htmlContent,
-    };
-
-    // Add attachment if provided
-    if (pdfBase64 && pdfFileName) {
-      emailData.attachment = [{
-        content: pdfBase64,
-        name: pdfFileName,
-      }];
-    }
-
-    // Send email using Brevo API
-    const response = await axios({
-      method: 'post',
-      url: 'https://api.brevo.com/v3/smtp/email',
-      data: emailData,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'api-key': process.env.BREVO_API_KEY,
-      },
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error sending email:', error.response?.data || error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data?.message || 'Failed to send email'
-    });
-  }
-});
-
-// Image proxy endpoint
-app.get('/api/image-proxy', async (req, res) => {
-    try {
-        const imageUrl = req.query.url;
-        if (!imageUrl) {
-            return res.status(400).send('Image URL is required');
-        }
-
-        const response = await axios.get(imageUrl, {
-            responseType: 'arraybuffer'
-        });
-
-        // Set appropriate headers
-        res.set('Content-Type', response.headers['content-type']);
-        res.set('Content-Length', response.headers['content-length']);
-        res.send(response.data);
-    } catch (error) {
-        console.error('Error proxying image:', error);
-        res.status(500).send('Error fetching image');
-    }
-});
+// API Routes
+const apiRouter = express.Router();
 
 // Client creation endpoint
-app.post('/api/clients', async (req, res) => {
+apiRouter.post('/clients', async (req, res) => {
   try {
     const {
       companyName,
@@ -211,13 +143,33 @@ app.post('/api/clients', async (req, res) => {
   }
 });
 
+// Mount API routes
+app.use('/api', apiRouter);
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('dist'));
+  app.use(express.static(path.join(__dirname, 'dist')));
   app.get('*', (req, res) => {
-    res.sendFile('index.html', { root: 'dist' });
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   });
 }
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    error: 'Something broke!',
+    details: err.message
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: 'The requested resource was not found'
+  });
+});
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
