@@ -14,13 +14,7 @@ const port = process.env.PORT || 3001;
 
 // CORS configuration
 const corsOptions = {
-  origin: [
-    'https://fodox.netlify.app',
-    'https://fordox.netlify.app',
-    'http://localhost:3000',
-    'http://localhost:5000',
-    'http://localhost:8082'
-  ],
+  origin: '*', // Allow all origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
@@ -181,5 +175,5 @@ app.use((req, res) => {
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  console.log('CORS enabled for: http://localhost:8082, http://localhost:3000, https://fordox.netlify.app');
+  console.log('CORS enabled for all domains');
 }); 
