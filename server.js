@@ -2,9 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const axios = require('axios');
-const { collection, addDoc } = require('firebase/firestore');
-const { db } = require('./firebase');
 const path = require('path');
+const { db } = require('./src/firebase/firebase.js');
+const { collection, addDoc } = require('firebase/firestore');
 
 // Load environment variables
 dotenv.config();
@@ -32,8 +32,6 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Add OPTIONS handling for preflight requests
 app.options('*', cors(corsOptions));
@@ -41,26 +39,32 @@ app.options('*', cors(corsOptions));
 // Add CORS headers middleware
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (corsOptions.origin.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+  if (corsOptions.origin && typeof corsOptions.origin === 'function') {
+    corsOptions.origin(origin, (err, allowed) => {
+      if (allowed) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Methods', corsOptions.methods.join(', '));
+        res.setHeader('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(', '));
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Max-Age', corsOptions.maxAge);
+      }
+      next();
+    });
+  } else {
+    next();
   }
-  res.setHeader('Access-Control-Allow-Methods', corsOptions.methods.join(', '));
-  res.setHeader('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(', '));
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', corsOptions.maxAge);
-  next();
 });
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// API Routes
-const apiRouter = express.Router();
-
 // Client creation endpoint
-apiRouter.post('/clients', async (req, res) => {
+app.post('/api/clients', async (req, res) => {
   try {
     const {
       companyName,
@@ -126,7 +130,8 @@ apiRouter.post('/clients', async (req, res) => {
     };
 
     // Add to Firestore
-    const docRef = await addDoc(collection(db, 'clients'), newClient);
+    const clientsCollection = collection(db, 'clients');
+    const docRef = await addDoc(clientsCollection, newClient);
 
     // Return the created client with its ID
     res.status(201).json({
@@ -142,6 +147,9 @@ apiRouter.post('/clients', async (req, res) => {
     });
   }
 });
+
+// Mount API routes
+const apiRouter = express.Router();
 
 // Mount API routes
 app.use('/api', apiRouter);
@@ -173,5 +181,5 @@ app.use((req, res) => {
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-  console.log(`CORS enabled for: ${corsOptions.origin.join(', ')}`);
+  console.log('CORS enabled for: http://localhost:8082, http://localhost:3000, https://fordox.netlify.app');
 }); 

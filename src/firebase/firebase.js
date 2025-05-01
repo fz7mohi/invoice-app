@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, deleteDoc, doc, getDocs, query, limit, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+const { initializeApp } = require('firebase/app');
+const { getFirestore, collection, addDoc, deleteDoc, doc, getDocs, query, limit, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } = require('firebase/firestore');
+const { getStorage } = require('firebase/storage');
 
 // Your Firebase configuration
 // Replace these with your actual Firebase project config
@@ -54,4 +54,4 @@ setTimeout(() => {
   testFirebaseWrite();
 }, 2000);
 
-export { db, storage };
+module.exports = { db, storage };
