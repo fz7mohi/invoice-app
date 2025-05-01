@@ -15,10 +15,9 @@
 
 # Redirect API requests to Netlify Functions
 [[redirects]]
-  from = "/api/send-email"
-  to = "/.netlify/functions/send-email"
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
   status = 200
-  force = true
 
 # Allow direct access to Netlify Functions
 [[redirects]]
