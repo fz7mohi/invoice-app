@@ -18,16 +18,19 @@ Accept: application/json
 ```json
 {
   "clientId": "string",          // Required: ID of the client
-  "quoteNumber": "string",       // Required: Unique quote number
+  "quoteNumber": "string",       // Required: Unique quote number (format: FTQXXXX)
   "quoteDate": "string",         // Required: Date in ISO format
   "validUntil": "string",        // Required: Expiry date in ISO format
   "items": [                     // Required: Array of quote items
     {
       "productId": "string",     // Required: ID of the product
+      "name": "string",          // Required: Name of the product
       "quantity": number,        // Required: Quantity of the product
       "unitPrice": number,       // Required: Price per unit
       "description": "string",   // Optional: Additional description
-      "discount": number         // Optional: Discount percentage
+      "discount": number,        // Optional: Discount percentage
+      "total": number,          // Required: Total for this item (quantity * unitPrice)
+      "vat": number             // Optional: VAT amount for this item
     }
   ],
   "subtotal": number,            // Required: Total before tax
@@ -35,7 +38,31 @@ Accept: application/json
   "total": number,               // Required: Final total
   "notes": "string",             // Optional: Additional notes
   "terms": "string",             // Optional: Terms and conditions
-  "status": "string"             // Required: Status (e.g., "draft", "sent", "accepted", "rejected")
+  "status": "string",            // Required: Status (e.g., "draft", "sent", "accepted", "rejected")
+  "currency": "string",          // Required: Currency code (default: "QAR")
+  "description": "string",       // Optional: Project description
+  "paymentTerms": "string",      // Optional: Payment terms in days (default: "30")
+  "clientName": "string",        // Required: Name of the client
+  "clientEmail": "string",       // Required: Email of the client
+  "clientAddress": {             // Required: Client address details
+    "street": "string",         // Required: Street address
+    "city": "string",           // Optional: City
+    "postCode": "string",       // Optional: Postal code
+    "country": "string"         // Required: Country
+  },
+  "senderAddress": {             // Required: Sender address details
+    "street": "string",         // Required: Street address
+    "city": "string",           // Optional: City
+    "postCode": "string",       // Optional: Postal code
+    "country": "string"         // Required: Country
+  },
+  "discount": number,            // Optional: Overall discount amount
+  "discountType": "string",      // Optional: Type of discount ("percentage" or "fixed")
+  "discountAmount": number,      // Optional: Amount of discount
+  "vat": number,                // Optional: VAT percentage
+  "vatAmount": number,          // Optional: VAT amount
+  "grandTotal": number,         // Required: Final total including all adjustments
+  "totalVat": number            // Optional: Total VAT amount (automatically calculated for UAE clients)
 }
 ```
 
@@ -52,10 +79,13 @@ Accept: application/json
   "items": [                     // Quote items
     {
       "productId": "string",
+      "name": "string",
       "quantity": number,
       "unitPrice": number,
       "description": "string",
-      "discount": number
+      "discount": number,
+      "total": number,
+      "vat": number
     }
   ],
   "subtotal": number,
@@ -64,9 +94,72 @@ Accept: application/json
   "notes": "string",
   "terms": "string",
   "status": "string",
+  "currency": "string",
+  "description": "string",
+  "paymentTerms": "string",
+  "clientName": "string",
+  "clientEmail": "string",
+  "clientAddress": {
+    "street": "string",
+    "city": "string",
+    "postCode": "string",
+    "country": "string"
+  },
+  "senderAddress": {
+    "street": "string",
+    "city": "string",
+    "postCode": "string",
+    "country": "string"
+  },
+  "discount": number,
+  "discountType": "string",
+  "discountAmount": number,
+  "vat": number,
+  "vatAmount": number,
+  "grandTotal": number,
+  "totalVat": number,
   "createdAt": "string"          // Creation timestamp
 }
 ```
+
+#### Special Notes
+
+1. **VAT Calculation**:
+   - For UAE clients (country includes "emirates" or "uae"), a 5% VAT is automatically calculated
+   - VAT is calculated per item and summed up in totalVat
+   - VAT calculation is based on the item's total (quantity * unitPrice)
+
+2. **Currency**:
+   - Default currency is USD
+   - Currency is automatically set based on client's country
+   - Currency symbol is displayed in the UI
+
+3. **Quote Number Format**:
+   - Format: FTQXXXX where XXXX is a random 4-digit number
+   - Example: FTQ1234
+
+4. **Status Values**:
+   - "draft": Initial state for new quotes
+   - "pending": Quote has been sent to client
+   - "accepted": Client has accepted the quote
+   - "rejected": Client has rejected the quote
+   - "converted": Quote has been converted to an invoice
+
+5. **Address Requirements**:
+   - Both client and sender addresses are required
+   - Country field is used for VAT calculation and currency determination
+   - Address format should follow international standards
+
+6. **Payment Terms**:
+   - Default is 30 days
+   - Can be customized per quote
+   - Used to calculate payment due date
+
+7. **Discounts**:
+   - Can be applied at item level or quote level
+   - Item-level discounts are calculated per item
+   - Quote-level discounts are applied to the subtotal
+   - Discount type can be percentage or fixed amount
 
 ### 2. Get Quotes
 #### Endpoint

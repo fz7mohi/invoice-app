@@ -2,7 +2,14 @@ const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, addDoc, initializeFirestore, memoryLocalCache } = require('firebase/firestore');
 
 // Firebase configuration from environment variables
-const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+let firebaseConfig;
+try {
+  firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+  console.log('Firebase config loaded successfully');
+} catch (error) {
+  console.error('Failed to parse FIREBASE_CONFIG:', error);
+  throw new Error('Invalid FIREBASE_CONFIG environment variable');
+}
 
 // Initialize Firebase outside the handler to reuse the connection
 let db;
@@ -16,6 +23,7 @@ try {
   console.log('Firebase initialized successfully');
 } catch (error) {
   console.error('Firebase initialization error:', error);
+  throw error; // Re-throw to ensure the error is not silently handled
 }
 
 exports.handler = async (event, context) => {
@@ -70,7 +78,7 @@ exports.handler = async (event, context) => {
   try {
     console.log('Parsing request body...');
     const clientData = JSON.parse(event.body);
-    console.log('Request body parsed successfully');
+    console.log('Request body parsed successfully:', clientData);
 
     // Validate required fields
     const requiredFields = ['companyName', 'email', 'phone', 'address', 'country'];
@@ -149,6 +157,8 @@ exports.handler = async (event, context) => {
     };
   } catch (error) {
     console.error('Error creating client:', error);
+    // Log the full error stack trace
+    console.error('Error stack:', error.stack);
     return {
       statusCode: error.message === 'Operation timed out' ? 504 : 500,
       headers: {
@@ -157,7 +167,8 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({
         error: error.message === 'Operation timed out' ? 'Request timed out' : 'Failed to create client',
-        details: error.message
+        details: error.message,
+        stack: error.stack // Include stack trace in development
       })
     };
   }

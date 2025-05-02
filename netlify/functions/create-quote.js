@@ -1,5 +1,5 @@
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, addDoc, doc, getDoc, initializeFirestore, memoryLocalCache } = require('firebase/firestore');
+const { getFirestore, collection, addDoc, doc, getDoc, initializeFirestore, memoryLocalCache, Timestamp } = require('firebase/firestore');
 
 // Firebase configuration from environment variables
 const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
@@ -75,9 +75,36 @@ exports.handler = async (event, context) => {
     const quoteData = JSON.parse(event.body);
     console.log('Received quote data:', quoteData);
 
+    // Set default values
+    const defaultValues = {
+      currency: 'QAR',
+      paymentTerms: '30',
+      taxAmount: 0,
+      status: 'draft'
+    };
+
+    // Apply default values
+    const quoteWithDefaults = {
+      ...defaultValues,
+      ...quoteData
+    };
+
     // Validate required fields
-    const requiredFields = ['clientId', 'quoteNumber', 'quoteDate', 'validUntil', 'items', 'subtotal', 'total', 'status'];
-    const missingFields = requiredFields.filter(field => !quoteData[field]);
+    const requiredFields = [
+      'clientId',
+      'quoteNumber',
+      'quoteDate',
+      'validUntil',
+      'items',
+      'subtotal',
+      'total',
+      'status',
+      'clientName',
+      'clientEmail',
+      'clientAddress',
+      'senderAddress'
+    ];
+    const missingFields = requiredFields.filter(field => !quoteWithDefaults[field]);
     
     if (missingFields.length > 0) {
       console.error('Missing required fields:', missingFields);
@@ -94,13 +121,34 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Set default taxAmount if not provided
-    if (!quoteData.taxAmount) {
-      quoteData.taxAmount = 0;
+    // Validate address fields
+    const requiredAddressFields = ['street', 'country'];
+    const validateAddress = (address, type) => {
+      const missingAddressFields = requiredAddressFields.filter(field => !address[field]);
+      if (missingAddressFields.length > 0) {
+        throw new Error(`Missing ${type} address fields: ${missingAddressFields.join(', ')}`);
+      }
+    };
+
+    try {
+      validateAddress(quoteWithDefaults.clientAddress, 'client');
+      validateAddress(quoteWithDefaults.senderAddress, 'sender');
+    } catch (error) {
+      return {
+        statusCode: 400,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          error: 'Invalid address data',
+          details: error.message
+        })
+      };
     }
 
     // Validate items array
-    if (!Array.isArray(quoteData.items) || quoteData.items.length === 0) {
+    if (!Array.isArray(quoteWithDefaults.items) || quoteWithDefaults.items.length === 0) {
       console.error('Invalid items array');
       return {
         statusCode: 400,
@@ -116,8 +164,8 @@ exports.handler = async (event, context) => {
     }
 
     // Validate each item
-    const itemRequiredFields = ['productId', 'quantity', 'unitPrice'];
-    for (const item of quoteData.items) {
+    const itemRequiredFields = ['productId', 'name', 'quantity', 'unitPrice', 'total'];
+    for (const item of quoteWithDefaults.items) {
       const missingItemFields = itemRequiredFields.filter(field => !item[field]);
       if (missingItemFields.length > 0) {
         console.error('Invalid item:', item, 'Missing fields:', missingItemFields);
@@ -136,11 +184,11 @@ exports.handler = async (event, context) => {
     }
 
     // Check if client exists
-    const clientRef = doc(db, 'clients', quoteData.clientId);
+    const clientRef = doc(db, 'clients', quoteWithDefaults.clientId);
     const clientDoc = await getDoc(clientRef);
     
     if (!clientDoc.exists()) {
-      console.error('Client not found:', quoteData.clientId);
+      console.error('Client not found:', quoteWithDefaults.clientId);
       return {
         statusCode: 404,
         headers: {
@@ -149,20 +197,34 @@ exports.handler = async (event, context) => {
         },
         body: JSON.stringify({
           error: 'Client not found',
-          details: `No client found with ID: ${quoteData.clientId}`
+          details: `No client found with ID: ${quoteWithDefaults.clientId}`
         })
       };
     }
 
+    // Calculate VAT for UAE clients
+    if (quoteWithDefaults.clientAddress?.country?.toLowerCase().includes('emirates') || 
+        quoteWithDefaults.clientAddress?.country?.toLowerCase().includes('uae')) {
+      const totalVat = quoteWithDefaults.items.reduce((sum, item) => {
+        const itemTotal = parseFloat(item.total) || 0;
+        const itemVat = itemTotal * 0.05; // 5% VAT for each product
+        return sum + itemVat;
+      }, 0);
+      
+      quoteWithDefaults.totalVat = totalVat;
+    } else {
+      quoteWithDefaults.totalVat = 0;
+    }
+
     // Add timestamp
     const quoteWithTimestamp = {
-      ...quoteData,
-      createdAt: new Date().toISOString()
+      ...quoteWithDefaults,
+      createdAt: Timestamp.now()
     };
 
     // Add quote to Firestore
     console.log('Adding quote to Firestore...');
-    const quoteRef = await addDoc(collection(db, 'quotes'), quoteWithTimestamp);
+    const quoteRef = await addDoc(collection(db, 'quotations'), quoteWithTimestamp);
     console.log('Quote added successfully with ID:', quoteRef.id);
 
     // Return success response
@@ -174,7 +236,8 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({
         id: quoteRef.id,
-        ...quoteWithTimestamp
+        ...quoteWithTimestamp,
+        createdAt: quoteWithTimestamp.createdAt.toDate().toISOString()
       })
     };
   } catch (error) {
