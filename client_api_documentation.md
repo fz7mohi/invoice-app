@@ -1,30 +1,149 @@
-# Client Creation API Documentation
+# Client API Documentation
 
 ## Overview
-This API endpoint allows you to create a new client in the Fordox system. The endpoint handles validation, data persistence, and special requirements for UAE-based clients.
+This API provides endpoints for managing clients in the Fordox system. It supports creating new clients and retrieving client lists with pagination and search capabilities.
 
 ## Base URLs
 ```
-Production: https://fordox.netlify.app
-Development: http://localhost:3000
+Production: https://fordox.netlify.app/.netlify/functions
+Development: http://localhost:8888/.netlify/functions
 ```
 
-## Endpoint
+## CORS Configuration
+The API supports CORS for the following origins:
+- https://fortunegiftz.com
+- http://localhost:8082
+
+All responses include the following CORS headers:
 ```
-POST /api/clients
+Access-Control-Allow-Origin: [request origin]
+Access-Control-Allow-Headers: Content-Type, Accept, Authorization
+Access-Control-Allow-Methods: [GET/POST], OPTIONS
+Access-Control-Allow-Credentials: true
+Access-Control-Max-Age: 86400
 ```
 
-## Authentication
-Currently, no authentication is required for this endpoint.
+## Endpoints
 
-## Request
+### 1. Get Clients
+```
+GET /.netlify/functions/get-clients
+```
 
-### Headers
+#### Query Parameters
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| search | string | No | "" | Search term to filter clients by company name |
+| page | number | No | 1 | Page number for pagination |
+| itemsPerPage | number | No | 10 | Number of items per page |
+| lastDocId | string | No | null | ID of the last document for cursor-based pagination |
+
+#### Response
+
+##### Success (200 OK)
+```json
+{
+  "clients": [
+    {
+      "id": "string",
+      "companyName": "string",
+      "email": "string",
+      "phone": "string",
+      "address": "string",
+      "country": "string",
+      "trnNumber": "string",
+      "vatPercentage": "string",
+      "createdAt": "string"
+    }
+  ],
+  "totalClients": number,
+  "currentPage": number,
+  "itemsPerPage": number,
+  "hasMore": boolean
+}
+```
+
+##### Error Responses
+
+###### 405 Method Not Allowed
+```json
+{
+  "error": "Method not allowed"
+}
+```
+
+###### 500 Internal Server Error
+```json
+{
+  "error": "Failed to fetch clients",
+  "details": "Error message"
+}
+```
+
+#### Example Usage
+
+##### cURL
+```bash
+# Get all clients (paginated)
+curl -X GET "https://fordox.netlify.app/.netlify/functions/get-clients"
+
+# Search clients
+curl -X GET "https://fordox.netlify.app/.netlify/functions/get-clients?search=company"
+
+# Get specific page
+curl -X GET "https://fordox.netlify.app/.netlify/functions/get-clients?page=2&itemsPerPage=20"
+```
+
+##### JavaScript (Fetch)
+```javascript
+const getClients = async (params = {}) => {
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://fordox.netlify.app/.netlify/functions'
+    : 'http://localhost:3000/.netlify/functions';
+
+  // Build query string
+  const queryString = new URLSearchParams(params).toString();
+  const url = `${baseUrl}/get-clients${queryString ? `?${queryString}` : ''}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch clients');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching clients:', error);
+    throw error;
+  }
+};
+
+// Example usage
+getClients({ search: 'company', page: 1, itemsPerPage: 10 })
+  .then(data => console.log('Clients:', data))
+  .catch(error => console.error('Error:', error));
+```
+
+### 2. Create Client
+```
+POST /.netlify/functions/create-client
+```
+
+#### Headers
 ```
 Content-Type: application/json
+Accept: application/json
 ```
 
-### Request Body
+#### Request Body
 ```json
 {
   "companyName": "string",    // Required
@@ -37,25 +156,9 @@ Content-Type: application/json
 }
 ```
 
-### Field Descriptions
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| companyName | string | Yes | Company or business name |
-| email | string | Yes | Valid email address |
-| phone | string | Yes | Phone number with country code |
-| address | string | Yes | Complete street address |
-| country | string | Yes | Country name |
-| trnNumber | string | For UAE | Tax Registration Number (TRN) |
-| vatPercentage | string | For UAE | VAT percentage (default: "5") |
+#### Response
 
-### Special Requirements for UAE Clients
-If the country is "United Arab Emirates", the following additional fields are required:
-- `trnNumber`: Must be provided
-- `vatPercentage`: Must be a valid number
-
-## Response
-
-### Success Response (201 Created)
+##### Success (201 Created)
 ```json
 {
   "id": "string",
@@ -66,34 +169,21 @@ If the country is "United Arab Emirates", the following additional fields are re
   "country": "string",
   "trnNumber": "string",
   "vatPercentage": "string",
-  "createdAt": "timestamp"
+  "createdAt": "string"
 }
 ```
 
-### Error Responses
+##### Error Responses
 
-#### 400 Bad Request
+###### 400 Bad Request
 ```json
 {
   "error": "Missing required fields",
-  "details": {
-    "companyName": "Company name is required",
-    "email": "Email is required",
-    "phone": "Phone is required",
-    "address": "Address is required",
-    "country": "Country is required"
-  }
+  "details": ["field1", "field2"]
 }
 ```
 
-#### 400 Bad Request (Invalid Email)
-```json
-{
-  "error": "Invalid email format"
-}
-```
-
-#### 400 Bad Request (UAE Validation)
+###### 400 Bad Request (UAE Validation)
 ```json
 {
   "error": "TRN Number is required for UAE clients"
@@ -105,14 +195,15 @@ or
   "error": "VAT Percentage is required for UAE clients"
 }
 ```
-or
+
+###### 405 Method Not Allowed
 ```json
 {
-  "error": "VAT Percentage must be a number"
+  "error": "Method not allowed"
 }
 ```
 
-#### 500 Internal Server Error
+###### 500 Internal Server Error
 ```json
 {
   "error": "Failed to create client",
@@ -120,12 +211,12 @@ or
 }
 ```
 
-## Example Usage
+#### Example Usage
 
-### cURL
+##### cURL
 ```bash
 # Production
-curl -X POST https://fordox.netlify.app/api/clients \
+curl -X POST https://fordox.netlify.app/.netlify/functions/create-client \
   -H "Content-Type: application/json" \
   -d '{
     "companyName": "Example Company",
@@ -138,7 +229,7 @@ curl -X POST https://fordox.netlify.app/api/clients \
   }'
 
 # Development
-curl -X POST http://localhost:3000/api/clients \
+curl -X POST http://localhost:3000/.netlify/functions/create-client \
   -H "Content-Type: application/json" \
   -d '{
     "companyName": "Example Company",
@@ -151,22 +242,22 @@ curl -X POST http://localhost:3000/api/clients \
   }'
 ```
 
-### JavaScript (Fetch)
+##### JavaScript (Fetch)
 ```javascript
 const createClient = async (clientData) => {
-  // Use the appropriate base URL based on environment
   const baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://fordox.netlify.app'
-    : 'http://localhost:3000';
+    ? 'https://fordox.netlify.app/.netlify/functions'
+    : 'http://localhost:3000/.netlify/functions';
 
   try {
-    const response = await fetch(`${baseUrl}/api/clients`, {
+    const response = await fetch(`${baseUrl}/create-client`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify(clientData),
-      credentials: 'include' // Important for CORS with credentials
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -197,57 +288,14 @@ createClient(clientData)
   .catch(error => console.error('Error:', error));
 ```
 
-### Python (Requests)
-```python
-import requests
-import json
-import os
-
-def create_client(client_data):
-    # Use the appropriate base URL based on environment
-    base_url = 'https://fordox.netlify.app' if os.getenv('NODE_ENV') == 'production' else 'http://localhost:3000'
-    url = f"{base_url}/api/clients"
-    
-    headers = {
-        "Content-Type": "application/json"
-    }
-    
-    try:
-        response = requests.post(url, headers=headers, json=client_data)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Error creating client: {e}")
-        raise
-
-# Example usage
-client_data = {
-    "companyName": "Example Company",
-    "email": "contact@example.com",
-    "phone": "+971 50 123 4567",
-    "address": "123 Business Street, Dubai",
-    "country": "United Arab Emirates",
-    "trnNumber": "123456789012345",
-    "vatPercentage": "5"
-}
-
-try:
-    result = create_client(client_data)
-    print("Client created:", result)
-except Exception as e:
-    print("Error:", e)
-```
-
 ## Notes
 1. All timestamps are returned in ISO 8601 format
-2. The API supports CORS for the following origins:
-   - https://fodox.netlify.app
-   - https://fordox.netlify.app
-   - http://localhost:3000
-   - http://localhost:5000
-   - http://localhost:8082
-3. The API has a request body size limit of 50MB
-4. For UAE clients, the VAT percentage defaults to "5" if not specified
+2. The API uses Firebase Firestore with memory caching to avoid IndexedDB issues
+3. All requests must include the appropriate CORS headers
+4. For UAE clients, both TRN Number and VAT Percentage are required
+5. The API validates all required fields before processing requests
+6. Search functionality is case-sensitive and matches against company names
+7. Pagination is implemented using both offset-based and cursor-based methods
 
 ## Troubleshooting CORS Issues
 
@@ -265,5 +313,5 @@ Common CORS Error Solutions:
    - Check that the server is properly configured to handle CORS
 2. If you see "Request header field Authorization is not allowed":
    - Add 'Authorization' to the allowed headers list
-3. If you see "Method POST is not allowed":
-   - Verify 'POST' is in the allowed methods list 
+3. If you see "Method [GET/POST] is not allowed":
+   - Verify the method is in the allowed methods list 

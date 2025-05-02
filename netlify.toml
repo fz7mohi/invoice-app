@@ -19,6 +19,7 @@
   to = "/.netlify/functions/:splat"
   status = 200
   force = true
+  headers = {Access-Control-Allow-Origin = "https://fortunegiftz.com"}
 
 [build.environment]
   NODE_VERSION = "18"

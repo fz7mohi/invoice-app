@@ -1,5 +1,5 @@
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, addDoc, initializeFirestore, memoryLocalCache } = require('firebase/firestore');
+const { getFirestore, collection, addDoc, doc, getDoc, initializeFirestore, memoryLocalCache } = require('firebase/firestore');
 
 // Firebase configuration from environment variables
 const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
@@ -46,7 +46,10 @@ exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: corsHeaders,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -68,16 +71,16 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('Parsing request body...');
-    const clientData = JSON.parse(event.body);
-    console.log('Request body parsed successfully');
+    // Parse request body
+    const quoteData = JSON.parse(event.body);
+    console.log('Received quote data:', quoteData);
 
     // Validate required fields
-    const requiredFields = ['companyName', 'email', 'phone', 'address', 'country'];
-    const missingFields = requiredFields.filter(field => !clientData[field]);
-
+    const requiredFields = ['clientId', 'quoteNumber', 'quoteDate', 'validUntil', 'items', 'subtotal', 'total', 'status'];
+    const missingFields = requiredFields.filter(field => !quoteData[field]);
+    
     if (missingFields.length > 0) {
-      console.log('Missing required fields:', missingFields);
+      console.error('Missing required fields:', missingFields);
       return {
         statusCode: 400,
         headers: {
@@ -91,10 +94,33 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Validate UAE-specific fields
-    if (clientData.country === 'United Arab Emirates') {
-      if (!clientData.trnNumber) {
-        console.log('Missing TRN Number for UAE client');
+    // Set default taxAmount if not provided
+    if (!quoteData.taxAmount) {
+      quoteData.taxAmount = 0;
+    }
+
+    // Validate items array
+    if (!Array.isArray(quoteData.items) || quoteData.items.length === 0) {
+      console.error('Invalid items array');
+      return {
+        statusCode: 400,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          error: 'Invalid items array',
+          details: 'Items must be a non-empty array'
+        })
+      };
+    }
+
+    // Validate each item
+    const itemRequiredFields = ['productId', 'quantity', 'unitPrice'];
+    for (const item of quoteData.items) {
+      const missingItemFields = itemRequiredFields.filter(field => !item[field]);
+      if (missingItemFields.length > 0) {
+        console.error('Invalid item:', item, 'Missing fields:', missingItemFields);
         return {
           statusCode: 400,
           headers: {
@@ -102,39 +128,44 @@ exports.handler = async (event, context) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            error: 'TRN Number is required for UAE clients'
-          })
-        };
-      }
-      if (!clientData.vatPercentage) {
-        console.log('Missing VAT Percentage for UAE client');
-        return {
-          statusCode: 400,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            error: 'VAT Percentage is required for UAE clients'
+            error: 'Invalid item data',
+            details: `Missing fields in item: ${missingItemFields.join(', ')}`
           })
         };
       }
     }
 
-    console.log('Adding document to Firestore...');
-    // Add to Firestore with a timeout
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Operation timed out')), 5000);
-    });
+    // Check if client exists
+    const clientRef = doc(db, 'clients', quoteData.clientId);
+    const clientDoc = await getDoc(clientRef);
+    
+    if (!clientDoc.exists()) {
+      console.error('Client not found:', quoteData.clientId);
+      return {
+        statusCode: 404,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          error: 'Client not found',
+          details: `No client found with ID: ${quoteData.clientId}`
+        })
+      };
+    }
 
-    const addDocPromise = addDoc(collection(db, 'clients'), {
-      ...clientData,
+    // Add timestamp
+    const quoteWithTimestamp = {
+      ...quoteData,
       createdAt: new Date().toISOString()
-    });
+    };
 
-    const docRef = await Promise.race([addDocPromise, timeoutPromise]);
-    console.log('Document added successfully with ID:', docRef.id);
+    // Add quote to Firestore
+    console.log('Adding quote to Firestore...');
+    const quoteRef = await addDoc(collection(db, 'quotes'), quoteWithTimestamp);
+    console.log('Quote added successfully with ID:', quoteRef.id);
 
+    // Return success response
     return {
       statusCode: 201,
       headers: {
@@ -142,21 +173,20 @@ exports.handler = async (event, context) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        id: docRef.id,
-        ...clientData,
-        createdAt: new Date().toISOString()
+        id: quoteRef.id,
+        ...quoteWithTimestamp
       })
     };
   } catch (error) {
-    console.error('Error creating client:', error);
+    console.error('Error creating quote:', error);
     return {
-      statusCode: error.message === 'Operation timed out' ? 504 : 500,
+      statusCode: 500,
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        error: error.message === 'Operation timed out' ? 'Request timed out' : 'Failed to create client',
+        error: 'Failed to create quote',
         details: error.message
       })
     };
