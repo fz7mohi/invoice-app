@@ -1,6 +1,6 @@
-const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, addDoc, deleteDoc, doc, getDocs, query, limit, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } = require('firebase/firestore');
-const { getStorage } = require('firebase/storage');
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, addDoc, deleteDoc, doc, getDocs, query, limit } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Your Firebase configuration
 // Replace these with your actual Firebase project config
@@ -17,15 +17,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with cache settings
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache(
-    { tabManager: persistentMultipleTabManager() }
-  )
-});
+// Initialize Firestore
+export const db = getFirestore(app);
 
 // Initialize Firebase Storage
-const storage = getStorage(app);
+export const storage = getStorage(app);
 
 // Test Firebase write functionality
 const testFirebaseWrite = async () => {
@@ -41,7 +37,7 @@ const testFirebaseWrite = async () => {
     await deleteDoc(doc(db, 'test_permissions', testDoc.id));
     
     return true;
-} catch (error) {
+  } catch (error) {
     if (error.code === 'permission-denied') {
       // Handle permission denied silently
     }
@@ -53,5 +49,3 @@ const testFirebaseWrite = async () => {
 setTimeout(() => {
   testFirebaseWrite();
 }, 2000);
-
-module.exports = { db, storage };

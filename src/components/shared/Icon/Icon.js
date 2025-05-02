@@ -42,7 +42,8 @@ import {
     faChartLine,
     faDollarSign,
     faExclamationCircle,
-    faCut
+    faCut,
+    faUpload
 } from '@fortawesome/free-solid-svg-icons';
 
 const iconMap = {
@@ -93,7 +94,8 @@ const iconMap = {
     'chart-line': faChartLine,
     'dollar-sign': faDollarSign,
     'alert-circle': faExclamationCircle,
-    'scissors': faCut
+    'scissors': faCut,
+    'upload': faUpload
 };
 
 const getFontAwesomeSize = (size) => {
