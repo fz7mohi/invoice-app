@@ -1097,20 +1097,28 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 page-break-inside: avoid;
             `;
             totalSection.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
-                        <span style="font-size: 14px;">Subtotal:</span>
-                        <span style="font-size: 14px;">${formatPrice(invoice.subtotal || 0, invoice.currency)}</span>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 15px; font-weight: 500;">Subtotal</span>
+                        <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.subtotal || 0, invoice.currency)}</span>
                     </div>
                     ${clientHasVAT ? `
-                        <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
-                            <span style="font-size: 14px;">VAT (5%):</span>
-                            <span style="font-size: 14px;">${formatPrice(invoice.totalVat || 0, invoice.currency)}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 15px; font-weight: 500;">VAT (5%)</span>
+                            <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.totalVat || 0, invoice.currency)}</span>
                         </div>
                     ` : ''}
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                        <span style="font-size: 16px;">${invoice.paymentType || 'Total'}:</span>
-                        <span style="font-size: 20px; font-weight: bold;">${formatPrice(invoice.total || 0, invoice.currency)}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 15px; font-weight: 500;">Total Amount</span>
+                        <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.total || 0, invoice.currency)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 15px; font-weight: 500;">Amount Paid</span>
+                        <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.paidAmount || 0, invoice.currency)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
+                        <span style="font-size: 16px; font-weight: 600;">Balance Due</span>
+                        <span style="font-size: 18px; font-weight: 700;">${formatPrice((invoice.total || 0) - (invoice.paidAmount || 0), invoice.currency)}</span>
                     </div>
                 </div>
             `;
@@ -1229,15 +1237,25 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 logging: false,
                 backgroundColor: '#ffffff',
                 width: 1122.5, // 297mm in pixels at 96 DPI
-                height: 1587.4 // 420mm in pixels at 96 DPI
+                height: 1587.4, // 420mm in pixels at 96 DPI
+                onclone: (clonedDoc) => {
+                    // Ensure all styles are properly applied in the cloned document
+                    const clonedContainer = clonedDoc.querySelector('#pdf-container');
+                    if (clonedContainer) {
+                        clonedContainer.style.display = 'block';
+                        clonedContainer.style.visibility = 'visible';
+                        clonedContainer.style.position = 'relative';
+                        clonedContainer.style.left = '0';
+                    }
+                }
             });
 
             // Remove temporary elements
             document.body.removeChild(pdfContainer);
 
             // Add the image to fit A3 page
-            const imgData = canvas.toDataURL('image/png');
-            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420, undefined, 'FAST');
 
             // Save the PDF
             pdf.save(`Invoice_${invoice.customId || id}.pdf`);
@@ -1853,20 +1871,28 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 page-break-inside: avoid;
             `;
             totalSection.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
-                        <span style="font-size: 14px;">Subtotal:</span>
-                        <span style="font-size: 14px;">${formatPrice(invoice.subtotal || 0, invoice.currency)}</span>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 15px; font-weight: 500;">Subtotal</span>
+                        <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.subtotal || 0, invoice.currency)}</span>
                     </div>
                     ${clientHasVAT ? `
-                        <div style="display: flex; justify-content: space-between; align-items: center; opacity: 0.9;">
-                            <span style="font-size: 14px;">VAT (5%):</span>
-                            <span style="font-size: 14px;">${formatPrice(invoice.totalVat || 0, invoice.currency)}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 15px; font-weight: 500;">VAT (5%)</span>
+                            <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.totalVat || 0, invoice.currency)}</span>
                         </div>
                     ` : ''}
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                        <span style="font-size: 16px;">${invoice.paymentType || 'Total'}:</span>
-                        <span style="font-size: 20px; font-weight: bold;">${formatPrice(invoice.total || 0, invoice.currency)}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 15px; font-weight: 500;">Total Amount</span>
+                        <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.total || 0, invoice.currency)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 15px; font-weight: 500;">Amount Paid</span>
+                        <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.paidAmount || 0, invoice.currency)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
+                        <span style="font-size: 16px; font-weight: 600;">Balance Due</span>
+                        <span style="font-size: 18px; font-weight: 700;">${formatPrice((invoice.total || 0) - (invoice.paidAmount || 0), invoice.currency)}</span>
                     </div>
                 </div>
             `;
@@ -1985,15 +2011,25 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 logging: false,
                 backgroundColor: '#ffffff',
                 width: 1122.5, // 297mm in pixels at 96 DPI
-                height: 1587.4 // 420mm in pixels at 96 DPI
+                height: 1587.4, // 420mm in pixels at 96 DPI
+                onclone: (clonedDoc) => {
+                    // Ensure all styles are properly applied in the cloned document
+                    const clonedContainer = clonedDoc.querySelector('#pdf-container');
+                    if (clonedContainer) {
+                        clonedContainer.style.display = 'block';
+                        clonedContainer.style.visibility = 'visible';
+                        clonedContainer.style.position = 'relative';
+                        clonedContainer.style.left = '0';
+                    }
+                }
             });
 
             // Remove temporary elements
             document.body.removeChild(pdfContainer);
 
             // Add the image to fit A3 page
-            const imgData = canvas.toDataURL('image/png');
-            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420, undefined, 'FAST');
 
             // Convert to base64
             const pdfBase64 = pdf.output('datauristring').split(',')[1];
