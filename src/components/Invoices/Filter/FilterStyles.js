@@ -32,12 +32,14 @@ export const List = styled.ul`
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    width: clamp(134px, 19vw, 192px);
+    width: clamp(280px, 25vw, 350px);
     padding: 24px;
-    background-color: ${({ theme }) => theme.colors.bgFilter};
+    background-color: ${({ theme }) => theme.colors.bgFilter || '#1E2139'};
     border: 1px solid ${({ theme }) => theme.colors.purple};
     border-radius: 8px;
     z-index: 10;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
 `;
 
 export const Item = styled.li`
@@ -87,5 +89,123 @@ export const StatusFilter = styled.button`
         &::before {
             border-color: ${({ theme }) => theme.colors.purple};
         }
+    }
+`;
+
+// Date Filter Components
+export const DateFilterSection = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+`;
+
+export const DateFilterTitle = styled.h4`
+    color: ${({ theme }) => theme.colors.white};
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    margin-bottom: 8px;
+`;
+
+export const DateRangeContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+export const DateInput = styled.input`
+    width: 100%;
+    padding: 8px 12px;
+    background-color: ${({ theme }) => theme.colors.backgroundItem || '#252945'};
+    border: 1px solid ${({ theme }) => theme.colors.purple}40;
+    border-radius: 4px;
+    color: ${({ theme }) => theme.colors.white};
+    font-size: 14px;
+    transition: all 0.3s ease;
+
+    &:focus {
+        outline: none;
+        border-color: ${({ theme }) => theme.colors.purple};
+        box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.purple}20;
+    }
+
+    &::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        cursor: pointer;
+    }
+`;
+
+export const MonthFilterContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+export const MonthSelect = styled.select`
+    width: 100%;
+    padding: 8px 12px;
+    background-color: ${({ theme }) => theme.colors.backgroundItem || '#252945'};
+    border: 1px solid ${({ theme }) => theme.colors.purple}40;
+    border-radius: 4px;
+    color: ${({ theme }) => theme.colors.white};
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:focus {
+        outline: none;
+        border-color: ${({ theme }) => theme.colors.purple};
+        box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.purple}20;
+    }
+
+    option {
+        background-color: ${({ theme }) => theme.colors.backgroundItem || '#252945'};
+        color: ${({ theme }) => theme.colors.white};
+    }
+`;
+
+export const ApplyButton = styled.button`
+    ${buttonDefault}
+    flex: 1;
+    padding: 8px 16px;
+    background-color: ${({ theme }) => theme.colors.purple};
+    color: ${({ theme }) => theme.colors.white} !important;
+    border: 1px solid ${({ theme }) => theme.colors.purple};
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background-color: ${({ theme }) => theme.colors.purple}dd;
+        transform: translateY(-1px);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+`;
+
+export const ClearButton = styled.button`
+    ${buttonDefault}
+    flex: 1;
+    padding: 8px 16px;
+    background-color: transparent;
+    color: ${({ theme }) => theme.colors.white} !important;
+    border: 1px solid ${({ theme }) => theme.colors.purple}40;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background-color: ${({ theme }) => theme.colors.purple}20;
+        border-color: ${({ theme }) => theme.colors.purple};
+    }
+
+    &:active {
+        transform: translateY(0);
     }
 `;

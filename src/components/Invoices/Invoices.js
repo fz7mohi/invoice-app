@@ -23,6 +23,7 @@ import {
 const Invoices = () => {
     const [filterType, setFilterType] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [dateFilter, setDateFilter] = useState({ startDate: '', endDate: '', month: '', year: '' });
     const shouldReduceMotion = useReducedMotion();
     const { windowWidth, invoiceState, createInvoice } = useGlobalContext();
     
@@ -33,45 +34,67 @@ const Invoices = () => {
     // Define searchable fields
     const searchableFields = ['customId', 'id', 'clientName', 'description'];
 
-    // Filter invoices based on status and search query
+    // Check if date filter is active
+    const isDateFilterActive = dateFilter.startDate && dateFilter.endDate;
+
+    // Filter invoices based on status, search query, and date filter
     const filteredInvoices = useMemo(() => {
         let filtered = rawInvoices.filter(invoice => {
+            // Status filter
             const matchesStatus = filterType === 'all' || invoice.status === filterType;
+            
+            // Search filter
             const matchesSearch = !searchQuery || searchableFields.some(field => {
                 const value = invoice[field]?.toString().toLowerCase() || '';
                 return value.includes(searchQuery.toLowerCase());
             });
-            return matchesStatus && matchesSearch;
+
+            // Date filter
+            let matchesDate = true;
+            if (dateFilter.startDate && dateFilter.endDate) {
+                const invoiceDate = new Date(invoice.createdAt || invoice.date);
+                const startDate = new Date(dateFilter.startDate);
+                const endDate = new Date(dateFilter.endDate);
+                endDate.setHours(23, 59, 59, 999); // Set to end of day
+                
+                matchesDate = invoiceDate >= startDate && invoiceDate <= endDate;
+            }
+
+            return matchesStatus && matchesSearch && matchesDate;
         });
 
-        // Apply search filter if there's a search query
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase().trim();
-            filtered = filtered.filter(invoice => {
-                const searchableFields = [
-                    invoice.customId || invoice.id, // Invoice ID
-                    invoice.clientName,              // Client Name
-                    invoice.description              // Project Description
-                ].filter(Boolean);
-                
-                return searchableFields.some(field => 
-                    field.toLowerCase().includes(query)
-                );
-            });
-        }
-
         return filtered;
-    }, [rawInvoices, filterType, searchQuery]);
+    }, [rawInvoices, filterType, searchQuery, dateFilter]);
+
+    // Generate filter message
+    const getFilterMessage = () => {
+        if (isLoading) return "Loading invoices...";
+        
+        let message = invoicesLengthMessage(filteredInvoices, filterType, windowWidth);
+        
+        // Add date filter info if active
+        if (isDateFilterActive) {
+            const startDate = new Date(dateFilter.startDate).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            const endDate = new Date(dateFilter.endDate).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            message += ` • Date range: ${startDate} - ${endDate}`;
+        }
+        
+        return message;
+    };
 
     // Update document title based on filter
     useEffect(() => {
-        const message = invoicesLengthMessage(
-            filteredInvoices.length,
-            filterType,
-            windowWidth
-        );
+        const message = getFilterMessage();
         document.title = `Fordox App | ${message}`;
-    }, [filteredInvoices.length, filterType, windowWidth]);
+    }, [filteredInvoices.length, filterType, windowWidth, dateFilter]);
 
     // Define variant based on element type and reduced motion preference
     const variant = (type, index) => {
@@ -101,20 +124,15 @@ const Invoices = () => {
                     <Info>
                         <Title>Invoices</Title>
                         <Text>
-                            {isLoading 
-                                ? "Loading invoices..."
-                                : invoicesLengthMessage(
-                                    filteredInvoices,
-                                    filterType,
-                                    windowWidth
-                                )
-                            }
+                            {getFilterMessage()}
                         </Text>
                     </Info>
                     
                     <Filter 
                         filterType={filterType} 
-                        setFilterType={setFilterType} 
+                        setFilterType={setFilterType}
+                        dateFilter={dateFilter}
+                        setDateFilter={setDateFilter}
                     />
                 </HeaderTop>
 
