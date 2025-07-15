@@ -354,11 +354,15 @@ const QuotationView = () => {
     // Add this new function before handleDownloadPDF
     const generatePDF = async () => {
         try {
+            // --- Constants for A3 at 96 DPI ---
+            const PAGE_WIDTH_MM = 297;
+            const PAGE_HEIGHT_MM = 420;
+            const PAGE_WIDTH_PX = 1122; // 297mm * 96 / 25.4
+            const PAGE_HEIGHT_PX = 1587; // 420mm * 96 / 25.4
+            const ITEMS_PER_PAGE = 12; // Always 12 items per page
+
             // Get the client's country from the quotation or client data
-            const clientCountry = quotation?.clientAddress?.country || 
-                                clientData?.country || 
-                                'qatar';
-            
+            const clientCountry = quotation?.clientAddress?.country || clientData?.country || 'qatar';
             // Determine which company profile to use
             let companyProfile;
             try {
@@ -377,219 +381,13 @@ const QuotationView = () => {
                 };
             }
 
-            // Create a new container for PDF content
-            const pdfContainer = document.createElement('div');
-            pdfContainer.style.cssText = `
-                width: 297mm;
-                min-height: 420mm;
-                padding: 5mm 20mm 20mm 20mm;
-                margin: 0;
-                background-color: white;
-                box-sizing: border-box;
-                position: relative;
-                font-family: Arial, sans-serif;
-            `;
-
-            // Add header
-            pdfContainer.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <div>
-                        <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
-                    </div>
-                    <div style="text-align: right; font-size: 19px; color: #000000;">
-                        <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
-                        <div>${companyProfile.address}</div>
-                        <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
-                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
-                    </div>
-                </div>
-                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
-                <div style="text-align: center; margin-top: 25px;">
-                    <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
-                </div>
-            `;
-
-            // Add client section
-            const clientSection = document.createElement('div');
-            clientSection.style.cssText = `
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 20px;
-                padding: 20px;
-                background-color: white;
-                border: 1px solid #e0e0e0;
-                border-radius: 4px;
-            `;
-
-            // Debug logs
-            console.log('PDF Generation - Client Data:', clientData);
-            console.log('PDF Generation - Client Country:', clientCountry);
-            console.log('PDF Generation - Client TRN:', clientData?.trn || clientData?.trnNumber || quotation?.clientTRN);
-
-            clientSection.innerHTML = `
-                <div style="flex: 1;">
-                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
-                    <div style="color: black; font-size: 16px;">
-                        <strong>${quotation.clientName}</strong><br />
-                        ${clientData?.address || quotation.clientAddress?.street || ''}
-                        ${quotation.clientAddress?.city ? `, ${quotation.clientAddress.city}` : ''}
-                        ${quotation.clientAddress?.postCode ? `, ${quotation.clientAddress.postCode}` : ''}
-                        ${clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
-                        ${clientData?.phone ? `<br />${clientData.phone}` : ''}
-                        ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || quotation?.clientTRN) ? 
-                            `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber || quotation?.clientTRN}</span>` : ''}
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Quotation #</div>
-                    <div style="color: black; font-size: 16px; margin-bottom: 15px;">${quotation.customId || id}</div>
-                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Quote Date</div>
-                    <div style="color: black; font-size: 16px;">${formatDate(quotation.createdAt)}</div>
-                </div>
-            `;
-            pdfContainer.appendChild(clientSection);
-
-            // Add items table
-            const itemsTable = document.createElement('table');
-            itemsTable.style.cssText = `
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 20px;
-                background-color: white;
-                border: 1px solid #e0e0e0;
-                border-radius: 10px;
-            `;
-            itemsTable.innerHTML = `
-                <thead style="background-color: #004359; color: white;">
-                    <tr>
-                        <th style="padding: 15px; text-align: left; font-size: 18px;">Item Name</th>
-                        <th style="padding: 15px; text-align: center; font-size: 18px;">QTY.</th>
-                        <th style="padding: 15px; text-align: right; font-size: 18px;">Price</th>
-                        ${clientHasVAT ? '<th style="padding: 15px; text-align: right; font-size: 18px;">VAT (5%)</th>' : ''}
-                        <th style="padding: 15px; text-align: right; font-size: 18px;">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${quotation.items.map(item => {
-                        const itemVAT = item.vat || 0;
-                        return `
-                            <tr style="border-bottom: 1px solid #e0e0e0;">
-                                <td style="padding: 15px; color: black; font-size: 16px;">
-                                    ${item.name}
-                                    ${item.description ? `<div style="font-size: 14px; color: #666;">${item.description}</div>` : ''}
-                                </td>
-                                <td style="padding: 15px; text-align: center; color: black; font-size: 16px;">${item.quantity || 0}</td>
-                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.price || 0, quotation.currency)}</td>
-                                ${clientHasVAT ? `<td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(itemVAT, quotation.currency)}</td>` : ''}
-                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.total || 0, quotation.currency)}</td>
-                            </tr>
-                        `;
-                    }).join('')}
-                </tbody>
-            `;
-            pdfContainer.appendChild(itemsTable);
-
-            // Add total section
-            const totalSection = document.createElement('div');
-            totalSection.style.cssText = `
-                background-color: #004359;
-                color: white;
-                padding: 15px;
-                text-align: right;
-                border-radius: 0 0 4px 4px;
-            `;
-            totalSection.innerHTML = `
-                <div style="font-size: 18px; margin-bottom: 4px;">Grand Total</div>
-                ${clientHasVAT ? `<div style="font-size: 11px; opacity: 0.8;">Includes VAT: ${formatPrice(quotation.items.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0), quotation.currency)}</div>` : ''}
-                <div style="font-size: 24px; font-weight: bold;">${formatPrice(quotation.grandTotal || quotation.total || 0, quotation.currency)}</div>
-            `;
-            pdfContainer.appendChild(totalSection);
-
-            // Add terms section if exists
-            if (quotation.termsAndConditions) {
-                const termsSection = document.createElement('div');
-                termsSection.style.cssText = `
-                    padding: 20px;
-                    background-color: white;
-                    border: 1px solid #e0e0e0;
-                    border-radius: 4px;
-                    margin-bottom: 20px;
-                `;
-                
-                // Format the terms and conditions text
-                const formattedTerms = quotation.termsAndConditions
-                    .split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0)
-                    .map(line => {
-                        if (/^\d+\./.test(line)) {
-                            return `<div style="margin-bottom: 8px; color: black; font-size: 16px;">${line}</div>`;
-                        }
-                        else if (line.toUpperCase() === line || 
-                                /^(Terms|Conditions|Payment|Delivery|Warranty|Cancellation|Force Majeure|Governing Law)/i.test(line)) {
-                            return `<div style="margin-top: 16px; margin-bottom: 8px; color: #004359; font-weight: bold; font-size: 18px;">${line}</div>`;
-                        }
-                        else {
-                            return `<div style="margin-bottom: 8px; color: black; font-size: 16px;">${line}</div>`;
-                        }
-                    })
-                    .join('');
-
-                termsSection.innerHTML = `
-                    <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 16px;">Terms and Conditions</div>
-                    <div style="color: black; font-size: 16px; line-height: 1.5;">
-                        ${formattedTerms}
-                    </div>
-                `;
-                pdfContainer.appendChild(termsSection);
+            // --- Helper to split items into pages ---
+            const items = quotation.items || [];
+            const itemChunks = [];
+            for (let i = 0; i < items.length; i += ITEMS_PER_PAGE) {
+                itemChunks.push(items.slice(i, i + ITEMS_PER_PAGE));
             }
 
-            // Add spacer for signature section
-            const spacer = document.createElement('div');
-            spacer.style.height = '150px';
-            pdfContainer.appendChild(spacer);
-
-            // Add signature section
-            const signatureSection = document.createElement('div');
-            signatureSection.style.cssText = `
-                position: absolute;
-                bottom: 30mm;
-                left: 20mm;
-                right: 20mm;
-                display: flex;
-                justify-content: space-between;
-            `;
-            signatureSection.innerHTML = `
-                <div style="width: 45%;">
-                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Authorized Signature</div>
-                </div>
-                <div style="width: 45%;">
-                    <div style="border-bottom: 2px solid #004359; margin-bottom: 15px;"></div>
-                    <div style="font-weight: bold; color: #004359; font-size: 19px;">Client Acceptance</div>
-                </div>
-            `;
-            pdfContainer.appendChild(signatureSection);
-
-            // Temporarily add to document to render
-            pdfContainer.style.position = 'absolute';
-            pdfContainer.style.left = '-9999px';
-            document.body.appendChild(pdfContainer);
-
-            // Convert to canvas with A3 dimensions
-            const canvas = await html2canvas(pdfContainer, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff',
-                width: 1122.5, // 297mm in pixels at 96 DPI
-                height: 1587.4 // 420mm in pixels at 96 DPI
-            });
-
-            // Remove temporary elements
-            document.body.removeChild(pdfContainer);
-
-            // Create PDF with A3 size
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
@@ -597,10 +395,202 @@ const QuotationView = () => {
                 compress: true
             });
 
-            // Add the image to fit A3 page
-            const imgData = canvas.toDataURL('image/png');
-            pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
-
+            for (let pageIdx = 0; pageIdx < itemChunks.length; pageIdx++) {
+                const isLastPage = pageIdx === itemChunks.length - 1;
+                // --- Build a page container ---
+                const pdfContainer = document.createElement('div');
+                pdfContainer.style.cssText = `
+                    width: ${PAGE_WIDTH_MM}mm;
+                    min-height: ${PAGE_HEIGHT_MM}mm;
+                    padding: 5mm 20mm 20mm 20mm;
+                    margin: 0;
+                    background-color: white;
+                    box-sizing: border-box;
+                    position: relative;
+                    font-family: Arial, sans-serif;
+                `;
+                // Header
+                pdfContainer.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div>
+                            <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
+                        </div>
+                        <div style="text-align: right; font-size: 19px; color: #000000;">
+                            <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
+                            <div>${companyProfile.address}</div>
+                            <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                            <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
+                        </div>
+                    </div>
+                    <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
+                    <div style="text-align: center; margin-top: 25px;">
+                        <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">QUOTATION</h1>
+                    </div>
+                `;
+                // Only on first page: Bill To (client) section
+                if (pageIdx === 0) {
+                    const clientSection = document.createElement('div');
+                    clientSection.style.cssText = `
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 20px;
+                        padding: 20px;
+                        background-color: white;
+                        border: 1px solid #e0e0e0;
+                        border-radius: 4px;
+                    `;
+                    clientSection.innerHTML = `
+                        <div style="flex: 1;">
+                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
+                            <div style="color: black; font-size: 16px;">
+                                <strong>${quotation.clientName}</strong><br />
+                                ${clientData?.address || quotation.clientAddress?.street || ''}
+                                ${quotation.clientAddress?.city ? `, ${quotation.clientAddress.city}` : ''}
+                                ${quotation.clientAddress?.postCode ? `, ${quotation.clientAddress.postCode}` : ''}
+                                ${clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
+                                ${clientData?.phone ? `<br />${clientData.phone}` : ''}
+                                ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || quotation?.clientTRN) ? 
+                                    `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber || quotation?.clientTRN}</span>` : ''}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Quotation #</div>
+                            <div style="color: black; font-size: 16px; margin-bottom: 15px;">${quotation.customId || id}</div>
+                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Quote Date</div>
+                            <div style="color: black; font-size: 16px;">${formatDate(quotation.createdAt)}</div>
+                        </div>
+                    `;
+                    pdfContainer.appendChild(clientSection);
+                }
+                // Items table (only this page's chunk)
+                const itemsTable = document.createElement('table');
+                itemsTable.style.cssText = `
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 20px;
+                    background-color: white;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 10px;
+                `;
+                itemsTable.innerHTML = `
+                    <thead style="background-color: #004359; color: white;">
+                        <tr>
+                            <th style="padding: 15px; text-align: center; font-size: 18px; width: 50px;">S/N</th>
+                            <th style="padding: 15px; text-align: left; font-size: 18px;">Item Name</th>
+                            <th style="padding: 15px; text-align: center; font-size: 18px;">QTY.</th>
+                            <th style="padding: 15px; text-align: right; font-size: 18px;">Price</th>
+                            ${clientHasVAT ? '<th style=\"padding: 15px; text-align: right; font-size: 18px;\">VAT (5%)</th>' : ''}
+                            <th style="padding: 15px; text-align: right; font-size: 18px;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemChunks[pageIdx].map((item, idx) => {
+                            const itemVAT = item.vat || 0;
+                            const serialNumber = pageIdx * ITEMS_PER_PAGE + idx + 1;
+                            return `
+                                <tr style=\"border-bottom: 1px solid #e0e0e0;\">
+                                    <td style=\"padding: 15px; text-align: center; color: black; font-size: 16px; font-weight: bold;\">${serialNumber}</td>
+                                    <td style=\"padding: 15px; color: black; font-size: 16px;\">${item.name}${item.description ? `<div style=\\"font-size: 14px; color: #666;\\">${item.description}</div>` : ''}</td>
+                                    <td style=\"padding: 15px; text-align: center; color: black; font-size: 16px;\">${item.quantity || 0}</td>
+                                    <td style=\"padding: 15px; text-align: right; color: black; font-size: 16px;\">${formatPrice(item.price || 0, quotation.currency)}</td>
+                                    ${clientHasVAT ? `<td style=\\"padding: 15px; text-align: right; color: black; font-size: 16px;\\">${formatPrice(itemVAT, quotation.currency)}</td>` : ''}
+                                    <td style=\"padding: 15px; text-align: right; color: black; font-size: 16px;\">${formatPrice(item.total || 0, quotation.currency)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                `;
+                pdfContainer.appendChild(itemsTable);
+                // Only on last page: totals, terms, signature
+                if (isLastPage) {
+                    // Total section
+                    const totalSection = document.createElement('div');
+                    totalSection.style.cssText = `
+                        background-color: #004359;
+                        color: white;
+                        padding: 15px;
+                        text-align: right;
+                        border-radius: 0 0 4px 4px;
+                    `;
+                    totalSection.innerHTML = `
+                        <div style=\"font-size: 18px; margin-bottom: 4px;\">Grand Total</div>
+                        ${clientHasVAT ? `<div style=\\"font-size: 11px; opacity: 0.8;\\">Includes VAT: ${formatPrice(quotation.items.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0), quotation.currency)}</div>` : ''}
+                        <div style=\"font-size: 24px; font-weight: bold;\">${formatPrice(quotation.grandTotal || quotation.total || 0, quotation.currency)}</div>
+                    `;
+                    pdfContainer.appendChild(totalSection);
+                    // Terms section
+                    if (quotation.termsAndConditions) {
+                        const termsSection = document.createElement('div');
+                        termsSection.style.cssText = `
+                            padding: 20px;
+                            background-color: white;
+                            border: 1px solid #e0e0e0;
+                            border-radius: 4px;
+                            margin-bottom: 20px;
+                        `;
+                        const formattedTerms = quotation.termsAndConditions
+                            .split('\n')
+                            .map(line => line.trim())
+                            .filter(line => line.length > 0)
+                            .map(line => {
+                                if (/^\d+\./.test(line)) {
+                                    return `<div style=\\"margin-bottom: 8px; color: black; font-size: 16px;\\">${line}</div>`;
+                                } else if (line.toUpperCase() === line || /^(Terms|Conditions|Payment|Delivery|Warranty|Cancellation|Force Majeure|Governing Law)/i.test(line)) {
+                                    return `<div style=\\"margin-top: 16px; margin-bottom: 8px; color: #004359; font-weight: bold; font-size: 18px;\\">${line}</div>`;
+                                } else {
+                                    return `<div style=\\"margin-bottom: 8px; color: black; font-size: 16px;\\">${line}</div>`;
+                                }
+                            })
+                            .join('');
+                        termsSection.innerHTML = `
+                            <div style=\"color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 16px;\">Terms and Conditions</div>
+                            <div style=\"color: black; font-size: 16px; line-height: 1.5;\">${formattedTerms}</div>
+                        `;
+                        pdfContainer.appendChild(termsSection);
+                    }
+                    // Spacer for signature
+                    const spacer = document.createElement('div');
+                    spacer.style.height = '150px';
+                    pdfContainer.appendChild(spacer);
+                    // Signature section
+                    const signatureSection = document.createElement('div');
+                    signatureSection.style.cssText = `
+                        position: absolute;
+                        bottom: 30mm;
+                        left: 20mm;
+                        right: 20mm;
+                        display: flex;
+                        justify-content: space-between;
+                    `;
+                    signatureSection.innerHTML = `
+                        <div style=\"width: 45%;\">
+                            <div style=\"border-bottom: 2px solid #004359; margin-bottom: 15px;\"></div>
+                            <div style=\"font-weight: bold; color: #004359; font-size: 19px;\">Authorized Signature</div>
+                        </div>
+                        <div style=\"width: 45%;\">
+                            <div style=\"border-bottom: 2px solid #004359; margin-bottom: 15px;\"></div>
+                            <div style=\"font-weight: bold; color: #004359; font-size: 19px;\">Client Acceptance</div>
+                        </div>
+                    `;
+                    pdfContainer.appendChild(signatureSection);
+                }
+                // Render to canvas
+                pdfContainer.style.position = 'absolute';
+                pdfContainer.style.left = '-9999px';
+                document.body.appendChild(pdfContainer);
+                const canvas = await html2canvas(pdfContainer, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    width: PAGE_WIDTH_PX,
+                    height: PAGE_HEIGHT_PX
+                });
+                document.body.removeChild(pdfContainer);
+                const imgData = canvas.toDataURL('image/png');
+                if (pageIdx > 0) pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, 0, PAGE_WIDTH_MM, PAGE_HEIGHT_MM);
+            }
             return pdf;
         } catch (error) {
             throw new Error('Error generating PDF: ' + error.message);
