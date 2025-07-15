@@ -118,6 +118,44 @@ const QuotationDetails = ({ quotation, onClose }) => {
                     </StatusBadge>
                 </DetailsSection>
             </DetailsContent>
+            {/* Items Table with S/N */}
+            {Array.isArray(dataToDisplay.items) && dataToDisplay.items.length > 0 && (
+                <div style={{ margin: '32px 0 0 0', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15, background: '#fff', border: '1px solid #e0e0e0', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                        <thead>
+                            <tr style={{ background: '#004359', color: '#fff' }}>
+                                <th style={{ padding: '12px', textAlign: 'center', width: 60 }}>S/N</th>
+                                <th style={{ padding: '12px', textAlign: 'left' }}>Item Name</th>
+                                <th style={{ padding: '12px', textAlign: 'center' }}>QTY.</th>
+                                <th style={{ padding: '12px', textAlign: 'right' }}>Price</th>
+                                {dataToDisplay.items.some(item => item.vat) && (
+                                    <th style={{ padding: '12px', textAlign: 'right' }}>VAT</th>
+                                )}
+                                <th style={{ padding: '12px', textAlign: 'right' }}>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {dataToDisplay.items.map((item, idx) => (
+                                <tr key={idx} style={{ borderBottom: '1px solid #e0e0e0' }}>
+                                    <td style={{ padding: '12px', textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                                    <td style={{ padding: '12px', textAlign: 'left' }}>
+                                        {item.name}
+                                        {item.description && (
+                                            <div style={{ fontSize: 13, color: '#666', marginTop: 2 }}>{item.description}</div>
+                                        )}
+                                    </td>
+                                    <td style={{ padding: '12px', textAlign: 'center' }}>{item.quantity || 0}</td>
+                                    <td style={{ padding: '12px', textAlign: 'right' }}>{formatPrice(item.price || 0, dataToDisplay.currency)}</td>
+                                    {dataToDisplay.items.some(i => i.vat) && (
+                                        <td style={{ padding: '12px', textAlign: 'right' }}>{item.vat ? formatPrice(item.vat, dataToDisplay.currency) : '-'}</td>
+                                    )}
+                                    <td style={{ padding: '12px', textAlign: 'right' }}>{formatPrice(item.total || 0, dataToDisplay.currency)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </DetailsContainer>
     );
 };
