@@ -119,6 +119,75 @@ function InvoiceView() {
                 <div style="height: 2px; background-color: #004359; margin: 10px 0;"></div>
             `;
 
+            // Add client and invoice details
+            const detailsSection = document.createElement('div');
+            detailsSection.style.marginBottom = '20px';
+            detailsSection.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <div>
+                        <div><strong>Bill To:</strong> ${invoice.clientName}</div>
+                        <div><strong>Email:</strong> ${invoice.clientEmail}</div>
+                        <div><strong>Address:</strong> ${invoice.clientAddress?.country || ''}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div><strong>Invoice #:</strong> ${invoice.customId}</div>
+                        <div><strong>Date:</strong> ${invoice.paymentDue ? format(new Date(invoice.paymentDue), 'dd/MM/yyyy') : 'N/A'}</div>
+                        <div><strong>Status:</strong> ${invoice.status}</div>
+                    </div>
+                </div>
+            `;
+            pdfContainer.appendChild(detailsSection);
+
+            // Add items table
+            const itemsTable = document.createElement('table');
+            itemsTable.style.width = '100%';
+            itemsTable.style.borderCollapse = 'collapse';
+            itemsTable.style.marginBottom = '20px';
+            itemsTable.innerHTML = `
+                <thead>
+                    <tr style="background: #f5f5f5; color: #004359;">
+                        <th style="border: 1px solid #ddd; padding: 8px;">#</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Description</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Qty</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Unit Price</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${invoice.items.map((item, idx) => `
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${idx + 1}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${item.description || ''}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.quantity || ''}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${item.unitPrice != null ? item.unitPrice.toFixed(2) : ''}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${item.total != null ? item.total.toFixed(2) : ''}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            pdfContainer.appendChild(itemsTable);
+
+            // Add totals section
+            const totalsSection = document.createElement('div');
+            totalsSection.style.textAlign = 'right';
+            totalsSection.style.marginBottom = '20px';
+            totalsSection.innerHTML = `
+                <div><strong>Subtotal:</strong> ${invoice.total ? invoice.total.toFixed(2) : '0.00'} ${invoice.currency}</div>
+                <!-- Add tax, discount, etc. here if needed -->
+                <div style="font-size: 20px; color: #004359;"><strong>Total:</strong> ${invoice.total ? invoice.total.toFixed(2) : '0.00'} ${invoice.currency}</div>
+            `;
+            pdfContainer.appendChild(totalsSection);
+
+            // Add terms and conditions if present
+            if (invoice.termsAndConditions) {
+                const termsSection = document.createElement('div');
+                termsSection.style.marginTop = '30px';
+                termsSection.style.fontSize = '12px';
+                termsSection.style.color = '#666';
+                termsSection.innerHTML = `<strong>Terms & Conditions:</strong><br/>${invoice.termsAndConditions}`;
+                pdfContainer.appendChild(termsSection);
+            }
+
             // Temporarily add to document to render
             pdfContainer.style.position = 'absolute';
             pdfContainer.style.left = '-9999px';
