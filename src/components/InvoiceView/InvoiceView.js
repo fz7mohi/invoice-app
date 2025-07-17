@@ -1154,15 +1154,15 @@ All prices are in local currency and include VAT where applicable.`;
                 margin-bottom: 100px;
                 page-break-inside: avoid;
             `;
-            // Redesigned Terms and Conditions section
+            // Minimal, compact Terms and Conditions section
             const termsSection = document.createElement('div');
             termsSection.style.cssText = `
-                padding: 28px 28px 20px 28px;
-                background: linear-gradient(120deg, #f7fafc 0%, #e3eaf3 100%);
-                border-radius: 14px;
+                padding: 14px 14px 10px 14px;
+                background: #fff;
+                border-radius: 10px;
                 border: 1px solid #e0e0e0;
-                margin-bottom: 18px;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+                margin-bottom: 10px;
+                box-shadow: 0 1px 6px rgba(0,0,0,0.04);
                 font-family: Arial, sans-serif;
             `;
             // Format terms and conditions professionally (define before use)
@@ -1173,34 +1173,34 @@ All prices are in local currency and include VAT where applicable.`;
                 .map(line => {
                     if (/^\d+\./.test(line)) {
                         // Numbered list
-                        return `<div style=\"margin-bottom: 8px; color: black; font-size: 16px;\">${line}</div>`;
+                        return `<div style=\"margin-bottom: 8px; color: black; font-size: 13px;\">${line}</div>`;
                     } else if (line.toUpperCase() === line || /^(Terms|Conditions|Payment|Delivery|Warranty|Cancellation|Force Majeure|Governing Law)/i.test(line)) {
                         // Section headers
-                        return `<div style=\"margin-top: 16px; margin-bottom: 8px; color: #004359; font-weight: bold; font-size: 18px;\">${line}</div>`;
+                        return `<div style=\"margin-top: 12px; margin-bottom: 6px; color: #004359; font-weight: bold; font-size: 14px;\">${line}</div>`;
                     } else {
                         // Normal paragraph
-                        return `<div style=\"margin-bottom: 8px; color: black; font-size: 16px;\">${line}</div>`;
+                        return `<div style=\"margin-bottom: 8px; color: black; font-size: 13px;\">${line}</div>`;
                     }
                 })
                 .join('');
             termsSection.innerHTML = `
-                <div style=\"font-size: 18px; font-weight: bold; color: #004359; margin-bottom: 14px; letter-spacing: 0.5px;\">Terms and Conditions</div>
-                <div style=\"font-size: 15px; line-height: 1.7; color: #444;\">${formattedTerms}</div>
+                <div style=\"font-size: 15px; font-weight: bold; color: #004359; margin-bottom: 8px; letter-spacing: 0.2px;\">Terms and Conditions</div>
+                <div style=\"font-size: 13px; line-height: 1.4; color: #444;\">${formattedTerms}</div>
             `;
             infoSectionsGrid.appendChild(termsSection);
-            // Redesigned Bank Details section
+            // Minimal, compact Bank Details section
             const bankSection = document.createElement('div');
             bankSection.style.cssText = `
-                padding: 28px 28px 20px 28px;
-                background: linear-gradient(120deg, #f7fafc 0%, #e3eaf3 100%);
-                border-radius: 14px;
+                padding: 14px 14px 10px 14px;
+                background: #fff;
+                border-radius: 10px;
                 border: 1px solid #e0e0e0;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+                box-shadow: 0 1px 6px rgba(0,0,0,0.04);
                 font-family: Arial, sans-serif;
             `;
             bankSection.innerHTML = `
-                <div style=\"font-size: 18px; font-weight: bold; color: #004359; margin-bottom: 14px; letter-spacing: 0.5px;\">Bank Transfer Details</div>
-                <div style=\"display: grid; grid-template-columns: auto 1fr; gap: 8px 18px; font-size: 15px; color: #444;\">
+                <div style=\"font-size: 15px; font-weight: bold; color: #004359; margin-bottom: 8px; letter-spacing: 0.2px;\">Bank Transfer Details</div>
+                <div style=\"display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; color: #444;\">
                     ${companyProfile?.bankDetails ? `
                         <div style=\"font-weight: bold;\">Bank Name</div><div>${companyProfile.bankDetails.bankName}</div>
                         <div style=\"font-weight: bold;\">Account Name</div><div>${companyProfile.bankDetails.accountName}</div>
