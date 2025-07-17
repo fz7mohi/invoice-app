@@ -134,6 +134,8 @@ import { storage } from '../../../firebase/firebase';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { getBase64FromUrl } from '../../../utilities/imageUtils';
+import BillDrawer from './BillDrawer';
+import PaymentSlipsDrawer from './PaymentSlipsDrawer';
 
 const defaultTermsAndConditions = `1. Payment is due within 30 days
 2. Please include invoice number on payment
@@ -190,6 +192,8 @@ const InternalPOView = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const [isBillDrawerOpen, setIsBillDrawerOpen] = useState(false);
+    const [isPaymentSlipsDrawerOpen, setIsPaymentSlipsDrawerOpen] = useState(false);
 
     const fetchClientData = async (clientId, fallbackName) => {
         if (!clientId) return;
@@ -1477,310 +1481,301 @@ const InternalPOView = () => {
     };
 
     return (
-        <StyledInternalPOView>
-            <ToastContainer position="top-right" autoClose={3000} />
-            <Container>
-                <Link
-                    to="/internal-pos"
-                    variants={variant('link')}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                >
-                    <Icon name="arrow-left" size={16} color="inherit" />
-                    Go back
-                </Link>
-
-                <HeaderSection>
-                    <HeaderTitle>Internal PO</HeaderTitle>
-                </HeaderSection>
-
-                <Controller
-                    variants={variant('controller')}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    style={{ 
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        width: '100%'
-                    }}
-                >
-                    <div>
-                        <StatusBadge status={internalPO.status}>
-                            <span>
-                                {internalPO.status === 'paid' ? 'Paid' : 
-                                 internalPO.status === 'pending' ? 'Pending' : 
-                                 internalPO.status === 'partially_paid' ? 'Partially Paid' : 
-                                 internalPO.status === 'void' ? 'Void' : 'Draft'}
-                            </span>
-                        </StatusBadge>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <DownloadButton 
-                            onClick={handleDownloadPDF}
-                            disabled={isGeneratingPDF}
-                            style={{ 
-                                opacity: isGeneratingPDF ? 0.7 : 1,
-                                cursor: isGeneratingPDF ? 'wait' : 'pointer'
-                            }}
+        <>
+            <StyledInternalPOView>
+                <ToastContainer position="top-right" autoClose={3000} />
+                <Container>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <Link
+                            to="/internal-pos"
+                            variants={variant('link')}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
                         >
-                            {isGeneratingPDF ? (
-                                <>
-                                    <div style={{ 
-                                        display: 'inline-block',
-                                        width: '16px',
-                                        height: '16px',
-                                        border: '2px solid rgba(255, 255, 255, 0.3)',
-                                        borderRadius: '50%',
-                                        borderTopColor: '#fff',
-                                        animation: 'spin 1s linear infinite',
-                                        marginRight: '8px'
-                                    }} />
-                                    Generating...
-                                </>
-                            ) : (
-                                <>
-                                    <Icon name="download" size={13} />
-                                    Share
-                                </>
-                            )}
-                        </DownloadButton>
-                        <DownloadButton 
-                            onClick={() => setShowDeleteModal(true)}
-                            style={{ 
-                                backgroundColor: '#dc3545',
-                                borderColor: '#dc3545'
-                            }}
-                        >
-                            <Icon name="delete" size={13} />
-                            Delete
-                        </DownloadButton>
+                            <Icon name="arrow-left" size={16} color="inherit" />
+                            Go back
+                        </Link>
                     </div>
-                </Controller>
 
-                {/* Delete Confirmation Modal */}
-                {showDeleteModal && (
-                    <ModalOverlay>
-                        <ModalContent>
-                            <ModalHeader>
-                                <ModalIconWrapper>
-                                    <Icon name="delete" size={20} color="#dc3545" />
-                                </ModalIconWrapper>
-                                <ModalTitle>Delete Internal PO</ModalTitle>
-                            </ModalHeader>
-                            <div style={{ padding: '20px' }}>
-                                <p style={{ 
-                                    marginBottom: '20px',
-                                    color: '#666',
-                                    fontSize: '15px',
-                                    lineHeight: '1.5'
-                                }}>
-                                    Are you sure you want to delete this internal PO? This action cannot be undone.
-                                </p>
-                                <div style={{ 
-                                    display: 'flex', 
-                                    justifyContent: 'flex-end', 
-                                    gap: '12px',
-                                    marginTop: '24px'
-                                }}>
-                                    <DownloadButton
-                                        onClick={() => setShowDeleteModal(false)}
-                                        style={{ 
-                                            backgroundColor: '#6c757d',
-                                            borderColor: '#6c757d',
-                                            minWidth: '100px'
-                                        }}
-                                    >
-                                        Cancel
-                                    </DownloadButton>
-                                    <DownloadButton
-                                        onClick={handleDelete}
-                                        style={{ 
-                                            backgroundColor: '#dc3545',
-                                            borderColor: '#dc3545',
-                                            minWidth: '100px'
-                                        }}
-                                    >
-                                        Delete
-                                    </DownloadButton>
-                                </div>
-                            </div>
-                        </ModalContent>
-                    </ModalOverlay>
-                )}
+                    <HeaderSection>
+                        <HeaderTitle>Internal PO</HeaderTitle>
+                    </HeaderSection>
 
-                <InfoCard>
-                    <InfoHeader>
-                        <InfoGroup>
-                            <InfoID>
-                                <span>Internal PO #</span>{internalPO.customId}
-                            </InfoID>
-                            <InfoDesc>{internalPO.description}</InfoDesc>
-                            {invoice && (
-                                <InvoiceLink to={`/invoice/${invoice.invoiceId}`}>
-                                    Invoice #: {invoice.customId}
-                                </InvoiceLink>
-                            )}
-                            <MetaInfo>
-                                <MetaItem>
-                                    <Icon name="calendar" size={13} />
-                                    Created: {formatDate(internalPO.createdAt)}
-                                </MetaItem>
-                                <MetaItem>
-                                    <Icon name="calendar" size={13} />
-                                    Due: {formatDate(internalPO.paymentDue)}
-                                </MetaItem>
-                            </MetaInfo>
-                        </InfoGroup>
-                    </InfoHeader>
-
-                    <InfoAddresses>
-                        <AddressGroup align="left">
-                            <AddressTitle>Bill To</AddressTitle>
-                            <AddressText>
-                                <strong>{clientData?.name || internalPO.clientName}</strong><br />
-                                {clientData?.address}<br />
-                                {clientData?.country}<br />
-                                {clientData?.phone}<br />
-                                {clientHasVAT && clientData?.trnNumber && (
-                                    <span style={{ fontWeight: '600' }}>
-                                        TRN: {clientData.trnNumber}
-                                    </span>
+                    <Controller
+                        variants={variant('controller')}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        style={{ 
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            width: '100%'
+                        }}
+                    >
+                        <div>
+                            <StatusBadge status={internalPO.status}>
+                                <span>
+                                    {internalPO.status === 'paid' ? 'Paid' : 
+                                     internalPO.status === 'pending' ? 'Pending' : 
+                                     internalPO.status === 'partially_paid' ? 'Partially Paid' : 
+                                     internalPO.status === 'void' ? 'Void' : 'Draft'}
+                                </span>
+                            </StatusBadge>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <DownloadButton 
+                                onClick={handleDownloadPDF}
+                                disabled={isGeneratingPDF}
+                                style={{ 
+                                    opacity: isGeneratingPDF ? 0.7 : 1,
+                                    cursor: isGeneratingPDF ? 'wait' : 'pointer'
+                                }}
+                            >
+                                {isGeneratingPDF ? (
+                                    <>
+                                        <div style={{ 
+                                            display: 'inline-block',
+                                            width: '16px',
+                                            height: '16px',
+                                            border: '2px solid rgba(255, 255, 255, 0.3)',
+                                            borderRadius: '50%',
+                                            borderTopColor: '#fff',
+                                            animation: 'spin 1s linear infinite',
+                                            marginRight: '8px'
+                                        }} />
+                                        Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Icon name="download" size={13} />
+                                        Share
+                                    </>
                                 )}
-                            </AddressText>
-                        </AddressGroup>
-                    </InfoAddresses>
+                            </DownloadButton>
+                            <Button
+                                $secondary
+                                style={{ padding: '8px 16px', fontSize: 14 }}
+                                onClick={() => setIsBillDrawerOpen(true)}
+                                aria-label="View Supplier Bills"
+                            >
+                                <Icon name="file" size={16} style={{ marginRight: 6 }} />
+                                Supplier Bills
+                            </Button>
+                            <Button
+                                $secondary
+                                style={{ padding: '8px 16px', fontSize: 14 }}
+                                onClick={() => setIsPaymentSlipsDrawerOpen(true)}
+                                aria-label="View Payment Slips"
+                            >
+                                <Icon name="file" size={16} style={{ marginRight: 6 }} />
+                                Payment Slips
+                            </Button>
+                            <DownloadButton 
+                                onClick={() => setShowDeleteModal(true)}
+                                style={{ 
+                                    backgroundColor: '#dc3545',
+                                    borderColor: '#dc3545'
+                                }}
+                            >
+                                <Icon name="delete" size={13} />
+                                Delete
+                            </DownloadButton>
+                        </div>
+                    </Controller>
 
-                    <PaymentDetailsSection>
-                        <PaymentDetailsHeader>
-                            <PaymentDetailsTitle>Cost Analysis</PaymentDetailsTitle>
-                        </PaymentDetailsHeader>
+                    {/* Delete Confirmation Modal */}
+                    {showDeleteModal && (
+                        <ModalOverlay>
+                            <ModalContent>
+                                <ModalHeader>
+                                    <ModalIconWrapper>
+                                        <Icon name="delete" size={20} color="#dc3545" />
+                                    </ModalIconWrapper>
+                                    <ModalTitle>Delete Internal PO</ModalTitle>
+                                </ModalHeader>
+                                <div style={{ padding: '20px' }}>
+                                    <p style={{ 
+                                        marginBottom: '20px',
+                                        color: '#666',
+                                        fontSize: '15px',
+                                        lineHeight: '1.5'
+                                    }}>
+                                        Are you sure you want to delete this internal PO? This action cannot be undone.
+                                    </p>
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        justifyContent: 'flex-end', 
+                                        gap: '12px',
+                                        marginTop: '24px'
+                                    }}>
+                                        <DownloadButton
+                                            onClick={() => setShowDeleteModal(false)}
+                                            style={{ 
+                                                backgroundColor: '#6c757d',
+                                                borderColor: '#6c757d',
+                                                minWidth: '100px'
+                                            }}
+                                        >
+                                            Cancel
+                                        </DownloadButton>
+                                        <DownloadButton
+                                            onClick={handleDelete}
+                                            style={{ 
+                                                backgroundColor: '#dc3545',
+                                                borderColor: '#dc3545',
+                                                minWidth: '100px'
+                                            }}
+                                        >
+                                            Delete
+                                        </DownloadButton>
+                                    </div>
+                                </div>
+                            </ModalContent>
+                        </ModalOverlay>
+                    )}
 
-                        <PaymentDetailsGrid>
-                            {/* Row 1: Basic Information */}
-                            <PaymentDetailItem>
-                                <PaymentDetailLabel>
-                                    <Icon name="cube" size={16} style={{ marginRight: '8px' }} />
-                                    Total Items
-                                </PaymentDetailLabel>
-                                <PaymentDetailValue>
-                                    {internalPO.items?.reduce((sum, item) => sum + (item.orderQuantity || item.quantity || 0), 0)}
-                                </PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem>
-                                <PaymentDetailLabel>
-                                    <Icon name="money-bill" size={16} style={{ marginRight: '8px' }} />
-                                    Total Cost
-                                </PaymentDetailLabel>
-                                <PaymentDetailValue>
-                                    {formatPrice(
-                                        internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const unitCost = item.unitCost || 0;
-                                            return sum + (orderQty * unitCost);
-                                        }, 0),
-                                        internalPO.currency
+                    <InfoCard>
+                        <InfoHeader>
+                            <InfoGroup>
+                                <InfoID>
+                                    <span>Internal PO #</span>{internalPO.customId}
+                                </InfoID>
+                                <InfoDesc>{internalPO.description}</InfoDesc>
+                                {invoice && (
+                                    <InvoiceLink to={`/invoice/${invoice.invoiceId}`}>
+                                        Invoice #: {invoice.customId}
+                                    </InvoiceLink>
+                                )}
+                                <MetaInfo>
+                                    <MetaItem>
+                                        <Icon name="calendar" size={13} />
+                                        Created: {formatDate(internalPO.createdAt)}
+                                    </MetaItem>
+                                    <MetaItem>
+                                        <Icon name="calendar" size={13} />
+                                        Due: {formatDate(internalPO.paymentDue)}
+                                    </MetaItem>
+                                </MetaInfo>
+                            </InfoGroup>
+                        </InfoHeader>
+
+                        <InfoAddresses>
+                            <AddressGroup align="left">
+                                <AddressTitle>Bill To</AddressTitle>
+                                <AddressText>
+                                    <strong>{clientData?.name || internalPO.clientName}</strong><br />
+                                    {clientData?.address}<br />
+                                    {clientData?.country}<br />
+                                    {clientData?.phone}<br />
+                                    {clientHasVAT && clientData?.trnNumber && (
+                                        <span style={{ fontWeight: '600' }}>
+                                            TRN: {clientData.trnNumber}
+                                        </span>
                                     )}
-                                </PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem>
-                                <PaymentDetailLabel>
-                                    <Icon name="print" size={16} style={{ marginRight: '8px' }} />
-                                    Printing Cost
-                                </PaymentDetailLabel>
-                                <PaymentDetailValue>
-                                    {formatPrice(
-                                        internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const printingCost = item.printingCost || 0;
-                                            return sum + (orderQty * printingCost);
-                                        }, 0),
-                                        internalPO.currency
-                                    )}
-                                </PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem onClick={() => setShowShippingModal(true)} style={{ cursor: 'pointer' }}>
-                                <PaymentDetailLabel>
-                                    <Icon name="shipping" size={16} style={{ marginRight: '8px' }} />
-                                    Additional Shipping Cost
-                                </PaymentDetailLabel>
-                                <PaymentDetailValue>
-                                    {formatPrice(internalPO.additionalShippingCost || 0, internalPO.currency)}
-                                </PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem>
-                                <PaymentDetailLabel>
-                                    <Icon name="truck-fast" size={16} style={{ marginRight: '8px' }} />
-                                    Shipping Cost
-                                </PaymentDetailLabel>
-                                <PaymentDetailValue>
-                                    {formatPrice(
-                                        internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const shippingCost = item.shippingCost || 0;
-                                            return sum + (orderQty * shippingCost);
-                                        }, 0) + (internalPO.additionalShippingCost || 0),
-                                        internalPO.currency
-                                    )}
-                                </PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem onClick={() => setShowPrintingModal(true)} style={{ cursor: 'pointer' }}>
-                                <PaymentDetailLabel>
-                                    <Icon name="print" size={16} style={{ marginRight: '8px' }} />
-                                    Additional Printing Cost
-                                </PaymentDetailLabel>
-                                <PaymentDetailValue>
-                                    {formatPrice(internalPO.additionalPrintingCost || 0, internalPO.currency)}
-                                </PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem onClick={() => setShowDeliveryDateModal(true)} style={{ cursor: 'pointer' }}>
-                                <PaymentDetailLabel>
-                                    <Icon name="calendar" size={16} style={{ marginRight: '8px' }} />
-                                    Date of Delivery
-                                </PaymentDetailLabel>
-                                <PaymentDetailValue>
-                                    {internalPO.deliveryDate ? formatDate(internalPO.deliveryDate) : 'Not set'}
-                                </PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem>
-                                <PaymentDetailLabel>
-                                    <Icon name="calculator" size={16} style={{ marginRight: '8px' }} />
-                                    Net Total (Cost)
-                                </PaymentDetailLabel>
-                                <PaymentDetailValue>
-                                    {formatPrice(
-                                        // Total cost of items
-                                        internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const unitCost = item.unitCost || 0;
-                                            return sum + (orderQty * unitCost);
-                                        }, 0) +
-                                        // Total printing cost (per item + additional)
-                                        internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const printingCost = item.printingCost || 0;
-                                            return sum + (orderQty * printingCost);
-                                        }, 0) + (internalPO.additionalPrintingCost || 0) +
-                                        // Total shipping cost (per item + additional)
-                                        internalPO.items?.reduce((sum, item) => {
-                                            const orderQty = item.orderQuantity || item.quantity || 0;
-                                            const shippingCost = item.shippingCost || 0;
-                                            return sum + (orderQty * shippingCost);
-                                        }, 0) + (internalPO.additionalShippingCost || 0),
-                                        internalPO.currency
-                                    )}
-                                </PaymentDetailValue>
-                            </PaymentDetailItem>
-                            <PaymentDetailItem>
-                                <PaymentDetailLabel>
-                                    <Icon name="chart-line" size={16} style={{ marginRight: '8px' }} />
-                                    Net Profit
-                                </PaymentDetailLabel>
-                                <PaymentDetailValue>
-                                    {formatPrice(
-                                        grandTotal - (
+                                </AddressText>
+                            </AddressGroup>
+                        </InfoAddresses>
+
+                        <PaymentDetailsSection>
+                            <PaymentDetailsHeader>
+                                <PaymentDetailsTitle>Cost Analysis</PaymentDetailsTitle>
+                            </PaymentDetailsHeader>
+
+                            <PaymentDetailsGrid>
+                                {/* Row 1: Basic Information */}
+                                <PaymentDetailItem>
+                                    <PaymentDetailLabel>
+                                        <Icon name="cube" size={16} style={{ marginRight: '8px' }} />
+                                        Total Items
+                                    </PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {internalPO.items?.reduce((sum, item) => sum + (item.orderQuantity || item.quantity || 0), 0)}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                <PaymentDetailItem>
+                                    <PaymentDetailLabel>
+                                        <Icon name="money-bill" size={16} style={{ marginRight: '8px' }} />
+                                        Total Cost
+                                    </PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {formatPrice(
+                                            internalPO.items?.reduce((sum, item) => {
+                                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                                const unitCost = item.unitCost || 0;
+                                                return sum + (orderQty * unitCost);
+                                            }, 0),
+                                            internalPO.currency
+                                        )}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                <PaymentDetailItem>
+                                    <PaymentDetailLabel>
+                                        <Icon name="print" size={16} style={{ marginRight: '8px' }} />
+                                        Printing Cost
+                                    </PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {formatPrice(
+                                            internalPO.items?.reduce((sum, item) => {
+                                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                                const printingCost = item.printingCost || 0;
+                                                return sum + (orderQty * printingCost);
+                                            }, 0),
+                                            internalPO.currency
+                                        )}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                <PaymentDetailItem onClick={() => setShowShippingModal(true)} style={{ cursor: 'pointer' }}>
+                                    <PaymentDetailLabel>
+                                        <Icon name="shipping" size={16} style={{ marginRight: '8px' }} />
+                                        Additional Shipping Cost
+                                    </PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {formatPrice(internalPO.additionalShippingCost || 0, internalPO.currency)}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                <PaymentDetailItem>
+                                    <PaymentDetailLabel>
+                                        <Icon name="truck-fast" size={16} style={{ marginRight: '8px' }} />
+                                        Shipping Cost
+                                    </PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {formatPrice(
+                                            internalPO.items?.reduce((sum, item) => {
+                                                const orderQty = item.orderQuantity || item.quantity || 0;
+                                                const shippingCost = item.shippingCost || 0;
+                                                return sum + (orderQty * shippingCost);
+                                            }, 0) + (internalPO.additionalShippingCost || 0),
+                                            internalPO.currency
+                                        )}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                <PaymentDetailItem onClick={() => setShowPrintingModal(true)} style={{ cursor: 'pointer' }}>
+                                    <PaymentDetailLabel>
+                                        <Icon name="print" size={16} style={{ marginRight: '8px' }} />
+                                        Additional Printing Cost
+                                    </PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {formatPrice(internalPO.additionalPrintingCost || 0, internalPO.currency)}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                <PaymentDetailItem onClick={() => setShowDeliveryDateModal(true)} style={{ cursor: 'pointer' }}>
+                                    <PaymentDetailLabel>
+                                        <Icon name="calendar" size={16} style={{ marginRight: '8px' }} />
+                                        Date of Delivery
+                                    </PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {internalPO.deliveryDate ? formatDate(internalPO.deliveryDate) : 'Not set'}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                <PaymentDetailItem>
+                                    <PaymentDetailLabel>
+                                        <Icon name="calculator" size={16} style={{ marginRight: '8px' }} />
+                                        Net Total (Cost)
+                                    </PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {formatPrice(
                                             // Total cost of items
                                             internalPO.items?.reduce((sum, item) => {
                                                 const orderQty = item.orderQuantity || item.quantity || 0;
@@ -1798,591 +1793,632 @@ const InternalPOView = () => {
                                                 const orderQty = item.orderQuantity || item.quantity || 0;
                                                 const shippingCost = item.shippingCost || 0;
                                                 return sum + (orderQty * shippingCost);
-                                            }, 0) + (internalPO.additionalShippingCost || 0)
-                                        ),
-                                        internalPO.currency
-                                    )}
-                                </PaymentDetailValue>
-                            </PaymentDetailItem>
-                        </PaymentDetailsGrid>
-                    </PaymentDetailsSection>
+                                            }, 0) + (internalPO.additionalShippingCost || 0),
+                                            internalPO.currency
+                                        )}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                                <PaymentDetailItem>
+                                    <PaymentDetailLabel>
+                                        <Icon name="chart-line" size={16} style={{ marginRight: '8px' }} />
+                                        Net Profit
+                                    </PaymentDetailLabel>
+                                    <PaymentDetailValue>
+                                        {formatPrice(
+                                            grandTotal - (
+                                                // Total cost of items
+                                                internalPO.items?.reduce((sum, item) => {
+                                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                                    const unitCost = item.unitCost || 0;
+                                                    return sum + (orderQty * unitCost);
+                                                }, 0) +
+                                                // Total printing cost (per item + additional)
+                                                internalPO.items?.reduce((sum, item) => {
+                                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                                    const printingCost = item.printingCost || 0;
+                                                    return sum + (orderQty * printingCost);
+                                                }, 0) + (internalPO.additionalPrintingCost || 0) +
+                                                // Total shipping cost (per item + additional)
+                                                internalPO.items?.reduce((sum, item) => {
+                                                    const orderQty = item.orderQuantity || item.quantity || 0;
+                                                    const shippingCost = item.shippingCost || 0;
+                                                    return sum + (orderQty * shippingCost);
+                                                }, 0) + (internalPO.additionalShippingCost || 0)
+                                            ),
+                                            internalPO.currency
+                                        )}
+                                    </PaymentDetailValue>
+                                </PaymentDetailItem>
+                            </PaymentDetailsGrid>
+                        </PaymentDetailsSection>
 
-                    <Details className="Details">
-                        <SupplierSection>
-                            <SupplierHeader>
-                                <Icon name="supplier" size={16} color={theme?.colors?.primary} />
-                                <SupplierTitle>Supplier Details</SupplierTitle>
-                            </SupplierHeader>
-                            
-                            <SupplierGrid>
-                                {internalPO.items?.map((item, index) => {
-                                    const orderQty = item.orderQuantity || item.quantity || 0;
-                                    const unitCost = item.unitCost || 0;
-                                    const printingCost = item.printingCost || 0;
-                                    const shippingCost = item.shippingCost || 0;
-                                    const subtotal = orderQty * unitCost;
-                                    const totalPrintingCost = orderQty * printingCost;
-                                    const totalShippingCost = orderQty * shippingCost;
-                                    const total = subtotal + totalPrintingCost + totalShippingCost;
-                                    
-                                    return (
-                                        <SupplierItem 
-                                            key={index}
-                                            onClick={() => handleSupplierClick(item)}
-                                        >
-                                            <SupplierName>
-                                                <Icon name="supplier" size={14} className="supplier-icon" />
-                                                {item.supplierName || 'Not assigned'}
-                                            </SupplierName>
-                                            {renderSupplierDetails(item)}
-                                        </SupplierItem>
-                                    );
-                                })}
-                            </SupplierGrid>
-                        </SupplierSection>
+                        <Details className="Details">
+                            <SupplierSection>
+                                <SupplierHeader>
+                                    <Icon name="supplier" size={16} color={theme?.colors?.primary} />
+                                    <SupplierTitle>Supplier Details</SupplierTitle>
+                                </SupplierHeader>
+                                
+                                <SupplierGrid>
+                                    {internalPO.items?.map((item, index) => {
+                                        const orderQty = item.orderQuantity || item.quantity || 0;
+                                        const unitCost = item.unitCost || 0;
+                                        const printingCost = item.printingCost || 0;
+                                        const shippingCost = item.shippingCost || 0;
+                                        const subtotal = orderQty * unitCost;
+                                        const totalPrintingCost = orderQty * printingCost;
+                                        const totalShippingCost = orderQty * shippingCost;
+                                        const total = subtotal + totalPrintingCost + totalShippingCost;
+                                        
+                                        return (
+                                            <SupplierItem 
+                                                key={index}
+                                                onClick={() => handleSupplierClick(item)}
+                                            >
+                                                <SupplierName>
+                                                    <Icon name="supplier" size={14} className="supplier-icon" />
+                                                    {item.supplierName || 'Not assigned'}
+                                                </SupplierName>
+                                                {renderSupplierDetails(item)}
+                                            </SupplierItem>
+                                        );
+                                    })}
+                                </SupplierGrid>
+                            </SupplierSection>
 
-                        <ItemsSection>
-                            <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
-                                <HeaderCell>Item Name</HeaderCell>
-                                <HeaderCell>QTY.</HeaderCell>
-                                <HeaderCell>Price</HeaderCell>
-                                {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
-                                <HeaderCell>Total</HeaderCell>
-                            </ItemsHeader>
-                            
-                            <Items>
-                                {internalPO.items?.map((item, index) => {
-                                    const itemVAT = clientHasVAT ? (item.inPrice * item.inQuantity * 0.05) : 0;
-                                    const orderQty = item.inQuantity || 0;
-                                    const unitCost = item.unitCost || 0;
-                                    const price = item.price || 0;
-                                    const subtotal = orderQty * unitCost;
-                                    const total = item.inTotal || subtotal + (clientHasVAT ? itemVAT : 0);
-                                    
-                                    // Get the corresponding invoice item description
-                                    const invoiceItem = invoiceData?.items?.find(invItem => invItem.name === item.name);
-                                    return (
-                                        <Item key={index} showVat={clientHasVAT}>
-                                            <div className="item-details">
-                                                <ItemName>{item.name}</ItemName>
-                                                {(item.description || invoiceItem?.description) && (
-                                                    <ItemDescription>
-                                                        {item.description || invoiceItem?.description}
-                                                    </ItemDescription>
-                                                )}
-                                                <div className="item-mobile-details">
-                                                    <span>
-                                                        {orderQty} × {formatPrice(unitCost, internalPO.currency)}
-                                                        {clientHasVAT && ` (+${formatPrice(itemVAT, internalPO.currency)} VAT)`}
-                                                    </span>
+                            <ItemsSection>
+                                <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
+                                    <HeaderCell>Item Name</HeaderCell>
+                                    <HeaderCell>QTY.</HeaderCell>
+                                    <HeaderCell>Price</HeaderCell>
+                                    {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
+                                    <HeaderCell>Total</HeaderCell>
+                                </ItemsHeader>
+                                
+                                <Items>
+                                    {internalPO.items?.map((item, index) => {
+                                        const itemVAT = clientHasVAT ? (item.inPrice * item.inQuantity * 0.05) : 0;
+                                        const orderQty = item.inQuantity || 0;
+                                        const unitCost = item.unitCost || 0;
+                                        const price = item.price || 0;
+                                        const subtotal = orderQty * unitCost;
+                                        const total = item.inTotal || subtotal + (clientHasVAT ? itemVAT : 0);
+                                        
+                                        // Get the corresponding invoice item description
+                                        const invoiceItem = invoiceData?.items?.find(invItem => invItem.name === item.name);
+                                        return (
+                                            <Item key={index} showVat={clientHasVAT}>
+                                                <div className="item-details">
+                                                    <ItemName>{item.name}</ItemName>
+                                                    {(item.description || invoiceItem?.description) && (
+                                                        <ItemDescription>
+                                                            {item.description || invoiceItem?.description}
+                                                        </ItemDescription>
+                                                    )}
+                                                    <div className="item-mobile-details">
+                                                        <span>
+                                                            {orderQty} × {formatPrice(unitCost, internalPO.currency)}
+                                                            {clientHasVAT && ` (+${formatPrice(itemVAT, internalPO.currency)} VAT)`}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <ItemQty>{orderQty}</ItemQty>
-                                            <ItemPrice>{formatPrice(price, internalPO.currency)}</ItemPrice>
-                                            {clientHasVAT && (
-                                                <ItemVat>
-                                                    {formatPrice(itemVAT, internalPO.currency)}
-                                                </ItemVat>
-                                            )}
-                                            <ItemTotal>
-                                                {formatPrice(total, internalPO.currency)}
-                                            </ItemTotal>
-                                        </Item>
-                                    );
-                                })}
-                            </Items>
+                                                <ItemQty>{orderQty}</ItemQty>
+                                                <ItemPrice>{formatPrice(price, internalPO.currency)}</ItemPrice>
+                                                {clientHasVAT && (
+                                                    <ItemVat>
+                                                        {formatPrice(itemVAT, internalPO.currency)}
+                                                    </ItemVat>
+                                                )}
+                                                <ItemTotal>
+                                                    {formatPrice(total, internalPO.currency)}
+                                                </ItemTotal>
+                                            </Item>
+                                        );
+                                    })}
+                                </Items>
 
-                            <Total>
-                                <div>
-                                    <TotalText>Subtotal</TotalText>
-                                    <TotalAmount>{formatPrice(internalPO.inTotal, internalPO.currency)}</TotalAmount>
-                                </div>
-                                {clientHasVAT && (
+                                <Total>
                                     <div>
-                                        <TotalText>VAT (5%)</TotalText>
-                                        <TotalAmount>{formatPrice(vatAmount, internalPO.currency)}</TotalAmount>
+                                        <TotalText>Subtotal</TotalText>
+                                        <TotalAmount>{formatPrice(internalPO.inTotal, internalPO.currency)}</TotalAmount>
                                     </div>
-                                )}
-                                <div className="grand-total">
-                                    <TotalText>Total</TotalText>
-                                    <TotalAmount>{formatPrice(internalPO.inTotal + (clientHasVAT ? vatAmount : 0), internalPO.currency)}</TotalAmount>
-                                </div>
-                            </Total>
-                        </ItemsSection>
-                    </Details>
+                                    {clientHasVAT && (
+                                        <div>
+                                            <TotalText>VAT (5%)</TotalText>
+                                            <TotalAmount>{formatPrice(vatAmount, internalPO.currency)}</TotalAmount>
+                                        </div>
+                                    )}
+                                    <div className="grand-total">
+                                        <TotalText>Total</TotalText>
+                                        <TotalAmount>{formatPrice(internalPO.inTotal + (clientHasVAT ? vatAmount : 0), internalPO.currency)}</TotalAmount>
+                                    </div>
+                                </Total>
+                            </ItemsSection>
+                        </Details>
 
-                    <InfoSectionsGrid>
-                        <TermsSection>
-                            <TermsHeader>
-                                <TermsTitle>Notes</TermsTitle>
-                                {!isEditingTerms ? (
-                                    <Button
-                                        onClick={() => {
-                                            setEditedTerms(internalPO.termsAndConditions || defaultTermsAndConditions);
-                                            setIsEditingTerms(true);
-                                        }}
-                                        $secondary
-                                        style={{ padding: '6px 12px', fontSize: '13px' }}
-                                    >
-                                        <Icon name="edit" size={13} />
-                                        Edit
-                                    </Button>
-                                ) : (
-                                    <TermsActions>
+                        <InfoSectionsGrid>
+                            <TermsSection>
+                                <TermsHeader>
+                                    <TermsTitle>Notes</TermsTitle>
+                                    {!isEditingTerms ? (
                                         <Button
-                                            onClick={() => setIsEditingTerms(false)}
+                                            onClick={() => {
+                                                setEditedTerms(internalPO.termsAndConditions || defaultTermsAndConditions);
+                                                setIsEditingTerms(true);
+                                            }}
                                             $secondary
                                             style={{ padding: '6px 12px', fontSize: '13px' }}
                                         >
-                                            Cancel
+                                            <Icon name="edit" size={13} />
+                                            Edit
                                         </Button>
-                                        <Button
-                                            onClick={handleEditTerms}
-                                            $primary
-                                            style={{ padding: '6px 12px', fontSize: '13px' }}
-                                        >
-                                            Save
-                                        </Button>
-                                    </TermsActions>
-                                )}
-                            </TermsHeader>
-                            {!isEditingTerms ? (
-                                <div style={{ whiteSpace: 'pre-line' }}>
-                                    {internalPO.termsAndConditions || defaultTermsAndConditions}
-                                </div>
-                            ) : (
-                                <FormTextArea
-                                    value={editedTerms}
-                                    onChange={(e) => setEditedTerms(e.target.value)}
-                                    rows={5}
-                                />
-                            )}
-                        </TermsSection>
-
-                        {renderBankDetails()}
-                    </InfoSectionsGrid>
-                </InfoCard>
-            </Container>
-
-            {/* Modals */}
-            {showVoidModal && (
-                <Modal
-                    isOpen={showVoidModal}
-                    onClose={() => setShowVoidModal(false)}
-                    title="Void Internal PO"
-                    message="Are you sure you want to void this internal PO? This action cannot be undone."
-                    primaryAction={{
-                        label: 'Void',
-                        onClick: handleVoid,
-                        variant: 'warning'
-                    }}
-                    secondaryAction={{
-                        label: 'Cancel',
-                        onClick: () => setShowVoidModal(false)
-                    }}
-                />
-            )}
-
-            {showPaymentModal && (
-                <Modal
-                    isOpen={showPaymentModal}
-                    onClose={() => setShowPaymentModal(false)}
-                    title="Add Payment"
-                    content={
-                        <PaymentForm onSubmit={(e) => {
-                            e.preventDefault();
-                            handlePaymentUpdate(paymentAmount);
-                        }}>
-                            <FormRow>
-                                <PaymentFormLabel>Payment Amount</PaymentFormLabel>
-                                <FormInput
-                                    type="number"
-                                    value={paymentAmount}
-                                    onChange={(e) => setPaymentAmount(e.target.value)}
-                                    placeholder="Enter amount"
-                                    required
-                                />
-                            </FormRow>
-                        </PaymentForm>
-                    }
-                    primaryAction={{
-                        label: 'Add Payment',
-                        onClick: () => handlePaymentUpdate(paymentAmount),
-                        variant: 'primary'
-                    }}
-                    secondaryAction={{
-                        label: 'Cancel',
-                        onClick: () => setShowPaymentModal(false)
-                    }}
-                />
-            )}
-
-            {isEmailModalOpen && emailData && pdfData && (
-                <EmailPreviewModal
-                    isOpen={isEmailModalOpen}
-                    onClose={() => setIsEmailModalOpen(false)}
-                    onSend={handleEmailSent}
-                    emailData={emailData}
-                    documentType="internal_po"
-                    documentId={internalPO.id}
-                    clientName={internalPO.clientName}
-                    clientEmail={internalPO.clientEmail}
-                    amount={internalPO.total}
-                    currency={internalPO.currency}
-                    dueDate={internalPO.dueDate}
-                    pdfBase64={pdfData.content}
-                    pdfName={pdfData.name}
-                />
-            )}
-
-            {/* Supplier Edit Modal */}
-            {editingSupplier && (
-                <ModalOverlay>
-                    <SupplierEditModal>
-                        <ModalHeader>
-                            <ModalIconWrapper>
-                                <Icon name="supplier" size={20} />
-                            </ModalIconWrapper>
-                            <ModalTitle>Edit Supplier Details - {editingSupplier.name}</ModalTitle>
-                        </ModalHeader>
-                        
-                        <SupplierEditForm onSubmit={handleSupplierFormSubmit}>
-                            <SupplierFormSection>
-                                <SupplierFormTitle>Basic Information</SupplierFormTitle>
-                                <SupplierFormRow>
-                                    <SupplierFormLabel>Supplier Name</SupplierFormLabel>
-                                    <SupplierFormInput
-                                        type="text"
-                                        name="supplierName"
-                                        value={supplierFormData.supplierName}
-                                        onChange={handleSupplierFormChange}
-                                        placeholder="Enter supplier name"
-                                        required
-                                    />
-                                </SupplierFormRow>
-                                <SupplierFormRow>
-                                    <SupplierFormLabel>Order Quantity</SupplierFormLabel>
-                                    <SupplierFormInput
-                                        type="number"
-                                        name="orderQuantity"
-                                        value={supplierFormData.orderQuantity}
-                                        onChange={handleSupplierFormChange}
-                                        min="0"
-                                        step="1"
-                                        required
-                                    />
-                                </SupplierFormRow>
-                                <SupplierFormRow>
-                                    <SupplierFormLabel>Unit Cost</SupplierFormLabel>
-                                    <SupplierFormInput
-                                        type="number"
-                                        name="unitCost"
-                                        value={supplierFormData.unitCost}
-                                        onChange={handleSupplierFormChange}
-                                        min="0"
-                                        step="0.01"
-                                        required
-                                    />
-                                </SupplierFormRow>
-                                <SupplierFormRow>
-                                    <SupplierFormLabel>Product Image</SupplierFormLabel>
-                                    <ImageUploadContainer
-                                        onDrop={handleImageDrop}
-                                        onDragOver={handleDragOver}
-                                        hasImage={!!supplierFormData.imageUrl}
-                                        onClick={() => {
-                                            if (!supplierFormData.imageUrl) {
-                                                document.getElementById('image-upload').click();
-                                            }
-                                        }}
-                                    >
-                                        {supplierFormData.imageUrl ? (
-                                            <ImagePreview>
-                                                <img 
-                                                    src={getImageUrl(supplierFormData.imageUrl)} 
-                                                    alt="Product preview" 
-                                                    onError={(e) => {
-                                                        // Fallback to direct URL if proxy fails
-                                                        e.target.src = supplierFormData.imageUrl;
-                                                    }}
-                                                />
-                                                <RemoveImageButton 
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setSupplierFormData(prev => ({ 
-                                                            ...prev, 
-                                                            image: null,
-                                                            imageUrl: null,
-                                                            shouldRemoveImage: true
-                                                        }));
-                                                    }}
-                                                >
-                                                    <Icon name="close" size={16} color="#fff" />
-                                                </RemoveImageButton>
-                                            </ImagePreview>
-                                        ) : (
-                                            <ImageUploadPlaceholder>
-                                                <Icon name="image" size={32} color={theme?.colors?.primary || '#000'} />
-                                                <span>Drag & drop an image here</span>
-                                                <span style={{ fontSize: '12px', color: theme?.colors?.textSecondary || '#666' }}>
-                                                    or click to browse
-                                                </span>
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleImageUpload}
-                                                    style={{ display: 'none' }}
-                                                    id="image-upload"
-                                                />
-                                            </ImageUploadPlaceholder>
-                                        )}
-                                    </ImageUploadContainer>
-                                    <ImageUploadHint>
-                                        Supported formats: JPG, PNG, GIF (Max 5MB)
-                                    </ImageUploadHint>
-                                </SupplierFormRow>
-                            </SupplierFormSection>
-
-                            <SupplierFormSection>
-                                <SupplierFormTitle>Additional Costs (Per Unit)</SupplierFormTitle>
-                                <SupplierFormRow>
-                                    <SupplierFormLabel>Printing Cost (Per Unit)</SupplierFormLabel>
-                                    <SupplierFormInput
-                                        type="number"
-                                        name="printingCost"
-                                        value={supplierFormData.printingCost}
-                                        onChange={handleSupplierFormChange}
-                                        min="0"
-                                        step="0.01"
-                                    />
-                                </SupplierFormRow>
-                                <SupplierFormRow>
-                                    <SupplierFormLabel>Shipping Cost (Per Unit)</SupplierFormLabel>
-                                    <SupplierFormInput
-                                        type="number"
-                                        name="shippingCost"
-                                        value={supplierFormData.shippingCost}
-                                        onChange={handleSupplierFormChange}
-                                        min="0"
-                                        step="0.01"
-                                    />
-                                </SupplierFormRow>
-                            </SupplierFormSection>
-
-                            <CostBreakdown>
-                                <CostItem>
-                                    <CostLabel>Subtotal</CostLabel>
-                                    <CostValue>{formatPrice(calculateSupplierTotal().subtotal, internalPO.currency)}</CostValue>
-                                </CostItem>
-                                <CostItem>
-                                    <CostLabel>Total Printing Cost</CostLabel>
-                                    <CostValue>{formatPrice(calculateSupplierTotal().totalPrintingCost, internalPO.currency)}</CostValue>
-                                </CostItem>
-                                <CostItem>
-                                    <CostLabel>Total Shipping Cost</CostLabel>
-                                    <CostValue>{formatPrice(calculateSupplierTotal().totalShippingCost, internalPO.currency)}</CostValue>
-                                </CostItem>
-                                <CostItem>
-                                    <CostLabel>Total</CostLabel>
-                                    <CostValue>{formatPrice(calculateSupplierTotal().total, internalPO.currency)}</CostValue>
-                                </CostItem>
-                            </CostBreakdown>
-
-                            <SupplierFormActions>
-                                <Button
-                                    type="button"
-                                    onClick={() => setEditingSupplier(null)}
-                                    $secondary
-                                    disabled={isSubmitting}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button 
-                                    type="submit" 
-                                    $primary
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div style={{ marginRight: '8px', width: '16px', height: '16px' }} className="loading-spinner"></div>
-                                            Saving...
-                                        </>
                                     ) : (
-                                        'Save Changes'
+                                        <TermsActions>
+                                            <Button
+                                                onClick={() => setIsEditingTerms(false)}
+                                                $secondary
+                                                style={{ padding: '6px 12px', fontSize: '13px' }}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                onClick={handleEditTerms}
+                                                $primary
+                                                style={{ padding: '6px 12px', fontSize: '13px' }}
+                                            >
+                                                Save
+                                            </Button>
+                                        </TermsActions>
                                     )}
-                                </Button>
-                            </SupplierFormActions>
-                        </SupplierEditForm>
-                    </SupplierEditModal>
-                </ModalOverlay>
-            )}
+                                </TermsHeader>
+                                {!isEditingTerms ? (
+                                    <div style={{ whiteSpace: 'pre-line' }}>
+                                        {internalPO.termsAndConditions || defaultTermsAndConditions}
+                                    </div>
+                                ) : (
+                                    <FormTextArea
+                                        value={editedTerms}
+                                        onChange={(e) => setEditedTerms(e.target.value)}
+                                        rows={5}
+                                    />
+                                )}
+                            </TermsSection>
 
-            {showShippingModal && (
-                <ModalOverlay>
-                    <SupplierEditModal>
-                        <ModalHeader>
-                            <ModalIconWrapper>
-                                <Icon name="shipping" size={20} />
-                            </ModalIconWrapper>
-                            <ModalTitle>Add Additional Shipping Cost</ModalTitle>
-                        </ModalHeader>
-                        
-                        <SupplierEditForm onSubmit={handleShippingCostSubmit}>
-                            <SupplierFormSection>
-                                <SupplierFormTitle>Additional Shipping Cost</SupplierFormTitle>
-                                <SupplierFormRow>
-                                    <SupplierFormLabel>Additional Shipping Cost</SupplierFormLabel>
-                                    <SupplierFormInput
+                            {renderBankDetails()}
+                        </InfoSectionsGrid>
+                    </InfoCard>
+                </Container>
+
+                {/* Modals */}
+                {showVoidModal && (
+                    <Modal
+                        isOpen={showVoidModal}
+                        onClose={() => setShowVoidModal(false)}
+                        title="Void Internal PO"
+                        message="Are you sure you want to void this internal PO? This action cannot be undone."
+                        primaryAction={{
+                            label: 'Void',
+                            onClick: handleVoid,
+                            variant: 'warning'
+                        }}
+                        secondaryAction={{
+                            label: 'Cancel',
+                            onClick: () => setShowVoidModal(false)
+                        }}
+                    />
+                )}
+
+                {showPaymentModal && (
+                    <Modal
+                        isOpen={showPaymentModal}
+                        onClose={() => setShowPaymentModal(false)}
+                        title="Add Payment"
+                        content={
+                            <PaymentForm onSubmit={(e) => {
+                                e.preventDefault();
+                                handlePaymentUpdate(paymentAmount);
+                            }}>
+                                <FormRow>
+                                    <PaymentFormLabel>Payment Amount</PaymentFormLabel>
+                                    <FormInput
                                         type="number"
-                                        name="shippingCost"
-                                        value={additionalShippingCost}
-                                        onChange={(e) => setAdditionalShippingCost(e.target.value)}
-                                        placeholder="Enter additional shipping cost"
-                                        min="0"
-                                        step="0.01"
+                                        value={paymentAmount}
+                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                        placeholder="Enter amount"
                                         required
                                     />
-                                </SupplierFormRow>
-                            </SupplierFormSection>
+                                </FormRow>
+                            </PaymentForm>
+                        }
+                        primaryAction={{
+                            label: 'Add Payment',
+                            onClick: () => handlePaymentUpdate(paymentAmount),
+                            variant: 'primary'
+                        }}
+                        secondaryAction={{
+                            label: 'Cancel',
+                            onClick: () => setShowPaymentModal(false)
+                        }}
+                    />
+                )}
 
-                            <CostBreakdown>
-                                <CostItem>
-                                    <CostLabel>Additional Shipping Cost</CostLabel>
-                                    <CostValue>
-                                        {formatPrice(parseFloat(additionalShippingCost) || 0, internalPO.currency)}
-                                    </CostValue>
-                                </CostItem>
-                            </CostBreakdown>
+                {isEmailModalOpen && emailData && pdfData && (
+                    <EmailPreviewModal
+                        isOpen={isEmailModalOpen}
+                        onClose={() => setIsEmailModalOpen(false)}
+                        onSend={handleEmailSent}
+                        emailData={emailData}
+                        documentType="internal_po"
+                        documentId={internalPO.id}
+                        clientName={internalPO.clientName}
+                        clientEmail={internalPO.clientEmail}
+                        amount={internalPO.total}
+                        currency={internalPO.currency}
+                        dueDate={internalPO.dueDate}
+                        pdfBase64={pdfData.content}
+                        pdfName={pdfData.name}
+                    />
+                )}
 
-                            <SupplierFormActions>
-                                <Button
-                                    type="button"
-                                    onClick={() => setShowShippingModal(false)}
-                                    $secondary
-                                >
-                                    Cancel
-                                </Button>
-                                <Button type="submit" $primary>
-                                    Save Changes
-                                </Button>
-                            </SupplierFormActions>
-                        </SupplierEditForm>
-                    </SupplierEditModal>
-                </ModalOverlay>
-            )}
+                {/* Supplier Edit Modal */}
+                {editingSupplier && (
+                    <ModalOverlay>
+                        <SupplierEditModal>
+                            <ModalHeader>
+                                <ModalIconWrapper>
+                                    <Icon name="supplier" size={20} />
+                                </ModalIconWrapper>
+                                <ModalTitle>Edit Supplier Details - {editingSupplier.name}</ModalTitle>
+                            </ModalHeader>
+                            
+                            <SupplierEditForm onSubmit={handleSupplierFormSubmit}>
+                                <SupplierFormSection>
+                                    <SupplierFormTitle>Basic Information</SupplierFormTitle>
+                                    <SupplierFormRow>
+                                        <SupplierFormLabel>Supplier Name</SupplierFormLabel>
+                                        <SupplierFormInput
+                                            type="text"
+                                            name="supplierName"
+                                            value={supplierFormData.supplierName}
+                                            onChange={handleSupplierFormChange}
+                                            placeholder="Enter supplier name"
+                                            required
+                                        />
+                                    </SupplierFormRow>
+                                    <SupplierFormRow>
+                                        <SupplierFormLabel>Order Quantity</SupplierFormLabel>
+                                        <SupplierFormInput
+                                            type="number"
+                                            name="orderQuantity"
+                                            value={supplierFormData.orderQuantity}
+                                            onChange={handleSupplierFormChange}
+                                            min="0"
+                                            step="1"
+                                            required
+                                        />
+                                    </SupplierFormRow>
+                                    <SupplierFormRow>
+                                        <SupplierFormLabel>Unit Cost</SupplierFormLabel>
+                                        <SupplierFormInput
+                                            type="number"
+                                            name="unitCost"
+                                            value={supplierFormData.unitCost}
+                                            onChange={handleSupplierFormChange}
+                                            min="0"
+                                            step="0.01"
+                                            required
+                                        />
+                                    </SupplierFormRow>
+                                    <SupplierFormRow>
+                                        <SupplierFormLabel>Product Image</SupplierFormLabel>
+                                        <ImageUploadContainer
+                                            onDrop={handleImageDrop}
+                                            onDragOver={handleDragOver}
+                                            hasImage={!!supplierFormData.imageUrl}
+                                            onClick={() => {
+                                                if (!supplierFormData.imageUrl) {
+                                                    document.getElementById('image-upload').click();
+                                                }
+                                            }}
+                                        >
+                                            {supplierFormData.imageUrl ? (
+                                                <ImagePreview>
+                                                    <img 
+                                                        src={getImageUrl(supplierFormData.imageUrl)} 
+                                                        alt="Product preview" 
+                                                        onError={(e) => {
+                                                            // Fallback to direct URL if proxy fails
+                                                            e.target.src = supplierFormData.imageUrl;
+                                                        }}
+                                                    />
+                                                    <RemoveImageButton 
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setSupplierFormData(prev => ({ 
+                                                                ...prev, 
+                                                                image: null,
+                                                                imageUrl: null,
+                                                                shouldRemoveImage: true
+                                                            }));
+                                                        }}
+                                                    >
+                                                        <Icon name="close" size={16} color="#fff" />
+                                                    </RemoveImageButton>
+                                                </ImagePreview>
+                                            ) : (
+                                                <ImageUploadPlaceholder>
+                                                    <Icon name="image" size={32} color={theme?.colors?.primary || '#000'} />
+                                                    <span>Drag & drop an image here</span>
+                                                    <span style={{ fontSize: '12px', color: theme?.colors?.textSecondary || '#666' }}>
+                                                        or click to browse
+                                                    </span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleImageUpload}
+                                                        style={{ display: 'none' }}
+                                                        id="image-upload"
+                                                    />
+                                                </ImageUploadPlaceholder>
+                                            )}
+                                        </ImageUploadContainer>
+                                        <ImageUploadHint>
+                                            Supported formats: JPG, PNG, GIF (Max 5MB)
+                                        </ImageUploadHint>
+                                    </SupplierFormRow>
+                                </SupplierFormSection>
 
-            {showPrintingModal && (
-                <ModalOverlay>
-                    <SupplierEditModal>
-                        <ModalHeader>
-                            <ModalIconWrapper>
-                                <Icon name="print" size={20} />
-                            </ModalIconWrapper>
-                            <ModalTitle>Add Additional Printing Cost</ModalTitle>
-                        </ModalHeader>
-                        
-                        <SupplierEditForm onSubmit={handlePrintingCostSubmit}>
-                            <SupplierFormSection>
-                                <SupplierFormTitle>Additional Printing Cost</SupplierFormTitle>
-                                <SupplierFormRow>
-                                    <SupplierFormLabel>Additional Printing Cost</SupplierFormLabel>
-                                    <SupplierFormInput
-                                        type="number"
-                                        name="printingCost"
-                                        value={additionalPrintingCost}
-                                        onChange={(e) => setAdditionalPrintingCost(e.target.value)}
-                                        placeholder="Enter additional printing cost"
-                                        min="0"
-                                        step="0.01"
-                                        required
-                                    />
-                                </SupplierFormRow>
-                            </SupplierFormSection>
+                                <SupplierFormSection>
+                                    <SupplierFormTitle>Additional Costs (Per Unit)</SupplierFormTitle>
+                                    <SupplierFormRow>
+                                        <SupplierFormLabel>Printing Cost (Per Unit)</SupplierFormLabel>
+                                        <SupplierFormInput
+                                            type="number"
+                                            name="printingCost"
+                                            value={supplierFormData.printingCost}
+                                            onChange={handleSupplierFormChange}
+                                            min="0"
+                                            step="0.01"
+                                        />
+                                    </SupplierFormRow>
+                                    <SupplierFormRow>
+                                        <SupplierFormLabel>Shipping Cost (Per Unit)</SupplierFormLabel>
+                                        <SupplierFormInput
+                                            type="number"
+                                            name="shippingCost"
+                                            value={supplierFormData.shippingCost}
+                                            onChange={handleSupplierFormChange}
+                                            min="0"
+                                            step="0.01"
+                                        />
+                                    </SupplierFormRow>
+                                </SupplierFormSection>
 
-                            <CostBreakdown>
-                                <CostItem>
-                                    <CostLabel>Additional Printing Cost</CostLabel>
-                                    <CostValue>
-                                        {formatPrice(parseFloat(additionalPrintingCost) || 0, internalPO.currency)}
-                                    </CostValue>
-                                </CostItem>
-                            </CostBreakdown>
+                                <CostBreakdown>
+                                    <CostItem>
+                                        <CostLabel>Subtotal</CostLabel>
+                                        <CostValue>{formatPrice(calculateSupplierTotal().subtotal, internalPO.currency)}</CostValue>
+                                    </CostItem>
+                                    <CostItem>
+                                        <CostLabel>Total Printing Cost</CostLabel>
+                                        <CostValue>{formatPrice(calculateSupplierTotal().totalPrintingCost, internalPO.currency)}</CostValue>
+                                    </CostItem>
+                                    <CostItem>
+                                        <CostLabel>Total Shipping Cost</CostLabel>
+                                        <CostValue>{formatPrice(calculateSupplierTotal().totalShippingCost, internalPO.currency)}</CostValue>
+                                    </CostItem>
+                                    <CostItem>
+                                        <CostLabel>Total</CostLabel>
+                                        <CostValue>{formatPrice(calculateSupplierTotal().total, internalPO.currency)}</CostValue>
+                                    </CostItem>
+                                </CostBreakdown>
 
-                            <SupplierFormActions>
-                                <Button
-                                    type="button"
-                                    onClick={() => setShowPrintingModal(false)}
-                                    $secondary
-                                >
-                                    Cancel
-                                </Button>
-                                <Button type="submit" $primary>
-                                    Save Changes
-                                </Button>
-                            </SupplierFormActions>
-                        </SupplierEditForm>
-                    </SupplierEditModal>
-                </ModalOverlay>
-            )}
+                                <SupplierFormActions>
+                                    <Button
+                                        type="button"
+                                        onClick={() => setEditingSupplier(null)}
+                                        $secondary
+                                        disabled={isSubmitting}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button 
+                                        type="submit" 
+                                        $primary
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <div style={{ marginRight: '8px', width: '16px', height: '16px' }} className="loading-spinner"></div>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            'Save Changes'
+                                        )}
+                                    </Button>
+                                </SupplierFormActions>
+                            </SupplierEditForm>
+                        </SupplierEditModal>
+                    </ModalOverlay>
+                )}
 
-            {showDeliveryDateModal && (
-                <ModalOverlay>
-                    <SupplierEditModal>
-                        <ModalHeader>
-                            <ModalIconWrapper>
-                                <Icon name="calendar" size={20} />
-                            </ModalIconWrapper>
-                            <ModalTitle>Set Delivery Date</ModalTitle>
-                        </ModalHeader>
-                        
-                        <SupplierEditForm onSubmit={handleDeliveryDateSubmit}>
-                            <SupplierFormSection>
-                                <SupplierFormTitle>Delivery Date</SupplierFormTitle>
-                                <SupplierFormRow>
-                                    <SupplierFormLabel>Date</SupplierFormLabel>
-                                    <SupplierFormInput
-                                        type="date"
-                                        name="deliveryDate"
-                                        value={deliveryDate}
-                                        onChange={(e) => setDeliveryDate(e.target.value)}
-                                        required
-                                    />
-                                </SupplierFormRow>
-                            </SupplierFormSection>
+                {showShippingModal && (
+                    <ModalOverlay>
+                        <SupplierEditModal>
+                            <ModalHeader>
+                                <ModalIconWrapper>
+                                    <Icon name="shipping" size={20} />
+                                </ModalIconWrapper>
+                                <ModalTitle>Add Additional Shipping Cost</ModalTitle>
+                            </ModalHeader>
+                            
+                            <SupplierEditForm onSubmit={handleShippingCostSubmit}>
+                                <SupplierFormSection>
+                                    <SupplierFormTitle>Additional Shipping Cost</SupplierFormTitle>
+                                    <SupplierFormRow>
+                                        <SupplierFormLabel>Additional Shipping Cost</SupplierFormLabel>
+                                        <SupplierFormInput
+                                            type="number"
+                                            name="shippingCost"
+                                            value={additionalShippingCost}
+                                            onChange={(e) => setAdditionalShippingCost(e.target.value)}
+                                            placeholder="Enter additional shipping cost"
+                                            min="0"
+                                            step="0.01"
+                                            required
+                                        />
+                                    </SupplierFormRow>
+                                </SupplierFormSection>
 
-                            <SupplierFormActions>
-                                <Button
-                                    type="button"
-                                    onClick={() => setShowDeliveryDateModal(false)}
-                                    $secondary
-                                >
-                                    Cancel
-                                </Button>
-                                <Button type="submit" $primary>
-                                    Save Changes
-                                </Button>
-                            </SupplierFormActions>
-                        </SupplierEditForm>
-                    </SupplierEditModal>
-                </ModalOverlay>
-            )}
+                                <CostBreakdown>
+                                    <CostItem>
+                                        <CostLabel>Additional Shipping Cost</CostLabel>
+                                        <CostValue>
+                                            {formatPrice(parseFloat(additionalShippingCost) || 0, internalPO.currency)}
+                                        </CostValue>
+                                    </CostItem>
+                                </CostBreakdown>
 
-            {previewImage && (
-                <ModalOverlay onClick={() => setPreviewImage(null)}>
-                    <ImagePreviewModal onClick={e => e.stopPropagation()}>
-                        <ImagePreviewModalContent>
-                            <img src={previewImage} alt="Preview" />
-                            <ClosePreviewButton onClick={() => setPreviewImage(null)}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M18 6L6 18M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                            </ClosePreviewButton>
-                        </ImagePreviewModalContent>
-                    </ImagePreviewModal>
-                </ModalOverlay>
-            )}
-        </StyledInternalPOView>
+                                <SupplierFormActions>
+                                    <Button
+                                        type="button"
+                                        onClick={() => setShowShippingModal(false)}
+                                        $secondary
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" $primary>
+                                        Save Changes
+                                    </Button>
+                                </SupplierFormActions>
+                            </SupplierEditForm>
+                        </SupplierEditModal>
+                    </ModalOverlay>
+                )}
+
+                {showPrintingModal && (
+                    <ModalOverlay>
+                        <SupplierEditModal>
+                            <ModalHeader>
+                                <ModalIconWrapper>
+                                    <Icon name="print" size={20} />
+                                </ModalIconWrapper>
+                                <ModalTitle>Add Additional Printing Cost</ModalTitle>
+                            </ModalHeader>
+                            
+                            <SupplierEditForm onSubmit={handlePrintingCostSubmit}>
+                                <SupplierFormSection>
+                                    <SupplierFormTitle>Additional Printing Cost</SupplierFormTitle>
+                                    <SupplierFormRow>
+                                        <SupplierFormLabel>Additional Printing Cost</SupplierFormLabel>
+                                        <SupplierFormInput
+                                            type="number"
+                                            name="printingCost"
+                                            value={additionalPrintingCost}
+                                            onChange={(e) => setAdditionalPrintingCost(e.target.value)}
+                                            placeholder="Enter additional printing cost"
+                                            min="0"
+                                            step="0.01"
+                                            required
+                                        />
+                                    </SupplierFormRow>
+                                </SupplierFormSection>
+
+                                <CostBreakdown>
+                                    <CostItem>
+                                        <CostLabel>Additional Printing Cost</CostLabel>
+                                        <CostValue>
+                                            {formatPrice(parseFloat(additionalPrintingCost) || 0, internalPO.currency)}
+                                        </CostValue>
+                                    </CostItem>
+                                </CostBreakdown>
+
+                                <SupplierFormActions>
+                                    <Button
+                                        type="button"
+                                        onClick={() => setShowPrintingModal(false)}
+                                        $secondary
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" $primary>
+                                        Save Changes
+                                    </Button>
+                                </SupplierFormActions>
+                            </SupplierEditForm>
+                        </SupplierEditModal>
+                    </ModalOverlay>
+                )}
+
+                {showDeliveryDateModal && (
+                    <ModalOverlay>
+                        <SupplierEditModal>
+                            <ModalHeader>
+                                <ModalIconWrapper>
+                                    <Icon name="calendar" size={20} />
+                                </ModalIconWrapper>
+                                <ModalTitle>Set Delivery Date</ModalTitle>
+                            </ModalHeader>
+                            
+                            <SupplierEditForm onSubmit={handleDeliveryDateSubmit}>
+                                <SupplierFormSection>
+                                    <SupplierFormTitle>Delivery Date</SupplierFormTitle>
+                                    <SupplierFormRow>
+                                        <SupplierFormLabel>Date</SupplierFormLabel>
+                                        <SupplierFormInput
+                                            type="date"
+                                            name="deliveryDate"
+                                            value={deliveryDate}
+                                            onChange={(e) => setDeliveryDate(e.target.value)}
+                                            required
+                                        />
+                                    </SupplierFormRow>
+                                </SupplierFormSection>
+
+                                <SupplierFormActions>
+                                    <Button
+                                        type="button"
+                                        onClick={() => setShowDeliveryDateModal(false)}
+                                        $secondary
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" $primary>
+                                        Save Changes
+                                    </Button>
+                                </SupplierFormActions>
+                            </SupplierEditForm>
+                        </SupplierEditModal>
+                    </ModalOverlay>
+                )}
+
+                {previewImage && (
+                    <ModalOverlay onClick={() => setPreviewImage(null)}>
+                        <ImagePreviewModal onClick={e => e.stopPropagation()}>
+                            <ImagePreviewModalContent>
+                                <img src={previewImage} alt="Preview" />
+                                <ClosePreviewButton onClick={() => setPreviewImage(null)}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M18 6L6 18M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                </ClosePreviewButton>
+                            </ImagePreviewModalContent>
+                        </ImagePreviewModal>
+                    </ModalOverlay>
+                )}
+            </StyledInternalPOView>
+            <BillDrawer
+                isOpen={isBillDrawerOpen}
+                onClose={() => setIsBillDrawerOpen(false)}
+                internalPOId={internalPO?.id}
+            />
+            <PaymentSlipsDrawer
+                isOpen={isPaymentSlipsDrawerOpen}
+                onClose={() => setIsPaymentSlipsDrawerOpen(false)}
+                internalPOId={internalPO?.id}
+            />
+        </>
     );
 };
 

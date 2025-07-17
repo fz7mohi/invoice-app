@@ -8,7 +8,7 @@ export const ModalBackdrop = styled.div`
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(5px);
-    z-index: 100;
+    z-index: 2000;
 `;
 
 export const ModalContainer = styled.div`
@@ -16,7 +16,7 @@ export const ModalContainer = styled.div`
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 110;
+    z-index: 2010;
     width: 90%;
     max-width: 480px;
 `;

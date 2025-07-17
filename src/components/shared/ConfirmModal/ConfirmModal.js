@@ -9,7 +9,7 @@ import {
     ConfirmButton
 } from './ConfirmModalStyles';
 
-const ConfirmModal = ({ title, message, onConfirm, onCancel }) => {
+const ConfirmModal = ({ title, message, onConfirm, onCancel, loading }) => {
     return (
         <>
             <ModalBackdrop onClick={onCancel} />
@@ -18,8 +18,10 @@ const ConfirmModal = ({ title, message, onConfirm, onCancel }) => {
                     <Title>{title}</Title>
                     <Message>{message}</Message>
                     <ButtonGroup>
-                        <CancelButton onClick={onCancel}>Cancel</CancelButton>
-                        <ConfirmButton onClick={onConfirm}>Confirm</ConfirmButton>
+                        <CancelButton onClick={onCancel} disabled={loading}>Cancel</CancelButton>
+                        <ConfirmButton onClick={onConfirm} disabled={loading}>
+                            {loading ? 'Deleting...' : 'Confirm'}
+                        </ConfirmButton>
                     </ButtonGroup>
                 </ModalContent>
             </ModalContainer>

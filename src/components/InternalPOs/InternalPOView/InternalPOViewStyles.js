@@ -1570,3 +1570,169 @@ export const ClosePreviewButton = styled.button`
         background-color: ${({ theme }) => theme.colors.red}90;
     }
 `; 
+
+export const BillDrawerOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(18, 20, 32, 0.72);
+  backdrop-filter: blur(6px);
+  z-index: 1200;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  transition: background 0.3s;
+`;
+
+export const BillDrawerPanel = styled(motion.aside)`
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 400px;
+  max-width: 98vw;
+  background: linear-gradient(120deg, ${({ theme }) => theme.colors.backgroundAlt || '#23243a'} 80%, ${({ theme }) => theme.colors.backgroundItem || '#282a36'} 100%);
+  box-shadow: -8px 0 32px rgba(30,33,57,0.18), 0 2px 16px rgba(0,0,0,0.08);
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 32px 28px 32px;
+  border-left: 1.5px solid ${({ theme }) => theme.colors.border || '#23243a'};
+  border-radius: 24px 0 0 24px;
+  animation: ${modalSlideIn} 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow-y: auto;
+  @media (max-width: 600px) {
+    width: 100vw;
+    border-radius: 0;
+    padding: 24px 8px 12px 8px;
+  }
+`;
+
+export const BillDrawerHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid ${({ theme }) => theme.colors.border || '#23243a'};
+`;
+
+export const BillDrawerTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0;
+`;
+
+export const BillDrawerClose = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  &:hover {
+    background: ${({ theme }) => theme.colors.backgroundItem};
+  }
+`;
+
+export const BillUploadArea = styled.div`
+  border: 2px dashed ${({ theme }) => theme.colors.purple};
+  border-radius: 10px;
+  padding: 32px 16px;
+  text-align: center;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ theme }) => theme.colors.backgroundItem};
+  margin-bottom: 24px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.purple};
+    background: ${({ theme }) => theme.colors.backgroundSecondary};
+  }
+`;
+
+export const BillList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+`;
+
+export const BillItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: ${({ theme }) => theme.colors.background};
+  border-radius: 12px;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  padding: 14px 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: box-shadow 0.18s, border-color 0.18s, background 0.18s;
+  cursor: pointer;
+  &:hover {
+    box-shadow: 0 8px 24px rgba(30,33,57,0.10);
+    border-color: ${({ theme }) => theme.colors.purple};
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+  }
+`;
+
+export const BillPreviewThumb = styled.div`
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  img, embed {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+  }
+`;
+
+export const BillInfo = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+`;
+
+export const BillName = styled.span`
+  font-size: 15px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+export const BillDate = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+export const BillActions = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+export const BillActionBtn = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.purple};
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  &:hover {
+    background: ${({ theme }) => theme.colors.backgroundSecondary};
+  }
+`; 
