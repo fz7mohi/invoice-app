@@ -666,7 +666,11 @@ const DeliveryOrderView = () => {
             pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
 
             // Save the PDF
-            pdf.save(`Delivery_Order_${deliveryOrder.customId || deliveryOrder.id}.pdf`);
+            const clientNameSlug = (clientData?.companyName || deliveryOrder?.clientName || 'Client')
+                .replace(/[^a-zA-Z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .substring(0, 32);
+            pdf.save(`Delivery_Order_${deliveryOrder.customId || deliveryOrder.id}_${clientNameSlug}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('There was an error generating the PDF. Please try again.');

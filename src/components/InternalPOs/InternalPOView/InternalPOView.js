@@ -953,7 +953,11 @@ const InternalPOView = () => {
             document.body.removeChild(supplierPage);
 
             // Save the PDF
-            pdf.save(`Internal_PO_${internalPO.customId || id}.pdf`);
+            const clientName = (internalPO?.clientName || clientData?.companyName || 'Client')
+                .replace(/[^a-zA-Z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .substring(0, 32);
+            pdf.save(`Internal_PO_${internalPO.customId || id}_${clientName}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
             toast.error('Failed to generate PDF. Please try again.');

@@ -601,7 +601,12 @@ const QuotationView = () => {
     const handleDownloadPDF = async () => {
         try {
             const pdf = await generatePDF();
-            pdf.save(`Quotation_${quotation.customId || id}.pdf`);
+            // Slugify client name for filename
+            const clientName = (quotation?.clientName || clientData?.companyName || 'Client')
+                .replace(/[^a-zA-Z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .substring(0, 32);
+            pdf.save(`Quotation_${quotation.customId || id}_${clientName}.pdf`);
         } catch (error) {
             message.error('There was an error generating the PDF. Please try again.');
         }

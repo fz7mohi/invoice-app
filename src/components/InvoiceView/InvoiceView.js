@@ -281,9 +281,7 @@ const InvoiceView = () => {
     // Add default terms and conditions
     const defaultTermsAndConditions = `50% advance payment along with the issuance of the LPO (Local Purchase Order), and the remaining 50% to be settled before the delivery of the order.
 
-All prices are in local currency and include VAT where applicable.
-
-Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until paid in full.`;
+All prices are in local currency and include VAT where applicable.`;
 
     // Add exchange rates (using standard rates)
     const exchangeRates = {
@@ -485,15 +483,24 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                 }
                 
                 // Create a complete invoice object
+                let invoiceItems = [];
+                if (Array.isArray(data.items)) {
+                    invoiceItems = data.items;
+                } else if (data.items && typeof data.items === 'object') {
+                    // Defensive: convert object to array
+                    invoiceItems = Object.values(data.items);
+                } else {
+                    invoiceItems = [];
+                }
                 const fetchedInvoice = {
                     ...data,
                     id: docSnap.id,
                     customId: data.customId || generateCustomId(),
                     createdAt,
                     paymentDue,
-                    items: Array.isArray(data.items) ? data.items : [],
+                    items: invoiceItems,
                     currency: data.currency || 'USD',
-                    totalVat: data.totalVat || (data.items?.reduce((sum, item) => {
+                    totalVat: data.totalVat || (invoiceItems.reduce((sum, item) => {
                         const itemTotal = parseFloat(item.total) || 0;
                         return sum + (clientHasVAT ? calculateVAT(itemTotal) : 0);
                     }, 0) || 0),
@@ -545,27 +552,23 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
         if (!invoiceState) {
             return;
         }
-        
         // Get invoices from state
         const invoices = invoiceState.invoices || [];
-        
         if (invoices.length > 0 && !isDeleting && !invoice) {
             // First try to find by direct ID match
             let foundInvoice = invoices.find(inv => inv.id === id);
-            
             // If not found, try matching by customId (in case IDs are stored differently)
             if (!foundInvoice) {
                 foundInvoice = invoices.find(inv => inv.customId === id);
             }
-            
-            if (foundInvoice) {
-            setInvoice(foundInvoice);
-                
+            // Only set invoice if it has a non-empty items array
+            if (foundInvoice && Array.isArray(foundInvoice.items) && foundInvoice.items.length > 0) {
+                setInvoice(foundInvoice);
                 // After setting invoice, fetch client data
                 fetchClientData(foundInvoice.clientId, foundInvoice.clientName);
             }
         }
-    }, [invoiceState?.invoices, id, isDeleting]);
+    }, [invoiceState?.invoices, id, isDeleting, invoice]);
 
     // Handle invoice deletion
     const handleDeleteClick = () => {
@@ -938,16 +941,54 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
     // Add handleDownloadPDF function
     const handleDownloadPDF = async () => {
         try {
-            // --- Constants for A3 at 96 DPI ---
-            const PAGE_WIDTH_MM = 297;
-            const PAGE_HEIGHT_MM = 420;
-            const PAGE_WIDTH_PX = 1122; // 297mm * 96 / 25.4
-            const PAGE_HEIGHT_PX = 1587; // 420mm * 96 / 25.4
-            const ITEMS_PER_PAGE = 12; // Always 12 items per page
-
-            // Get the client's country from the invoice or client data
-            const clientCountry = invoice?.clientAddress?.country || clientData?.country || 'qatar';
-            // Determine which company profile to use
+            // Always fetch the latest invoice from Firebase
+            const invoiceRef = doc(db, 'invoices', id);
+            const docSnap = await getDoc(invoiceRef);
+            if (!docSnap.exists()) {
+                alert('Invoice not found.');
+                return;
+            }
+            const data = docSnap.data();
+            // Convert Firestore Timestamp back to Date object safely
+            let createdAt = new Date();
+            let paymentDue = new Date();
+            try {
+                createdAt = data.createdAt?.toDate() || new Date();
+                paymentDue = data.paymentDue?.toDate() || new Date();
+            } catch (dateError) {}
+            // Defensive: ensure items is always an array
+            let pdfItems = [];
+            if (Array.isArray(data.items)) {
+                pdfItems = data.items;
+            } else if (data.items && typeof data.items === 'object') {
+                pdfItems = Object.values(data.items);
+            } else {
+                pdfItems = [];
+            }
+            const latestInvoice = {
+                ...data,
+                id: docSnap.id,
+                customId: data.customId || id,
+                createdAt,
+                paymentDue,
+                items: pdfItems,
+                currency: data.currency || 'USD',
+                totalVat: data.totalVat || (pdfItems.reduce((sum, item) => {
+                    const itemTotal = parseFloat(item.total) || 0;
+                    return sum + (clientHasVAT ? calculateVAT(itemTotal) : 0);
+                }, 0) || 0),
+                grandTotal: data.grandTotal || (data.totalVat ? data.totalVat + (data.total || 0) : data.total || 0)
+            };
+            // Debug logs
+            console.log('PDF Generation - Invoice:', latestInvoice);
+            console.log('PDF Generation - Invoice Items:', latestInvoice.items);
+            const items = latestInvoice.items || [];
+            if (!Array.isArray(items) || items.length === 0) {
+                alert('Invoice items are not loaded yet. Please wait for the invoice to finish loading.');
+                return;
+            }
+            // Define clientCountry and companyProfile for use in the loop
+            const clientCountry = latestInvoice?.clientAddress?.country || clientData?.country || 'qatar';
             let companyProfile;
             try {
                 if (clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) {
@@ -964,264 +1005,267 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                     crNumber: 'CR123456789'
                 };
             }
-
-            // --- Helper to split items into pages ---
-            const items = invoice.items || [];
-            const itemChunks = [];
-            for (let i = 0; i < items.length; i += ITEMS_PER_PAGE) {
-                itemChunks.push(items.slice(i, i + ITEMS_PER_PAGE));
-            }
-
+            // Define page size constants for PDF and html2canvas
+            const PAGE_WIDTH_MM = 297;
+            const PAGE_HEIGHT_MM = 420;
+            const PAGE_WIDTH_PX = 1122; // 297mm * 96 / 25.4
+            const PAGE_HEIGHT_PX = 1587; // 420mm * 96 / 25.4
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
                 format: 'a3',
                 compress: true
             });
-
-            for (let pageIdx = 0; pageIdx < itemChunks.length; pageIdx++) {
-                const isLastPage = pageIdx === itemChunks.length - 1;
-                // --- Build a page container ---
-                const pdfContainer = document.createElement('div');
-                pdfContainer.style.cssText = `
-                    width: ${PAGE_WIDTH_MM}mm;
-                    min-height: ${PAGE_HEIGHT_MM}mm;
-                    padding: 5mm 20mm 20mm 20mm;
-                    margin: 0;
-                    background-color: white;
-                    box-sizing: border-box;
-                    position: relative;
-                    font-family: Arial, sans-serif;
-                `;
-                // Header
-                pdfContainer.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <div>
-                            <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
-                        </div>
-                        <div style="text-align: right; font-size: 19px; color: #000000;">
-                            <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
-                            <div>${companyProfile.address}</div>
-                            <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
-                            <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
-                        </div>
+            // --- Build a single page container ---
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                width: 297mm;
+                min-height: 420mm;
+                padding: 5mm 20mm 20mm 20mm;
+                margin: 0;
+                background-color: white;
+                box-sizing: border-box;
+                position: relative;
+                font-family: Arial, sans-serif;
+            `;
+            // Header
+            pdfContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <img src="${window.location.origin}/images/invoice-logo.png" alt="${companyProfile.name} Logo" style="max-height: 80px;" onerror="this.onerror=null; this.src=''; this.alt='${companyProfile.name}'; this.style.fontSize='27px'; this.style.fontWeight='bold'; this.style.color='#004359';"/>
                     </div>
-                    <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
-                    <div style="text-align: center; margin-top: 25px;">
-                        <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">INVOICE</h1>
+                    <div style="text-align: right; font-size: 19px; color: #000000;">
+                        <div style="font-weight: bold; font-size: 21px; margin-bottom: 5px;">${companyProfile.name}</div>
+                        <div>${companyProfile.address}</div>
+                        <div>Tel: ${companyProfile.phone} | ${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? 'TRN' : 'CR'} Number: <span style="color: #FF4806;">${clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae') ? companyProfile.vatNumber : companyProfile.crNumber}</span></div>
+                        <div>Email: sales@fortunegiftz.com | Website: www.fortunegiftz.com</div>
                     </div>
-                `;
-                // Only on first page: Bill To (client) section
-                if (pageIdx === 0) {
-                    const clientSection = document.createElement('div');
-                    clientSection.style.cssText = `
-                        display: flex;
-                        justify-content: space-between;
-                        margin-bottom: 20px;
-                        padding: 20px;
-                        background-color: white;
-                        border: 1px solid #e0e0e0;
-                        border-radius: 4px;
-                    `;
-                    clientSection.innerHTML = `
-                        <div style="flex: 1;">
-                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
-                            <div style="color: black; font-size: 16px;">
-                                <strong>${invoice.clientName}</strong><br />
-                                ${clientData?.address || invoice.clientAddress?.street || ''}
-                                ${invoice.clientAddress?.city ? `, ${invoice.clientAddress.city}` : ''}
-                                ${invoice.clientAddress?.postCode ? `, ${invoice.clientAddress.postCode}` : ''}
-                                ${clientData?.country || invoice.clientAddress?.country ? `, ${clientData?.country || invoice.clientAddress?.country}` : ''}
-                                ${clientData?.phone ? `<br />${clientData.phone}` : ''}
-                                ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || invoice?.clientTRN) ? 
-                                    `<br /><span style=\"font-weight: 600;\">TRN: ${clientData?.trn || clientData?.trnNumber || invoice?.clientTRN}</span>` : ''}
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 40px;">
-                            <div style="text-align: right;">
-                                <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Invoice #</div>
-                                <div style="color: black; font-size: 16px; margin-bottom: 15px;">${invoice.customId || id}</div>
-                                <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Due Date</div>
-                                <div style="color: black; font-size: 16px;">${formatDate(invoice.paymentDue)}</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Created Date</div>
-                                <div style="color: black; font-size: 16px; margin-bottom: 15px;">${formatDate(invoice.createdAt)}</div>
-                                ${invoice.lpoNumber ? `
-                                    <div style=\"color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;\">LPO Number</div>
-                                    <div style=\"color: black; font-size: 16px;\">${invoice.lpoNumber}</div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `;
-                    pdfContainer.appendChild(clientSection);
-                }
-                // Items table (only this page's chunk)
-                const itemsTable = document.createElement('table');
-                itemsTable.style.cssText = `
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 20px;
-                    background-color: white;
-                    border: 1px solid #e0e0e0;
-                    border-radius: 10px;
-                    page-break-inside: auto;
-                `;
-                itemsTable.innerHTML = `
-                    <thead style="background-color: #004359; color: white;">
-                        <tr>
-                            <th style=\"padding: 15px; text-align: center; font-size: 18px; width: 50px;\">S/N</th>
-                            <th style=\"padding: 15px; text-align: left; font-size: 18px;\">Item Name</th>
-                            <th style=\"padding: 15px; text-align: center; font-size: 18px;\">QTY.</th>
-                            <th style=\"padding: 15px; text-align: right; font-size: 18px;\">Price</th>
-                            ${clientHasVAT ? '<th style=\\"padding: 15px; text-align: right; font-size: 18px;\\">VAT (5%)</th>' : ''}
-                            <th style=\"padding: 15px; text-align: right; font-size: 18px;\">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itemChunks[pageIdx].map((item, idx) => {
-                            const itemVAT = item.vat || 0;
-                            const serialNumber = pageIdx * ITEMS_PER_PAGE + idx + 1;
-                            return `
-                                <tr style=\\"border-bottom: 1px solid #e0e0e0;\\">
-                                    <td style=\\"padding: 15px; text-align: center; color: black; font-size: 16px; font-weight: bold;\\">${serialNumber}</td>
-                                    <td style=\\"padding: 15px; color: black; font-size: 16px;\\">${item.name}${item.description ? `<div style=\\\"font-size: 14px; color: #666;\\\\">${item.description}</div>` : ''}</td>
-                                    <td style=\\"padding: 15px; text-align: center; color: black; font-size: 16px;\\">${item.quantity || 0}</td>
-                                    <td style=\\"padding: 15px; text-align: right; color: black; font-size: 16px;\\">${formatPrice(item.price || 0, invoice.currency)}</td>
-                                    ${clientHasVAT ? `<td style=\\\\"padding: 15px; text-align: right; color: black; font-size: 16px;\\\\">${formatPrice(itemVAT, invoice.currency)}</td>` : ''}
-                                    <td style=\\"padding: 15px; text-align: right; color: black; font-size: 16px;\\">${formatPrice(item.total || 0, invoice.currency)}</td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                `;
-                pdfContainer.appendChild(itemsTable);
-                // Only on last page: totals, terms, bank details, signature
-                if (isLastPage) {
-                    // Total section
-                    const totalSection = document.createElement('div');
-                    totalSection.style.cssText = `
-                        background-color: #004359;
-                        color: white;
-                        padding: 15px;
-                        text-align: right;
-                        border-radius: 0 0 4px 4px;
-                        margin-bottom: 20px;
-                        page-break-inside: avoid;
-                    `;
-                    totalSection.innerHTML = `
-                        <div style=\\"font-size: 18px; margin-bottom: 4px;\\">Subtotal</div>
-                        <div style=\\"font-size: 15px; font-weight: 500;\\">${formatPrice(invoice.subtotal || 0, invoice.currency)}</div>
-                        ${clientHasVAT ? `<div style=\\"font-size: 15px; font-weight: 500;\\">VAT (5%): ${formatPrice(invoice.totalVat || 0, invoice.currency)}</div>` : ''}
-                        <div style=\\"font-size: 24px; font-weight: bold;\\">Total: ${formatPrice(invoice.total || 0, invoice.currency)}</div>
-                        <div style=\\"font-size: 15px; font-weight: 500;\\">Amount Paid: ${formatPrice(invoice.paidAmount || 0, invoice.currency)}</div>
-                        <div style=\\"font-size: 16px; font-weight: 600;\\">Balance Due: ${formatPrice((invoice.total || 0) - (invoice.paidAmount || 0), invoice.currency)}</div>
-                    `;
-                    pdfContainer.appendChild(totalSection);
-                    // Terms and Bank Details section (two-column)
-                    const infoSectionsGrid = document.createElement('div');
-                    infoSectionsGrid.style.cssText = `
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 24px;
-                        margin-bottom: 100px;
-                        page-break-inside: avoid;
-                    `;
-                    // Terms and Conditions section
-                    const termsSection = document.createElement('div');
-                    termsSection.style.cssText = `
-                        padding: 24px;
-                        background-color: #f5f7fa;
-                        border-radius: 8px;
-                        border: 1px solid #e0e0e0;
-                    `;
-                    termsSection.innerHTML = `
-                        <h3 style=\\"font-size: 16px; font-weight: 600; color: #004359; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;\\">
-                            <span style=\\"display: inline-block; width: 4px; height: 16px; background-color: #004359; border-radius: 2px;\\"></span>
-                            Terms and Conditions
-                        </h3>
-                        <div style=\\"font-size: 14px; line-height: 1.6; color: #666;\\">
-                            ${invoice.termsAndConditions || defaultTermsAndConditions}
-                        </div>
-                    `;
-                    infoSectionsGrid.appendChild(termsSection);
-                    // Bank Details section
-                    const bankSection = document.createElement('div');
-                    bankSection.style.cssText = `
-                        padding: 24px;
-                        background-color: #f5f7fa;
-                        border-radius: 8px;
-                        border: 1px solid #e0e0e0;
-                    `;
-                    bankSection.innerHTML = `
-                        <h3 style=\\"font-size: 16px; font-weight: 600; color: #004359; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;\\">
-                            <span style=\\"display: inline-block; width: 4px; height: 16px; background-color: #004359; border-radius: 2px;\\"></span>
-                            Bank Transfer Details
-                        </h3>
-                        <div style=\\"font-size: 14px; line-height: 1.6; color: #666;\\">
-                            ${companyProfile?.bankDetails ? `
-                                <div style=\\"margin-bottom: 8px;\\"><strong>Bank Name:</strong> ${companyProfile.bankDetails.bankName}</div>
-                                <div style=\\"margin-bottom: 8px;\\"><strong>Account Name:</strong> ${companyProfile.bankDetails.accountName}</div>
-                                <div style=\\"margin-bottom: 8px;\\"><strong>Account Number:</strong> ${companyProfile.bankDetails.accountNumber}</div>
-                                <div style=\\"margin-bottom: 8px;\\"><strong>IBAN:</strong> ${companyProfile.bankDetails.iban}</div>
-                                <div style=\\"margin-bottom: 8px;\\"><strong>SWIFT Code:</strong> ${companyProfile.bankDetails.swift}</div>
-                            ` : 'No bank details available'}
-                        </div>
-                    `;
-                    infoSectionsGrid.appendChild(bankSection);
-                    pdfContainer.appendChild(infoSectionsGrid);
-                    // Signature section
-                    const signatureSection = document.createElement('div');
-                    signatureSection.style.cssText = `
-                        position: absolute;
-                        bottom: 30mm;
-                        left: 20mm;
-                        right: 20mm;
-                        display: flex;
-                        flex-direction: column;
-                        background-color: white;
-                        padding: 20px;
-                        border-top: 1px solid #e0e0e0;
-                        z-index: 1000;
-                        page-break-inside: avoid;
-                    `;
-                    signatureSection.innerHTML = `
-                        <div style=\\"display: flex; justify-content: space-between; margin-bottom: 15px;\\">
-                            <div style=\\"width: 45%;\\">
-                                <div style=\\"border-bottom: 2px solid #004359; margin-bottom: 15px;\\"></div>
-                                <div style=\\"font-weight: bold; color: #004359; font-size: 19px;\\">Authorized Signature</div>
-                            </div>
-                            <div style=\\"width: 45%;\\">
-                                <div style=\\"border-bottom: 2px solid #004359; margin-bottom: 15px;\\"></div>
-                                <div style=\\"font-weight: bold; color: #004359; font-size: 19px;\\">Client Acceptance</div>
-                            </div>
-                        </div>
-                        <div style=\\"text-align: center; color: #666; font-size: 12px; font-style: italic; margin-top: 10px;\\">
-                            This is a computer-generated document and does not require a physical signature.
-                        </div>
-                    `;
-                    pdfContainer.appendChild(signatureSection);
-                }
-                // Render to canvas
-                pdfContainer.style.position = 'absolute';
-                pdfContainer.style.left = '-9999px';
-                document.body.appendChild(pdfContainer);
-                const canvas = await html2canvas(pdfContainer, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#ffffff',
-                    width: PAGE_WIDTH_PX,
-                    height: PAGE_HEIGHT_PX
-                });
-                document.body.removeChild(pdfContainer);
-                const imgData = canvas.toDataURL('image/png');
-                if (pageIdx > 0) pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, 0, PAGE_WIDTH_MM, PAGE_HEIGHT_MM);
-            }
-            pdf.save(`Invoice_${invoice.customId || id}.pdf`);
+                </div>
+                <div style="height: 2px; background-color: #004359; margin-bottom: 10px;"></div>
+                <div style="text-align: center; margin-top: 25px;">
+                    <h1 style="font-size: 32px; color: #004359; margin: 0; letter-spacing: 1px;">INVOICE</h1>
+                </div>
+            `;
+            // Professional client (Bill To) section with minimal two-column meta
+            const clientSection = document.createElement('div');
+            clientSection.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 28px;
+                padding: 28px 32px;
+                background: linear-gradient(90deg, #f7fafc 0%, #e3eaf3 100%);
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+                font-family: Arial, sans-serif;
+            `;
+            clientSection.innerHTML = `
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="color: #004359; font-weight: bold; font-size: 19px; margin-bottom: 8px; letter-spacing: 0.5px;">Bill To</div>
+                    <div style="color: #222; font-size: 17px; font-weight: bold; margin-bottom: 2px;">${latestInvoice.clientName}</div>
+                    <div style="color: #444; font-size: 15px; margin-bottom: 2px;">${clientData?.address || latestInvoice.clientAddress?.street || ''}${latestInvoice.clientAddress?.city ? `, ${latestInvoice.clientAddress.city}` : ''}${latestInvoice.clientAddress?.postCode ? `, ${latestInvoice.clientAddress.postCode}` : ''}${clientData?.country || latestInvoice.clientAddress?.country ? `, ${clientData?.country || latestInvoice.clientAddress?.country}` : ''}</div>
+                    ${clientData?.phone ? `<div style=\"color: #444; font-size: 15px; margin-bottom: 2px;\">${clientData.phone}</div>` : ''}
+                    ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || latestInvoice?.clientTRN) ? `<div style=\"color: #004359; font-size: 15px; font-weight: 600; margin-bottom: 2px;\">TRN: ${clientData?.trn || clientData?.trnNumber || latestInvoice?.clientTRN}</div>` : ''}
+                </div>
+                <div style="display: grid; grid-template-columns: auto auto; gap: 6px 18px; align-content: start; min-width: 220px; font-size: 15px; color: #222; background: none; border: none; box-shadow: none;">
+                    <div style=\"font-weight: bold;\">Invoice #</div><div style="font-weight: 500;">${latestInvoice.customId || id}</div>
+                    <div style=\"font-weight: bold;\">Due Date</div><div style="font-weight: 500;">${formatDate(latestInvoice.paymentDue)}</div>
+                    <div style=\"font-weight: bold;\">Created Date</div><div style="font-weight: 500;">${formatDate(latestInvoice.createdAt)}</div>
+                    ${latestInvoice.lpoNumber ? `<div style=\"font-weight: bold;\">LPO Number</div><div style=\"font-weight: 500;\">${latestInvoice.lpoNumber}</div>` : ''}
+                </div>
+            `;
+            pdfContainer.appendChild(clientSection);
+            // Items table (styled like Quotation PDF, but more professional)
+            const itemsTable = document.createElement('table');
+            itemsTable.style.cssText = `
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0;
+                margin-bottom: 32px;
+                background-color: white;
+                border-radius: 12px;
+                overflow: hidden;
+                font-family: Arial, sans-serif;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            `;
+            itemsTable.innerHTML = `
+                <thead>
+                    <tr style="background: linear-gradient(90deg, #004359 0%, #1976d2 100%); color: #fff;">
+                        <th style="padding: 16px 12px; text-align: center; font-size: 17px; font-weight: bold; width: 50px;">S/N</th>
+                        <th style="padding: 16px 12px; text-align: left; font-size: 17px; font-weight: bold;">Item Name</th>
+                        <th style="padding: 16px 12px; text-align: center; font-size: 17px; font-weight: bold;">QTY.</th>
+                        <th style="padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;">Price</th>
+                        ${clientHasVAT ? '<th style=\"padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;\">VAT (5%)</th>' : ''}
+                        <th style="padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map((item, idx) => {
+                        const itemVAT = item.vat || 0;
+                        const serialNumber = idx + 1;
+                        const rowBg = idx % 2 === 0 ? '#f7fafc' : '#e3eaf3';
+                        return `
+                            <tr style=\"background: ${rowBg}; border-bottom: 1px solid #e0e0e0;\">
+                                <td style=\"padding: 14px 10px; text-align: center; color: #222; font-size: 16px; font-weight: bold;\">${serialNumber}</td>
+                                <td style=\"padding: 14px 10px; color: #222; font-size: 16px; text-align: left;\">${item.name}${item.description ? `<div style=\\"font-size: 14px; color: #666; margin-top: 2px;\\">${item.description}</div>` : ''}</td>
+                                <td style=\"padding: 14px 10px; text-align: center; color: #222; font-size: 16px;\">${item.quantity || 0}</td>
+                                <td style=\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px;\">${formatPrice(item.price || 0, latestInvoice.currency)}</td>
+                                ${clientHasVAT ? `<td style=\\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px;\\">${formatPrice(itemVAT, latestInvoice.currency)}</td>` : ''}
+                                <td style=\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px; font-weight: 500;\">${formatPrice(item.total || 0, latestInvoice.currency)}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            `;
+            pdfContainer.appendChild(itemsTable);
+            // Minimal, compact total section
+            const totalSection = document.createElement('div');
+            totalSection.style.cssText = `
+                background: #fff;
+                color: #222;
+                padding: 16px 14px 12px 14px;
+                border-radius: 10px;
+                margin-bottom: 24px;
+                width: 100%;
+                max-width: none;
+                margin-left: 0;
+                margin-right: 0;
+                box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+                border: 1px solid #e0e0e0;
+                font-family: Arial, sans-serif;
+            `;
+            totalSection.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: center; font-size: 15px; line-height: 1.3;">
+                    <div>Subtotal</div><div style="text-align: right; font-weight: 500;">${formatPrice(latestInvoice.subtotal || 0, latestInvoice.currency)}</div>
+                    ${clientHasVAT ? `<div>VAT (5%)</div><div style=\"text-align: right; font-weight: 500;\">${formatPrice(latestInvoice.totalVat || 0, latestInvoice.currency)}</div>` : ''}
+                    <div>Amount Paid</div><div style="text-align: right; font-weight: 500;">${formatPrice(latestInvoice.paidAmount || 0, latestInvoice.currency)}</div>
+                    <div style="grid-column: 1 / 3; border-top: 1px solid #e0e0e0; margin: 4px 0 2px 0;"></div>
+                    <div style="font-weight: bold;">Total</div><div style="text-align: right; font-weight: bold;">${formatPrice(latestInvoice.total || 0, latestInvoice.currency)}</div>
+                    <div style="font-weight: bold; color: #1976d2;">Balance Due</div><div style="text-align: right; font-weight: bold; color: #1976d2;">${formatPrice((latestInvoice.total || 0) - (latestInvoice.paidAmount || 0), latestInvoice.currency)}</div>
+                </div>
+            `;
+            pdfContainer.appendChild(totalSection);
+            // Terms and Bank Details section (two-column)
+            const infoSectionsGrid = document.createElement('div');
+            infoSectionsGrid.style.cssText = `
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+                margin-bottom: 100px;
+                page-break-inside: avoid;
+            `;
+            // Redesigned Terms and Conditions section
+            const termsSection = document.createElement('div');
+            termsSection.style.cssText = `
+                padding: 28px 28px 20px 28px;
+                background: linear-gradient(120deg, #f7fafc 0%, #e3eaf3 100%);
+                border-radius: 14px;
+                border: 1px solid #e0e0e0;
+                margin-bottom: 18px;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+                font-family: Arial, sans-serif;
+            `;
+            // Format terms and conditions professionally (define before use)
+            const formattedTerms = (latestInvoice.termsAndConditions || defaultTermsAndConditions)
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .map(line => {
+                    if (/^\d+\./.test(line)) {
+                        // Numbered list
+                        return `<div style=\"margin-bottom: 8px; color: black; font-size: 16px;\">${line}</div>`;
+                    } else if (line.toUpperCase() === line || /^(Terms|Conditions|Payment|Delivery|Warranty|Cancellation|Force Majeure|Governing Law)/i.test(line)) {
+                        // Section headers
+                        return `<div style=\"margin-top: 16px; margin-bottom: 8px; color: #004359; font-weight: bold; font-size: 18px;\">${line}</div>`;
+                    } else {
+                        // Normal paragraph
+                        return `<div style=\"margin-bottom: 8px; color: black; font-size: 16px;\">${line}</div>`;
+                    }
+                })
+                .join('');
+            termsSection.innerHTML = `
+                <div style=\"font-size: 18px; font-weight: bold; color: #004359; margin-bottom: 14px; letter-spacing: 0.5px;\">Terms and Conditions</div>
+                <div style=\"font-size: 15px; line-height: 1.7; color: #444;\">${formattedTerms}</div>
+            `;
+            infoSectionsGrid.appendChild(termsSection);
+            // Redesigned Bank Details section
+            const bankSection = document.createElement('div');
+            bankSection.style.cssText = `
+                padding: 28px 28px 20px 28px;
+                background: linear-gradient(120deg, #f7fafc 0%, #e3eaf3 100%);
+                border-radius: 14px;
+                border: 1px solid #e0e0e0;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+                font-family: Arial, sans-serif;
+            `;
+            bankSection.innerHTML = `
+                <div style=\"font-size: 18px; font-weight: bold; color: #004359; margin-bottom: 14px; letter-spacing: 0.5px;\">Bank Transfer Details</div>
+                <div style=\"display: grid; grid-template-columns: auto 1fr; gap: 8px 18px; font-size: 15px; color: #444;\">
+                    ${companyProfile?.bankDetails ? `
+                        <div style=\"font-weight: bold;\">Bank Name</div><div>${companyProfile.bankDetails.bankName}</div>
+                        <div style=\"font-weight: bold;\">Account Name</div><div>${companyProfile.bankDetails.accountName}</div>
+                        <div style=\"font-weight: bold;\">Account Number</div><div>${companyProfile.bankDetails.accountNumber}</div>
+                        <div style=\"font-weight: bold;\">IBAN</div><div>${companyProfile.bankDetails.iban}</div>
+                        <div style=\"font-weight: bold;\">SWIFT Code</div><div>${companyProfile.bankDetails.swift}</div>
+                    ` : '<div>No bank details available</div>'}
+                </div>
+            `;
+            infoSectionsGrid.appendChild(bankSection);
+            pdfContainer.appendChild(infoSectionsGrid);
+            // Signature section
+            const signatureSection = document.createElement('div');
+            signatureSection.style.cssText = `
+                position: absolute;
+                bottom: 30mm;
+                left: 20mm;
+                right: 20mm;
+                display: flex;
+                flex-direction: column;
+                background-color: white;
+                padding: 20px;
+                border-top: 1px solid #e0e0e0;
+                z-index: 1000;
+                page-break-inside: avoid;
+            `;
+             signatureSection.innerHTML = `
+            //     <div style=\"display: flex; justify-content: space-between; margin-bottom: 15px;\">
+            //         <div style=\"width: 45%;\">
+            //             <div style=\"border-bottom: 2px solid #004359; margin-bottom: 15px;\"></div>
+            //             <div style=\"font-weight: bold; color: #004359; font-size: 19px;\">Authorized Signature</div>
+            //         </div>
+            //         <div style=\"width: 45%;\">
+            //             <div style=\"border-bottom: 2px solid #004359; margin-bottom: 15px;\"></div>
+            //             <div style=\"font-weight: bold; color: #004359; font-size: 19px;\">Client Acceptance</div>
+            //         </div>
+            //     </div>
+            //     <div style=\"text-align: center; color: #666; font-size: 12px; font-style: italic; margin-top: 10px;\">
+                    This is a computer-generated document and does not require a physical signature.
+             </div>
+            `;
+            pdfContainer.appendChild(signatureSection);
+            // Render to canvas, add to PDF, etc.
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            document.body.appendChild(pdfContainer);
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                width: PAGE_WIDTH_PX,
+                height: PAGE_HEIGHT_PX
+            });
+            document.body.removeChild(pdfContainer);
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, PAGE_WIDTH_MM, PAGE_HEIGHT_MM);
+            // Save the PDF
+            const clientName = (latestInvoice?.clientName || clientData?.companyName || 'Client')
+                .replace(/[^a-zA-Z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .substring(0, 32);
+            pdf.save(`Invoice_${latestInvoice.customId || id}_${clientName}.pdf`);
         } catch (error) {
-            console.error('Error generating PDF:', error);
+            console.error('Error generating PDF:', error, error?.stack);
             alert('There was an error generating the PDF. Please try again.');
         }
     };
@@ -1783,36 +1827,39 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
             const itemsTable = document.createElement('table');
             itemsTable.style.cssText = `
                 width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 20px;
+                border-collapse: separate;
+                border-spacing: 0;
+                margin-bottom: 32px;
                 background-color: white;
-                border: 1px solid #e0e0e0;
-                border-radius: 10px;
-                page-break-inside: auto;
+                border-radius: 12px;
+                overflow: hidden;
+                font-family: Arial, sans-serif;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
             `;
             itemsTable.innerHTML = `
-                <thead style="background-color: #004359; color: white;">
-                    <tr>
-                        <th style="padding: 15px; text-align: left; font-size: 18px;">Item Name</th>
-                        <th style="padding: 15px; text-align: center; font-size: 18px;">QTY.</th>
-                        <th style="padding: 15px; text-align: right; font-size: 18px;">Price</th>
-                        ${clientHasVAT ? '<th style="padding: 15px; text-align: right; font-size: 18px;">VAT (5%)</th>' : ''}
-                        <th style="padding: 15px; text-align: right; font-size: 18px;">Total</th>
+                <thead>
+                    <tr style="background: linear-gradient(90deg, #004359 0%, #1976d2 100%); color: #fff;">
+                        <th style="padding: 16px 12px; text-align: center; font-size: 17px; font-weight: bold; width: 50px;">S/N</th>
+                        <th style="padding: 16px 12px; text-align: left; font-size: 17px; font-weight: bold;">Item Name</th>
+                        <th style="padding: 16px 12px; text-align: center; font-size: 17px; font-weight: bold;">QTY.</th>
+                        <th style="padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;">Price</th>
+                        ${clientHasVAT ? '<th style=\"padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;\">VAT (5%)</th>' : ''}
+                        <th style="padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${invoice.items.map(item => {
+                    ${items.map((item, idx) => {
                         const itemVAT = item.vat || 0;
+                        const serialNumber = idx + 1;
+                        const rowBg = idx % 2 === 0 ? '#f7fafc' : '#e3eaf3';
                         return `
-                            <tr style="border-bottom: 1px solid #e0e0e0;">
-                                <td style="padding: 15px; color: black; font-size: 16px;">
-                                    ${item.name}
-                                    ${item.description ? `<div style="font-size: 14px; color: #666;">${item.description}</div>` : ''}
-                                </td>
-                                <td style="padding: 15px; text-align: center; color: black; font-size: 16px;">${item.quantity || 0}</td>
-                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.price || 0, invoice.currency)}</td>
-                                ${clientHasVAT ? `<td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(itemVAT, invoice.currency)}</td>` : ''}
-                                <td style="padding: 15px; text-align: right; color: black; font-size: 16px;">${formatPrice(item.total || 0, invoice.currency)}</td>
+                            <tr style=\"background: ${rowBg}; border-bottom: 1px solid #e0e0e0;\">
+                                <td style=\"padding: 14px 10px; text-align: center; color: #222; font-size: 16px; font-weight: bold;\">${serialNumber}</td>
+                                <td style=\"padding: 14px 10px; color: #222; font-size: 16px; text-align: left;\">${item.name}${item.description ? `<div style=\\"font-size: 14px; color: #666; margin-top: 2px;\\">${item.description}</div>` : ''}</td>
+                                <td style=\"padding: 14px 10px; text-align: center; color: #222; font-size: 16px;\">${item.quantity || 0}</td>
+                                <td style=\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px;\">${formatPrice(item.price || 0, latestInvoice.currency)}</td>
+                                ${clientHasVAT ? `<td style=\\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px;\\">${formatPrice(itemVAT, latestInvoice.currency)}</td>` : ''}
+                                <td style=\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px; font-weight: 500;\">${formatPrice(item.total || 0, latestInvoice.currency)}</td>
                             </tr>
                         `;
                     }).join('')}
@@ -1820,41 +1867,30 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
             `;
             pdfContainer.appendChild(itemsTable);
 
-            // Add total section
+            // Minimal, compact total section
             const totalSection = document.createElement('div');
             totalSection.style.cssText = `
-                background-color: #004359;
-                color: white;
-                padding: 15px;
-                text-align: right;
-                border-radius: 0 0 4px 4px;
-                margin-bottom: 20px;
-                page-break-inside: avoid;
+                background: #fff;
+                color: #222;
+                padding: 16px 14px 12px 14px;
+                border-radius: 10px;
+                margin-bottom: 24px;
+                width: 100%;
+                max-width: none;
+                margin-left: 0;
+                margin-right: 0;
+                box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+                border: 1px solid #e0e0e0;
+                font-family: Arial, sans-serif;
             `;
             totalSection.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 15px; font-weight: 500;">Subtotal</span>
-                        <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.subtotal || 0, invoice.currency)}</span>
-                    </div>
-                    ${clientHasVAT ? `
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 15px; font-weight: 500;">VAT (5%)</span>
-                            <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.totalVat || 0, invoice.currency)}</span>
-                        </div>
-                    ` : ''}
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 15px; font-weight: 500;">Total Amount</span>
-                        <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.total || 0, invoice.currency)}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 15px; font-weight: 500;">Amount Paid</span>
-                        <span style="font-size: 15px; font-weight: 500;">${formatPrice(invoice.paidAmount || 0, invoice.currency)}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
-                        <span style="font-size: 16px; font-weight: 600;">Balance Due</span>
-                        <span style="font-size: 18px; font-weight: 700;">${formatPrice((invoice.total || 0) - (invoice.paidAmount || 0), invoice.currency)}</span>
-                    </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: center; font-size: 15px; line-height: 1.3;">
+                    <div>Subtotal</div><div style="text-align: right; font-weight: 500;">${formatPrice(latestInvoice.subtotal || 0, latestInvoice.currency)}</div>
+                    ${clientHasVAT ? `<div>VAT (5%)</div><div style=\"text-align: right; font-weight: 500;\">${formatPrice(latestInvoice.totalVat || 0, latestInvoice.currency)}</div>` : ''}
+                    <div>Amount Paid</div><div style="text-align: right; font-weight: 500;">${formatPrice(latestInvoice.paidAmount || 0, latestInvoice.currency)}</div>
+                    <div style="grid-column: 1 / 3; border-top: 1px solid #e0e0e0; margin: 4px 0 2px 0;"></div>
+                    <div style="font-weight: bold;">Total</div><div style="text-align: right; font-weight: bold;">${formatPrice(latestInvoice.total || 0, latestInvoice.currency)}</div>
+                    <div style="font-weight: bold; color: #1976d2;">Balance Due</div><div style="text-align: right; font-weight: bold; color: #1976d2;">${formatPrice((latestInvoice.total || 0) - (latestInvoice.paidAmount || 0), latestInvoice.currency)}</div>
                 </div>
             `;
             pdfContainer.appendChild(totalSection);
@@ -1877,43 +1913,39 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
             // Terms and Conditions section
             const termsSection = document.createElement('div');
             termsSection.style.cssText = `
-                padding: 24px;
-                background-color: #f5f7fa;
-                border-radius: 8px;
+                padding: 28px 28px 20px 28px;
+                background: linear-gradient(120deg, #f7fafc 0%, #e3eaf3 100%);
+                border-radius: 14px;
                 border: 1px solid #e0e0e0;
+                margin-bottom: 18px;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+                font-family: Arial, sans-serif;
             `;
             termsSection.innerHTML = `
-                <h3 style="font-size: 16px; font-weight: 600; color: #004359; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-block; width: 4px; height: 16px; background-color: #004359; border-radius: 2px;"></span>
-                    Terms and Conditions
-                </h3>
-                <div style="font-size: 14px; line-height: 1.6; color: #666;">
-                    ${invoice.termsAndConditions || defaultTermsAndConditions}
-                </div>
+                <div style=\"font-size: 18px; font-weight: bold; color: #004359; margin-bottom: 14px; letter-spacing: 0.5px;\">Terms and Conditions</div>
+                <div style=\"font-size: 15px; line-height: 1.7; color: #444;\">${formattedTerms}</div>
             `;
             infoSectionsGrid.appendChild(termsSection);
-
-            // Bank Details section
+            // Redesigned Bank Details section
             const bankSection = document.createElement('div');
             bankSection.style.cssText = `
-                padding: 24px;
-                background-color: #f5f7fa;
-                border-radius: 8px;
+                padding: 28px 28px 20px 28px;
+                background: linear-gradient(120deg, #f7fafc 0%, #e3eaf3 100%);
+                border-radius: 14px;
                 border: 1px solid #e0e0e0;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+                font-family: Arial, sans-serif;
             `;
             bankSection.innerHTML = `
-                <h3 style="font-size: 16px; font-weight: 600; color: #004359; margin: 0 0 16px; display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-block; width: 4px; height: 16px; background-color: #004359; border-radius: 2px;"></span>
-                    Bank Transfer Details
-                </h3>
-                <div style="font-size: 14px; line-height: 1.6; color: #666;">
+                <div style=\"font-size: 18px; font-weight: bold; color: #004359; margin-bottom: 14px; letter-spacing: 0.5px;\">Bank Transfer Details</div>
+                <div style=\"display: grid; grid-template-columns: auto 1fr; gap: 8px 18px; font-size: 15px; color: #444;\">
                     ${companyProfile?.bankDetails ? `
-                        <div style="margin-bottom: 8px;"><strong>Bank Name:</strong> ${companyProfile.bankDetails.bankName}</div>
-                        <div style="margin-bottom: 8px;"><strong>Account Name:</strong> ${companyProfile.bankDetails.accountName}</div>
-                        <div style="margin-bottom: 8px;"><strong>Account Number:</strong> ${companyProfile.bankDetails.accountNumber}</div>
-                        <div style="margin-bottom: 8px;"><strong>IBAN:</strong> ${companyProfile.bankDetails.iban}</div>
-                        <div style="margin-bottom: 8px;"><strong>SWIFT Code:</strong> ${companyProfile.bankDetails.swift}</div>
-                    ` : 'No bank details available'}
+                        <div style=\"font-weight: bold;\">Bank Name</div><div>${companyProfile.bankDetails.bankName}</div>
+                        <div style=\"font-weight: bold;\">Account Name</div><div>${companyProfile.bankDetails.accountName}</div>
+                        <div style=\"font-weight: bold;\">Account Number</div><div>${companyProfile.bankDetails.accountNumber}</div>
+                        <div style=\"font-weight: bold;\">IBAN</div><div>${companyProfile.bankDetails.iban}</div>
+                        <div style=\"font-weight: bold;\">SWIFT Code</div><div>${companyProfile.bankDetails.swift}</div>
+                    ` : '<div>No bank details available</div>'}
                 </div>
             `;
             infoSectionsGrid.appendChild(bankSection);
@@ -2297,7 +2329,7 @@ Goods remain the property of ${companyProfile?.name || 'Fortune Gifts'} until pa
                                  invoice.status === 'void' ? 'Void' : 'Draft'}
                             </span>
                         </StatusBadge>
-                        <DownloadButton onClick={handleDownloadPDF} className="DownloadButton">
+                        <DownloadButton onClick={handleDownloadPDF} className="DownloadButton" disabled={!invoice || !Array.isArray(invoice.items) || invoice.items.length === 0}>
                             <Icon name="download" size={13} />
                             Share
                         </DownloadButton>

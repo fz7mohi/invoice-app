@@ -54,6 +54,7 @@
         "cors-anywhere": "^0.4.4",
         "express": "^4.21.2",
         "firebase": "^11.5.0",
+        "firebase-admin": "^13.4.0",
         "framer-motion": "^4.1.17",
         "html2canvas": "^1.4.1",
         "jspdf": "^2.5.1",

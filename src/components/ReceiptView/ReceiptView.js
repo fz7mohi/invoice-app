@@ -549,7 +549,11 @@ const ReceiptView = () => {
             pdf.addImage(imgData, 'PNG', 0, 0, 297, 420);
 
             // Save the PDF
-            pdf.save(`Receipt_${receipt.customId || receipt.id}.pdf`);
+            const clientName = (receipt?.clientName || clientData?.companyName || 'Client')
+                .replace(/[^a-zA-Z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .substring(0, 32);
+            pdf.save(`Receipt_${receipt.customId || receipt.id}_${clientName}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('There was an error generating the PDF. Please try again.');
