@@ -429,72 +429,74 @@ const QuotationView = () => {
                 `;
                 // Only on first page: Bill To (client) section
                 if (pageIdx === 0) {
+                    // Professional client (Bill To) section with minimal two-column meta
                     const clientSection = document.createElement('div');
                     clientSection.style.cssText = `
                         display: flex;
                         justify-content: space-between;
-                        margin-bottom: 20px;
-                        padding: 20px;
-                        background-color: white;
+                        margin-bottom: 28px;
+                        padding: 28px 32px;
+                        background: linear-gradient(90deg, #f7fafc 0%, #e3eaf3 100%);
                         border: 1px solid #e0e0e0;
-                        border-radius: 4px;
+                        border-radius: 12px;
+                        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+                        font-family: Arial, sans-serif;
                     `;
                     clientSection.innerHTML = `
-                        <div style="flex: 1;">
-                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Bill To</div>
-                            <div style="color: black; font-size: 16px;">
-                                <strong>${quotation.clientName}</strong><br />
-                                ${clientData?.address || quotation.clientAddress?.street || ''}
-                                ${quotation.clientAddress?.city ? `, ${quotation.clientAddress.city}` : ''}
-                                ${quotation.clientAddress?.postCode ? `, ${quotation.clientAddress.postCode}` : ''}
-                                ${clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}
-                                ${clientData?.phone ? `<br />${clientData.phone}` : ''}
-                                ${(clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.trnNumber || quotation?.clientTRN) ? 
-                                    `<br /><span style="font-weight: 600;">TRN: ${clientData?.trn || clientData?.trnNumber || quotation?.clientTRN}</span>` : ''}
-                            </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                            <div style="color: #004359; font-weight: bold; font-size: 19px; margin-bottom: 8px; letter-spacing: 0.5px;">Bill To</div>
+                            <div style="color: #222; font-size: 17px; font-weight: bold; margin-bottom: 2px;">${quotation.clientName}</div>
+                            ${clientData?.address || quotation.clientAddress?.street ? `<div style=\"color: #444; font-size: 15px; margin-bottom: 2px;\">${clientData?.address || quotation.clientAddress?.street}</div>` : ''}
+                            ${quotation.clientAddress?.city ? `<div style=\"color: #444; font-size: 15px; margin-bottom: 2px;\">${quotation.clientAddress.city}</div>` : ''}
+                            ${quotation.clientAddress?.postCode ? `<div style=\"color: #444; font-size: 15px; margin-bottom: 2px;\">${quotation.clientAddress.postCode}</div>` : ''}
+                            ${(clientData?.country || quotation.clientAddress?.country) ? `<div style=\"color: #444; font-size: 15px; margin-bottom: 2px;\">${clientData?.country || quotation.clientAddress?.country}</div>` : ''}
+                            ${clientData?.phone ? `<div style=\"color: #444; font-size: 15px; margin-bottom: 2px;\">${clientData.phone}</div>` : ''}
+                            ${((clientCountry.toLowerCase().includes('emirates') || clientCountry.toLowerCase().includes('uae')) && (clientData?.trn || clientData?.TRN || clientData?.trnNumber || clientData?.taxRegistrationNumber || clientData?.tax_registration_number || clientData?.taxNumber || quotation?.clientTRN)) ? `<div style=\"color: #004359; font-size: 15px; font-weight: 600; margin-bottom: 2px;\">TRN: ${clientData?.trn || clientData?.TRN || clientData?.trnNumber || clientData?.taxRegistrationNumber || clientData?.tax_registration_number || clientData?.taxNumber || quotation?.clientTRN}</div>` : ''}
                         </div>
-                        <div style="text-align: right;">
-                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Quotation #</div>
-                            <div style="color: black; font-size: 16px; margin-bottom: 15px;">${quotation.customId || id}</div>
-                            <div style="color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 10px;">Quote Date</div>
-                            <div style="color: black; font-size: 16px;">${formatDate(quotation.createdAt)}</div>
+                        <div style=\"display: grid; grid-template-columns: auto auto; gap: 6px 18px; align-content: start; min-width: 220px; font-size: 15px; color: #222; background: none; border: none; box-shadow: none;\">
+                            <div style=\"font-weight: bold;\">Quotation #</div><div style=\"font-weight: 500;\">${quotation.customId || id}</div>
+                            <div style=\"font-weight: bold;\">Quote Date</div><div style=\"font-weight: 500;\">${formatDate(quotation.createdAt)}</div>
                         </div>
                     `;
                     pdfContainer.appendChild(clientSection);
                 }
-                // Items table (only this page's chunk)
+                // Items table (styled like Invoice PDF)
                 const itemsTable = document.createElement('table');
                 itemsTable.style.cssText = `
                     width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 20px;
+                    border-collapse: separate;
+                    border-spacing: 0;
+                    margin-bottom: 32px;
                     background-color: white;
-                    border: 1px solid #e0e0e0;
-                    border-radius: 10px;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    font-family: Arial, sans-serif;
+                    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
                 `;
                 itemsTable.innerHTML = `
-                    <thead style="background-color: #004359; color: white;">
-                        <tr>
-                            <th style="padding: 15px; text-align: center; font-size: 18px; width: 50px;">S/N</th>
-                            <th style="padding: 15px; text-align: left; font-size: 18px;">Item Name</th>
-                            <th style="padding: 15px; text-align: center; font-size: 18px;">QTY.</th>
-                            <th style="padding: 15px; text-align: right; font-size: 18px;">Price</th>
-                            ${clientHasVAT ? '<th style=\"padding: 15px; text-align: right; font-size: 18px;\">VAT (5%)</th>' : ''}
-                            <th style="padding: 15px; text-align: right; font-size: 18px;">Total</th>
+                    <thead>
+                        <tr style="background: linear-gradient(90deg, #004359 0%, #1976d2 100%); color: #fff;">
+                            <th style="padding: 16px 12px; text-align: center; font-size: 17px; font-weight: bold; width: 50px;">S/N</th>
+                            <th style="padding: 16px 12px; text-align: left; font-size: 17px; font-weight: bold;">Item Name</th>
+                            <th style="padding: 16px 12px; text-align: center; font-size: 17px; font-weight: bold;">QTY.</th>
+                            <th style="padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;">Price</th>
+                            ${clientHasVAT ? '<th style=\"padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;\">VAT (5%)</th>' : ''}
+                            <th style="padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;">Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${itemChunks[pageIdx].map((item, idx) => {
                             const itemVAT = item.vat || 0;
                             const serialNumber = pageIdx * ITEMS_PER_PAGE + idx + 1;
+                            const rowBg = (pageIdx * ITEMS_PER_PAGE + idx) % 2 === 0 ? '#f7fafc' : '#e3eaf3';
                             return `
-                                <tr style=\"border-bottom: 1px solid #e0e0e0;\">
-                                    <td style=\"padding: 15px; text-align: center; color: black; font-size: 16px; font-weight: bold;\">${serialNumber}</td>
-                                    <td style=\"padding: 15px; color: black; font-size: 16px;\">${item.name}${item.description ? `<div style=\\"font-size: 14px; color: #666;\\">${item.description}</div>` : ''}</td>
-                                    <td style=\"padding: 15px; text-align: center; color: black; font-size: 16px;\">${item.quantity || 0}</td>
-                                    <td style=\"padding: 15px; text-align: right; color: black; font-size: 16px;\">${formatPrice(item.price || 0, quotation.currency)}</td>
-                                    ${clientHasVAT ? `<td style=\\"padding: 15px; text-align: right; color: black; font-size: 16px;\\">${formatPrice(itemVAT, quotation.currency)}</td>` : ''}
-                                    <td style=\"padding: 15px; text-align: right; color: black; font-size: 16px;\">${formatPrice(item.total || 0, quotation.currency)}</td>
+                                <tr style=\"background: ${rowBg}; border-bottom: 1px solid #e0e0e0;\">
+                                    <td style=\"padding: 14px 10px; text-align: center; color: #222; font-size: 16px; font-weight: bold;\">${serialNumber}</td>
+                                    <td style=\"padding: 14px 10px; color: #222; font-size: 16px; text-align: left;\">${item.name}${item.description ? `<div style=\\"font-size: 14px; color: #666; margin-top: 2px;\\">${item.description}</div>` : ''}</td>
+                                    <td style=\"padding: 14px 10px; text-align: center; color: #222; font-size: 16px;\">${item.quantity || 0}</td>
+                                    <td style=\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px;\">${formatPrice(item.price || 0, quotation.currency)}</td>
+                                    ${clientHasVAT ? `<td style=\\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px;\\">${formatPrice(itemVAT, quotation.currency)}</td>` : ''}
+                                    <td style=\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px; font-weight: 500;\">${formatPrice(item.total || 0, quotation.currency)}</td>
                                 </tr>
                             `;
                         }).join('')}
@@ -503,48 +505,66 @@ const QuotationView = () => {
                 pdfContainer.appendChild(itemsTable);
                 // Only on last page: totals, terms, signature
                 if (isLastPage) {
-                    // Total section
+                    // Invoice-style total section
                     const totalSection = document.createElement('div');
                     totalSection.style.cssText = `
-                        background-color: #004359;
-                        color: white;
-                        padding: 15px;
-                        text-align: right;
-                        border-radius: 0 0 4px 4px;
+                        background: #fff;
+                        color: #222;
+                        padding: 16px 14px 12px 14px;
+                        border-radius: 10px;
+                        margin-bottom: 24px;
+                        width: 100%;
+                        max-width: none;
+                        margin-left: 0;
+                        margin-right: 0;
+                        box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+                        border: 1px solid #e0e0e0;
+                        font-family: Arial, sans-serif;
                     `;
                     totalSection.innerHTML = `
-                        <div style=\"font-size: 18px; margin-bottom: 4px;\">Grand Total</div>
-                        ${clientHasVAT ? `<div style=\\"font-size: 11px; opacity: 0.8;\\">Includes VAT: ${formatPrice(quotation.items.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0), quotation.currency)}</div>` : ''}
-                        <div style=\"font-size: 24px; font-weight: bold;\">${formatPrice(quotation.grandTotal || quotation.total || 0, quotation.currency)}</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: center; font-size: 15px; line-height: 1.3;">
+                            <div>Subtotal</div><div style="text-align: right; font-weight: 500;">${formatPrice(quotation.subtotal || 0, quotation.currency)}</div>
+                            ${clientHasVAT ? `<div>VAT (5%)</div><div style=\"text-align: right; font-weight: 500;\">${formatPrice(quotation.totalVat || 0, quotation.currency)}</div>` : ''}
+                            <div>Amount Paid</div><div style="text-align: right; font-weight: 500;">${formatPrice(0, quotation.currency)}</div>
+                            <div style="grid-column: 1 / 3; border-top: 1px solid #e0e0e0; margin: 4px 0 2px 0;"></div>
+                            <div style="font-weight: bold;">Total</div><div style="text-align: right; font-weight: bold;">${formatPrice(quotation.total || 0, quotation.currency)}</div>
+                            <div style="font-weight: bold; color: #1976d2;">Balance Due</div><div style="text-align: right; font-weight: bold; color: #1976d2;">${formatPrice(quotation.total || 0, quotation.currency)}</div>
+                        </div>
                     `;
                     pdfContainer.appendChild(totalSection);
-                    // Terms section
+                    // Terms section (professional formatting)
                     if (quotation.termsAndConditions) {
                         const termsSection = document.createElement('div');
                         termsSection.style.cssText = `
-                            padding: 20px;
-                            background-color: white;
+                            padding: 14px 14px 10px 14px;
+                            background: #fff;
+                            border-radius: 10px;
                             border: 1px solid #e0e0e0;
-                            border-radius: 4px;
-                            margin-bottom: 20px;
+                            margin-bottom: 10px;
+                            box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+                            font-family: Arial, sans-serif;
                         `;
-                        const formattedTerms = quotation.termsAndConditions
+                        // Professional formatting for terms
+                        const formattedTerms = (quotation.termsAndConditions || '')
                             .split('\n')
                             .map(line => line.trim())
                             .filter(line => line.length > 0)
                             .map(line => {
                                 if (/^\d+\./.test(line)) {
-                                    return `<div style=\\"margin-bottom: 8px; color: black; font-size: 16px;\\">${line}</div>`;
+                                    // Numbered list
+                                    return `<div style=\"margin-bottom: 8px; color: black; font-size: 13px;\">${line}</div>`;
                                 } else if (line.toUpperCase() === line || /^(Terms|Conditions|Payment|Delivery|Warranty|Cancellation|Force Majeure|Governing Law)/i.test(line)) {
-                                    return `<div style=\\"margin-top: 16px; margin-bottom: 8px; color: #004359; font-weight: bold; font-size: 18px;\\">${line}</div>`;
+                                    // Section headers
+                                    return `<div style=\"margin-top: 12px; margin-bottom: 6px; color: #004359; font-weight: bold; font-size: 14px;\">${line}</div>`;
                                 } else {
-                                    return `<div style=\\"margin-bottom: 8px; color: black; font-size: 16px;\\">${line}</div>`;
+                                    // Normal paragraph
+                                    return `<div style=\"margin-bottom: 8px; color: black; font-size: 13px;\">${line}</div>`;
                                 }
                             })
                             .join('');
                         termsSection.innerHTML = `
-                            <div style=\"color: #004359; font-weight: bold; font-size: 18px; margin-bottom: 16px;\">Terms and Conditions</div>
-                            <div style=\"color: black; font-size: 16px; line-height: 1.5;\">${formattedTerms}</div>
+                            <div style=\"font-size: 15px; font-weight: bold; color: #004359; margin-bottom: 8px; letter-spacing: 0.2px;\">Terms and Conditions</div>
+                            <div style=\"font-size: 13px; line-height: 1.4; color: #444;\">${formattedTerms}</div>
                         `;
                         pdfContainer.appendChild(termsSection);
                     }
@@ -633,12 +653,6 @@ const QuotationView = () => {
 
     // Render client section with TRN from client data if available
     const renderClientSection = () => {
-        // Check if client is from UAE
-        const isUAE = quotation?.clientAddress?.country?.toLowerCase().includes('emirates') || 
-                      quotation?.clientAddress?.country?.toLowerCase().includes('uae') ||
-                      clientData?.country?.toLowerCase().includes('emirates') ||
-                      clientData?.country?.toLowerCase().includes('uae');
-
         // Check for TRN in various possible field names
         const clientTRN = 
             clientData?.trn || 
@@ -648,49 +662,25 @@ const QuotationView = () => {
             clientData?.tax_registration_number ||
             clientData?.taxNumber ||
             quotation?.clientTRN;
-
-        console.log('Client Data:', clientData);
-        console.log('Is UAE Client:', isUAE);
-        console.log('Client TRN:', clientTRN);
-        console.log('Client Country:', clientData?.country || quotation?.clientAddress?.country);
-
-        // Get address and country from either source
-        const clientAddress = quotation.clientAddress?.street || clientData?.address || '';
-        const clientCountry = quotation.clientAddress?.country || clientData?.country || '';
-        const clientCity = quotation.clientAddress?.city || '';
-        const clientPostCode = quotation.clientAddress?.postCode || '';
-
-        // Format the address parts
-        const addressParts = [];
-        if (clientAddress) addressParts.push(clientAddress);
-        if (clientCity) addressParts.push(clientCity);
-        if (clientPostCode) addressParts.push(clientPostCode);
-        if (clientCountry) addressParts.push(clientCountry);
-
+        // Check if client is from UAE
+        const isUAE = clientData?.country?.toLowerCase().includes('emirates') || 
+                      clientData?.country?.toLowerCase().includes('uae') ||
+                      quotation?.clientAddress?.country?.toLowerCase().includes('emirates') ||
+                      quotation?.clientAddress?.country?.toLowerCase().includes('uae');
         return (
             <AddressGroup>
                 <AddressTitle>Bill To</AddressTitle>
                 <AddressText>
-                    <strong>{quotation.clientName}</strong>
-                    {addressParts.length > 0 && (
-                        <>
-                            <br />
-                            {addressParts.join(', ')}
-                        </>
-                    )}
-                    {clientData?.phone && (
-                        <>
-                            <br />
-                            {clientData.phone}
-                        </>
-                    )}
+                    <strong>{clientData?.name || quotation.clientName}</strong><br />
+                    {clientData?.address || quotation.clientAddress?.street || ''}
+                    {quotation.clientAddress?.city ? `, ${quotation.clientAddress.city}` : ''}
+                    {quotation.clientAddress?.postCode ? `, ${quotation.clientAddress.postCode}` : ''}
+                    {clientData?.country || quotation.clientAddress?.country ? `, ${clientData?.country || quotation.clientAddress?.country}` : ''}<br />
+                    {clientData?.phone && <>{clientData.phone}<br /></>}
                     {isUAE && clientTRN && (
-                        <>
-                            <br />
-                            <span style={{ fontWeight: '600' }}>
-                                TRN: {clientTRN}
-                            </span>
-                        </>
+                        <span style={{ fontWeight: '600' }}>
+                            TRN: {clientTRN}
+                        </span>
                     )}
                 </AddressText>
             </AddressGroup>
@@ -1391,18 +1381,38 @@ const QuotationView = () => {
                             
                             <InfoAddresses className="InfoAddresses">
                                 {renderClientSection()}
-                                
                                 <AddressGroup align="right">
-                                    <AddressTitle>Quotation #</AddressTitle>
-                                    <AddressText>
-                                        {quotation.customId || id}
-                                    </AddressText>
-                                    <br />
-                                    <AddressTitle>Quote Date</AddressTitle>
-                                   
-                                    <AddressText>
-                                        {formatDate(quotation.createdAt)}
-                                    </AddressText>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'auto auto',
+                                        gap: '6px 18px',
+                                        alignContent: 'start',
+                                        minWidth: '220px',
+                                        fontSize: '15px',
+                                        color: '#222',
+                                        background: 'none',
+                                        border: 'none',
+                                        boxShadow: 'none',
+                                        fontFamily: 'inherit',
+                                        fontWeight: 400
+                                    }}>
+                                        <div style={{ fontWeight: 'bold' }}>Quotation #</div>
+                                        <div style={{ fontWeight: 500 }}>{quotation.customId || id}</div>
+                                        <div style={{ fontWeight: 'bold' }}>Quote Date</div>
+                                        <div style={{ fontWeight: 500 }}>{formatDate(quotation.createdAt)}</div>
+                                        {quotation.createdAt && (
+                                            <>
+                                                <div style={{ fontWeight: 'bold' }}>Created Date</div>
+                                                <div style={{ fontWeight: 500 }}>{formatDate(quotation.createdAt)}</div>
+                                            </>
+                                        )}
+                                        {quotation.lpoNumber && (
+                                            <>
+                                                <div style={{ fontWeight: 'bold' }}>LPO Number</div>
+                                                <div style={{ fontWeight: 500 }}>{quotation.lpoNumber}</div>
+                                            </>
+                                        )}
+                                    </div>
                                 </AddressGroup>
                             </InfoAddresses>
                             
@@ -1470,9 +1480,7 @@ const QuotationView = () => {
                                 
                                 <Items>
                                     {quotation.items && quotation.items.map((item, index) => {
-                                        // Use the stored VAT value from the database instead of recalculating
                                         const itemVAT = item.vat || 0;
-                                        
                                         return (
                                             <Item key={index} showVat={clientHasVAT}>
                                                 <div className="item-details">
@@ -1504,18 +1512,21 @@ const QuotationView = () => {
                                     })}
                                 </Items>
                                 
-                                <Total className="Total">
+                                <Total>
                                     <div>
-                                        <TotalText>Grand Total</TotalText>
-                                        {clientHasVAT && (
-                                            <div style={{ marginTop: '4px', fontSize: '11px', opacity: 0.8, color: 'white' }}>
-                                                Includes VAT: {formatPrice(quotation.items.reduce((sum, item) => sum + (parseFloat(item.vat) || 0), 0), quotation.currency)}
-                                            </div>
-                                        )}
+                                        <TotalText>Subtotal</TotalText>
+                                        <TotalAmount>{formatPrice(quotation.subtotal || 0, quotation.currency)}</TotalAmount>
                                     </div>
-                                    <TotalAmount>
-                                        {formatPrice(quotation.total || quotation.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0), quotation.currency)}
-                                    </TotalAmount>
+                                    {clientHasVAT && (
+                                        <div>
+                                            <TotalText>VAT (5%)</TotalText>
+                                            <TotalAmount>{formatPrice(quotation.totalVat || 0, quotation.currency)}</TotalAmount>
+                                        </div>
+                                    )}
+                                    <div className="grand-total">
+                                        <TotalText>{quotation.paymentType || 'Total'}</TotalText>
+                                        <TotalAmount>{formatPrice(quotation.total || 0, quotation.currency)}</TotalAmount>
+                                    </div>
                                 </Total>
                             </Details>
                             
