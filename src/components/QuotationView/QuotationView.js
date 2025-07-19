@@ -599,7 +599,7 @@ const QuotationView = () => {
                 pdfContainer.style.left = '-9999px';
                 document.body.appendChild(pdfContainer);
                 const canvas = await html2canvas(pdfContainer, {
-                    scale: 2,
+                    scale: 2, // Higher scale for better quality
                     useCORS: true,
                     logging: false,
                     backgroundColor: '#ffffff',
@@ -607,9 +607,10 @@ const QuotationView = () => {
                     height: PAGE_HEIGHT_PX
                 });
                 document.body.removeChild(pdfContainer);
-                const imgData = canvas.toDataURL('image/png');
+                // Use JPEG for compression, quality 0.9 (higher quality)
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
                 if (pageIdx > 0) pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, 0, PAGE_WIDTH_MM, PAGE_HEIGHT_MM);
+                pdf.addImage(imgData, 'JPEG', 0, 0, PAGE_WIDTH_MM, PAGE_HEIGHT_MM);
             }
             return pdf;
         } catch (error) {
