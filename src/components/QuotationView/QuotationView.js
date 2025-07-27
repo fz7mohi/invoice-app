@@ -1412,14 +1412,14 @@ const QuotationView = () => {
                                         fontFamily: 'inherit',
                                         fontWeight: 400
                                     }}>
-                                        <div style={{ fontWeight: 'bold' }}>Quotation #</div>
-                                        <div style={{ fontWeight: 500 }}>{quotation.customId || id}</div>
-                                        <div style={{ fontWeight: 'bold' }}>Quote Date</div>
-                                        <div style={{ fontWeight: 500 }}>{formatDate(quotation.createdAt)}</div>
+                                        <div style={{ fontWeight: 'bold', color: '#fff' }}>Quotation #</div>
+                                        <div style={{ fontWeight: 500, color: '#fff' }}>{quotation.customId || id}</div>
+                                        <div style={{ fontWeight: 'bold', color: '#fff' }}>Quote Date</div>
+                                        <div style={{ fontWeight: 500, color: '#fff' }}>{formatDate(quotation.createdAt)}</div>
                                         {quotation.createdAt && (
                                             <>
-                                                <div style={{ fontWeight: 'bold' }}>Created Date</div>
-                                                <div style={{ fontWeight: 500 }}>{formatDate(quotation.createdAt)}</div>
+                                                <div style={{ fontWeight: 'bold', color: '#fff' }}>Created Date</div>
+                                                <div style={{ fontWeight: 500, color: '#fff' }}>{formatDate(quotation.createdAt)}</div>
                                             </>
                                         )}
                                         {quotation.lpoNumber && (
