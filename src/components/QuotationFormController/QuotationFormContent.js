@@ -11,6 +11,7 @@ import styled, { css } from 'styled-components';
 import { defaultInput } from '../FormController/Form/FormStyles';
 import { motion, AnimatePresence } from 'framer-motion';
 import QuotationSubmitController from './QuotationSubmitController';
+import SortableItemsContainer from './SortableItemsContainer';
 
 import {
     StyledForm,
@@ -220,23 +221,7 @@ const Wrapper = styled.div`
     }
 `;
 
-const TotalValue = styled.div`
-    display: flex;
-    align-items: center;
-    padding: 10px 12px;
-    border-radius: 6px;
-    border: 1px solid #252945;
-    background-color: #1E2139;
-    color: #FFFFFF;
-    font-weight: 500;
-    font-size: 13px;
-    
-    .currency {
-        margin-right: 4px;
-        font-size: 12px;
-        color: #DFE3FA;
-    }
-`;
+
 
 const Delete = styled.button`
     width: 18px;
@@ -366,19 +351,7 @@ const InfoValue = styled.span`
     line-height: 1.3;
 `;
 
-// Add a styled component for the description field
-const DescriptionInput = styled.textarea`
-    ${defaultInput}
-    min-height: 50px;
-    resize: vertical;
-    font-size: 12px;
-    margin-top: 4px;
-    padding: 10px;
-    
-    ${({ $error }) =>
-        $error &&
-        `border: 1px solid ${props => props.theme.colors.red};`}
-`;
+
 
 // Update the styled component for the InputsGroup to support the new layout
 const ItemInputsGroup = styled(InputsGroup)`
@@ -501,16 +474,7 @@ const ItemDelete = styled.button`
     }
 `;
 
-// Update the VAT display value
-const VatValue = styled(TotalValue)`
-    color: #DFE3FA;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 10px 12px;
-    background-color: #1E2139;
-    border-radius: 6px;
-    border: 1px solid #252945;
-`;
+
 
 // Add a custom styled form that extends StyledForm
 const QuotationForm = styled(StyledForm)`
@@ -528,20 +492,7 @@ const QuotationForm = styled(StyledForm)`
     }
 `;
 
-// Add the MinimalLabel styled component
-const MinimalLabel = styled(Label)`
-    font-size: 12px;
-    font-weight: 500;
-    color: #DFE3FA;
-    margin-bottom: 4px;
-`;
 
-// Add the MinimalInput styled component
-const MinimalInput = styled(Input)`
-    padding: 10px 12px;
-    font-size: 13px;
-    height: auto;
-`;
 
 // Add a function to get currency symbol based on country
 const getCurrencySymbol = (country) => {
@@ -663,103 +614,7 @@ const FormSection = styled.section`
     }
 `;
 
-const ItemCard = styled.div`
-    background: rgba(37, 41, 69, 0.3);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 16px;
-    border: 1px solid #252945;
-    position: relative;
-    transition: all 0.3s ease;
 
-    @media (min-width: 768px) {
-        padding: 28px;
-        margin-bottom: 24px;
-        
-        &:hover {
-            border-color: #7C5DFA;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-    }
-`;
-
-const ItemHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #252945;
-
-    @media (min-width: 768px) {
-        padding-bottom: 0;
-        margin-bottom: 24px;
-        border-bottom: none;
-    }
-`;
-
-const ItemTitle = styled.h3`
-    color: #DFE3FA;
-    font-size: 14px;
-    font-weight: 600;
-    margin: 0;
-
-    @media (min-width: 768px) {
-        font-size: 16px;
-    }
-`;
-
-const ItemGrid = styled.div`
-    display: grid;
-    gap: 20px;
-    grid-template-columns: 1fr;
-    
-    @media (min-width: 768px) {
-        grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr;
-        gap: 32px;
-        align-items: start;
-    }
-
-    > div {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-`;
-
-const DeleteButton = styled.button`
-    background: none;
-    border: none;
-    padding: 8px;
-    color: #888EB0;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 1;
-
-    @media (min-width: 768px) {
-        top: 28px;
-        right: 28px;
-        padding: 10px;
-    }
-
-    &:hover {
-        color: #EC5757;
-        background: rgba(236, 87, 87, 0.1);
-    }
-
-    &:focus-visible {
-        outline: 2px solid #7C5DFA;
-        outline-offset: 2px;
-    }
-`;
 
 const AddItemButton = styled.button`
     width: 100%;
@@ -1010,7 +865,6 @@ const QuotationFormContent = ({ isEdited }) => {
     const clientNameRef = useRef(null);
     const descriptionRef = useRef(null);
     const termsRef = useRef(null);
-    const itemRefs = useRef([]);
 
     // Initialize items when component mounts or quotation changes
     useEffect(() => {
@@ -1315,14 +1169,11 @@ const QuotationFormContent = ({ isEdited }) => {
             return;
         }
         
-        // Check items
+        // Check items - scroll to the items section
         if (errors.items) {
-            // Find the first item with an error
-            for (let i = 0; i < itemRefs.current.length; i++) {
-                if (errors.items[i] && itemRefs.current[i]) {
-                    itemRefs.current[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
-                }
+            const itemsSection = document.querySelector('[data-section="items"]');
+            if (itemsSection) {
+                itemsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
     };
@@ -1333,6 +1184,11 @@ const QuotationFormContent = ({ isEdited }) => {
             scrollToFirstError();
         }
     }, [errorMessages]);
+
+    const handleItemsReorder = (newItems) => {
+        setLocalItems(newItems);
+        setItems(newItems);
+    };
 
     return (
         <FormContainer>
@@ -1536,7 +1392,7 @@ const QuotationFormContent = ({ isEdited }) => {
                     </InputWrapper>
                 </FormSection>
 
-                <FormSection>
+                <FormSection data-section="items">
                     <Legend>Item List</Legend>
                     
                     {/* Add items header for desktop */}
@@ -1548,135 +1404,15 @@ const QuotationFormContent = ({ isEdited }) => {
                         <span>Total</span>
                     </ItemsHeader>
                     
-                    {localItems.map((item, index) => (
-                        <ItemCard key={index} ref={el => itemRefs.current[index] = el}>
-                            <ItemGrid>
-                                <div>
-                                    <MinimalLabel
-                                        htmlFor={`item-name-${index}`}
-                                        data-error={errors.items && errors.items[index]?.name}
-                                    >
-                                        Item Name
-                                    </MinimalLabel>
-                                    <MinimalInput
-                                        id={`item-name-${index}`}
-                                        type="text"
-                                        name="name"
-                                        value={item.name || ''}
-                                        placeholder="Item name"
-                                        data-error={errors.items && errors.items[index]?.name}
-                                        onChange={(event) => handleItemChange(event, 'items', null, index)}
-                                    />
-                                    
-                                    <MinimalLabel
-                                        htmlFor={`item-description-${index}`}
-                                        style={{ marginTop: '8px' }}
-                                    >
-                                        Description
-                                    </MinimalLabel>
-                                    <DescriptionInput
-                                        id={`item-description-${index}`}
-                                        name="description"
-                                        value={item.description || ''}
-                                        placeholder="Item description..."
-                                        onChange={(event) => handleItemChange(event, 'items', null, index)}
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <MinimalLabel htmlFor={`item-quantity-${index}`}>
-                                        Qty.
-                                    </MinimalLabel>
-                                    <MinimalInput
-                                        id={`item-quantity-${index}`}
-                                        type="number"
-                                        inputMode="numeric"
-                                        min="0"
-                                        name="quantity"
-                                        value={item.quantity || ''}
-                                        style={{
-                                            fontSize: '16px',
-                                            WebkitAppearance: 'none',
-                                            appearance: 'none',
-                                            touchAction: 'manipulation'
-                                        }}
-                                        onChange={(event) => handleItemChange(event, 'items', null, index)}
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <MinimalLabel htmlFor={`item-price-${index}`}>
-                                        Price ({quotation.currency || 'USD'})
-                                    </MinimalLabel>
-                                    <input
-                                        id={`item-price-${index}`}
-                                        type="number"
-                                        inputMode="decimal"
-                                        step="0.01"
-                                        min="0"
-                                        name="price"
-                                        value={item.price || ''}
-                                        style={{
-                                            width: '100%',
-                                            padding: '10px 12px',
-                                            backgroundColor: '#252945',
-                                            color: '#FFFFFF',
-                                            border: '1px solid #252945',
-                                            borderRadius: '4px',
-                                            fontSize: '16px',
-                                            WebkitAppearance: 'none',
-                                            appearance: 'none',
-                                            touchAction: 'manipulation'
-                                        }}
-                                        onChange={(event) => {
-                                            handleItemChange({
-                                                target: {
-                                                    name: 'price',
-                                                    value: event.target.value
-                                                }
-                                            }, 'items', null, index);
-                                        }}
-                                        onBlur={(event) => {
-                                            const value = event.target.value;
-                                            if (value && !isNaN(parseFloat(value))) {
-                                                const formattedValue = parseFloat(value).toFixed(2);
-                                                handleItemChange({
-                                                    target: {
-                                                        name: 'price',
-                                                        value: formattedValue
-                                                    }
-                                                }, 'items', null, index);
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <MinimalLabel>VAT (5%)</MinimalLabel>
-                                    <VatValue>
-                                        <span className="currency">{quotation.currency || 'USD'}</span>
-                                        {formatNumber(item.vat)}
-                                    </VatValue>
-                                </div>
-                                
-                                <div>
-                                    <MinimalLabel>Total</MinimalLabel>
-                                    <TotalValue>
-                                        <span className="currency">{quotation.currency || 'USD'}</span>
-                                        {formatNumber(item.total)}
-                                    </TotalValue>
-                                </div>
-                            </ItemGrid>
-                            
-                            <DeleteButton
-                                type="button"
-                                onClick={() => removeItemAtIndex(index)}
-                                aria-label={`Delete item ${index + 1}`}
-                            >
-                                <Icon name="delete" size={16} />
-                            </DeleteButton>
-                        </ItemCard>
-                    ))}
+                    <SortableItemsContainer
+                        items={localItems}
+                        handleItemChange={handleItemChange}
+                        removeItemAtIndex={removeItemAtIndex}
+                        errors={errors}
+                        currency={quotation.currency || 'USD'}
+                        formatNumber={formatNumber}
+                        onItemsReorder={handleItemsReorder}
+                    />
 
                     <AddItemButton
                         type="button"
