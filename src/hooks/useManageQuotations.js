@@ -422,6 +422,13 @@ const useManageQuotations = () => {
                 total: parseFloat(item.total) || 0
             }));
 
+            // Calculate subtotal (price * quantity for each item)
+            const subtotal = processedItems.reduce((sum, item) => {
+                const price = parseFloat(item.price) || 0;
+                const quantity = parseFloat(item.quantity) || 0;
+                return sum + (price * quantity);
+            }, 0);
+
             // Calculate total
             const totalAmount = processedItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
 
@@ -432,6 +439,7 @@ const useManageQuotations = () => {
             const quotationDoc = {
                 ...quotation,
                 items: processedItems,
+                subtotal: subtotal,
                 total: totalAmount,
                 currency: quotation.currency || 'USD',
                 termsAndConditions: quotation.termsAndConditions || DEFAULT_TERMS_AND_CONDITIONS
@@ -469,6 +477,7 @@ const useManageQuotations = () => {
                     paymentTerms: quotationDoc.paymentTerms || '30',
                     status: quotationDoc.status || (type === 'draft' ? 'draft' : 'pending'),
                     items: processedItems,
+                    subtotal: subtotal,
                     total: totalAmount,
                     currency: quotationDoc.currency || 'USD',
                     termsAndConditions: quotationDoc.termsAndConditions || '',

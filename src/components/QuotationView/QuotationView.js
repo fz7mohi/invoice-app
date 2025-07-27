@@ -521,14 +521,24 @@ const QuotationView = () => {
                         border: 1px solid #e0e0e0;
                         font-family: Arial, sans-serif;
                     `;
+                    // Calculate totals for PDF
+                    const pdfSubtotal = quotation.items.reduce((sum, item) => {
+                        const price = parseFloat(item.price) || 0;
+                        const quantity = parseFloat(item.quantity) || 0;
+                        return sum + (price * quantity);
+                    }, 0);
+                    
+                    const pdfVatAmount = clientHasVAT ? pdfSubtotal * 0.05 : 0;
+                    const pdfGrandTotal = pdfSubtotal + pdfVatAmount;
+                    
                     totalSection.innerHTML = `
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: center; font-size: 15px; line-height: 1.3;">
-                            <div>Subtotal</div><div style="text-align: right; font-weight: 500;">${formatPrice(quotation.subtotal || 0, quotation.currency)}</div>
-                            ${clientHasVAT ? `<div>VAT (5%)</div><div style=\"text-align: right; font-weight: 500;\">${formatPrice(quotation.totalVat || 0, quotation.currency)}</div>` : ''}
+                            <div>Subtotal</div><div style="text-align: right; font-weight: 500;">${formatPrice(pdfSubtotal, quotation.currency)}</div>
+                            ${clientHasVAT ? `<div>VAT (5%)</div><div style=\"text-align: right; font-weight: 500;\">${formatPrice(pdfVatAmount, quotation.currency)}</div>` : ''}
                             <div>Amount Paid</div><div style="text-align: right; font-weight: 500;">${formatPrice(0, quotation.currency)}</div>
                             <div style="grid-column: 1 / 3; border-top: 1px solid #e0e0e0; margin: 4px 0 2px 0;"></div>
-                            <div style="font-weight: bold;">Total</div><div style="text-align: right; font-weight: bold;">${formatPrice(quotation.total || 0, quotation.currency)}</div>
-                            <div style="font-weight: bold; color: #1976d2;">Balance Due</div><div style="text-align: right; font-weight: bold; color: #1976d2;">${formatPrice(quotation.total || 0, quotation.currency)}</div>
+                            <div style="font-weight: bold;">Total</div><div style="text-align: right; font-weight: bold;">${formatPrice(pdfGrandTotal, quotation.currency)}</div>
+                            <div style="font-weight: bold; color: #1976d2;">Balance Due</div><div style="text-align: right; font-weight: bold; color: #1976d2;">${formatPrice(pdfGrandTotal, quotation.currency)}</div>
                         </div>
                     `;
                     pdfContainer.appendChild(totalSection);
@@ -1168,7 +1178,12 @@ const QuotationView = () => {
 
     // Calculate total amount with or without VAT
     const calculateTotals = () => {
-        const subtotal = quotation.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+        // Calculate subtotal from price * quantity (before VAT)
+        const subtotal = quotation.items.reduce((sum, item) => {
+            const price = parseFloat(item.price) || 0;
+            const quantity = parseFloat(item.quantity) || 0;
+            return sum + (price * quantity);
+        }, 0);
         
         if (clientHasVAT) {
             const vatAmount = subtotal * 0.05;
@@ -1516,17 +1531,17 @@ const QuotationView = () => {
                                 <Total>
                                     <div>
                                         <TotalText>Subtotal</TotalText>
-                                        <TotalAmount>{formatPrice(quotation.subtotal || 0, quotation.currency)}</TotalAmount>
+                                        <TotalAmount>{formatPrice(subtotal, quotation.currency)}</TotalAmount>
                                     </div>
                                     {clientHasVAT && (
                                         <div>
                                             <TotalText>VAT (5%)</TotalText>
-                                            <TotalAmount>{formatPrice(quotation.totalVat || 0, quotation.currency)}</TotalAmount>
+                                            <TotalAmount>{formatPrice(vatAmount, quotation.currency)}</TotalAmount>
                                         </div>
                                     )}
                                     <div className="grand-total">
                                         <TotalText>{quotation.paymentType || 'Total'}</TotalText>
-                                        <TotalAmount>{formatPrice(quotation.total || 0, quotation.currency)}</TotalAmount>
+                                        <TotalAmount>{formatPrice(grandTotal, quotation.currency)}</TotalAmount>
                                     </div>
                                 </Total>
                             </Details>
