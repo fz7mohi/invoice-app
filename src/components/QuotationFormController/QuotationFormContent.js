@@ -907,6 +907,7 @@ const QuotationFormContent = ({ isEdited }) => {
             const processedItems = localItems.map(item => ({
                 name: item.name || '',
                 description: item.description || '',
+                leadTime: item.leadTime || '',
                 quantity: parseFloat(item.quantity) || 0,
                 price: parseFloat(item.price) || 0,
                 total: parseFloat(item.total) || 0,

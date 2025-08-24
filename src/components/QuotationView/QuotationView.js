@@ -490,13 +490,13 @@ const QuotationView = () => {
                             const serialNumber = pageIdx * ITEMS_PER_PAGE + idx + 1;
                             const rowBg = (pageIdx * ITEMS_PER_PAGE + idx) % 2 === 0 ? '#f7fafc' : '#e3eaf3';
                             return `
-                                <tr style=\"background: ${rowBg}; border-bottom: 1px solid #e0e0e0;\">
-                                    <td style=\"padding: 14px 10px; text-align: center; color: #222; font-size: 16px; font-weight: bold;\">${serialNumber}</td>
-                                    <td style=\"padding: 14px 10px; color: #222; font-size: 16px; text-align: left;\">${item.name}${item.description ? `<div style=\\"font-size: 14px; color: #666; margin-top: 2px;\\">${item.description}</div>` : ''}</td>
-                                    <td style=\"padding: 14px 10px; text-align: center; color: #222; font-size: 16px;\">${item.quantity || 0}</td>
-                                    <td style=\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px;\">${formatPrice(item.price || 0, quotation.currency)}</td>
-                                    ${clientHasVAT ? `<td style=\\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px;\\">${formatPrice(itemVAT, quotation.currency)}</td>` : ''}
-                                    <td style=\"padding: 14px 10px; text-align: right; color: #222; font-size: 16px; font-weight: 500;\">${formatPrice(item.total || 0, quotation.currency)}</td>
+                                <tr style="background: ${rowBg}; border-bottom: 1px solid #e0e0e0;">
+                                    <td style="padding: 14px 10px; text-align: center; color: #222; font-size: 16px; font-weight: bold;">${serialNumber}</td>
+                                    <td style="padding: 14px 10px; color: #222; font-size: 16px; text-align: left;">${item.name}${item.description ? `<div style="font-size: 14px; color: #666; margin-top: 2px;">${item.description}</div>` : ''}${item.leadTime ? `<div style="font-size: 12px; color: #888; margin-top: 2px; font-style: italic;">Lead Time: ${item.leadTime}</div>` : ''}</td>
+                                    <td style="padding: 14px 10px; text-align: center; color: #222; font-size: 16px;">${item.quantity || 0}</td>
+                                    <td style="padding: 14px 10px; text-align: right; color: #222; font-size: 16px;">${formatPrice(item.price || 0, quotation.currency)}</td>
+                                    ${clientHasVAT ? `<td style="padding: 14px 10px; text-align: right; color: #222; font-size: 16px;">${formatPrice(itemVAT, quotation.currency)}</td>` : ''}
+                                    <td style="padding: 14px 10px; text-align: right; color: #222; font-size: 16px; font-weight: 500;">${formatPrice(item.total || 0, quotation.currency)}</td>
                                 </tr>
                             `;
                         }).join('')}
@@ -1503,6 +1503,16 @@ const QuotationView = () => {
                                                     <ItemName>{item.name}</ItemName>
                                                     {item.description && (
                                                         <ItemDescription>{item.description}</ItemDescription>
+                                                    )}
+                                                    {item.leadTime && (
+                                                        <div style={{ 
+                                                            fontSize: '13px', 
+                                                            color: '#888EB0', 
+                                                            marginTop: '4px',
+                                                            fontStyle: 'italic'
+                                                        }}>
+                                                            Lead Time: {item.leadTime}
+                                                        </div>
                                                     )}
                                                     <div className="item-mobile-details">
                                                         <span>

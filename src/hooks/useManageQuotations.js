@@ -54,6 +54,8 @@ const initialAddress = {
 
 const initialItems = {
     name: '',
+    description: '',
+    leadTime: '',
     quantity: 0,
     price: 0,
     total: 0,
@@ -416,6 +418,7 @@ const useManageQuotations = () => {
             const processedItems = items.map(item => ({
                 name: item.name || '',
                 description: item.description || '',
+                leadTime: item.leadTime || '',
                 quantity: parseFloat(item.quantity) || 0,
                 price: parseFloat(item.price) || 0,
                 vat: parseFloat(item.vat) || 0,

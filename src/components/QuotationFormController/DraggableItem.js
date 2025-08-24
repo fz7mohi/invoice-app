@@ -298,6 +298,24 @@ const DraggableItem = ({
                         placeholder="Item description..."
                         onChange={(event) => handleItemChange(event, 'items', null, index)}
                     />
+                    
+                    <MinimalLabel
+                        htmlFor={`item-leadTime-${index}`}
+                        style={{ marginTop: '8px' }}
+                        data-error={errors?.items && errors.items[index]?.leadTime}
+                    >
+                        Lead Time *
+                    </MinimalLabel>
+                    <MinimalInput
+                        id={`item-leadTime-${index}`}
+                        type="text"
+                        name="leadTime"
+                        value={item.leadTime || ''}
+                        placeholder="e.g., 2-3 weeks, 30 days"
+                        data-error={errors?.items && errors.items[index]?.leadTime}
+                        onChange={(event) => handleItemChange(event, 'items', null, index)}
+                        required
+                    />
                 </div>
                 
                 <div>

@@ -143,6 +143,11 @@ const QuotationDetails = ({ quotation, onClose }) => {
                                         {item.description && (
                                             <div style={{ fontSize: 13, color: '#666', marginTop: 2 }}>{item.description}</div>
                                         )}
+                                        {item.leadTime && (
+                                            <div style={{ fontSize: 13, color: '#888EB0', marginTop: 2, fontStyle: 'italic' }}>
+                                                Lead Time: {item.leadTime}
+                                            </div>
+                                        )}
                                     </td>
                                     <td style={{ padding: '12px', textAlign: 'center' }}>{item.quantity || 0}</td>
                                     <td style={{ padding: '12px', textAlign: 'right' }}>{formatPrice(item.price || 0, dataToDisplay.currency)}</td>
