@@ -153,7 +153,24 @@ export const generateScannerQRCode = async (imageUrl, itemName, quotationId, siz
  * @returns {string} - Simple URL for the QR scanner page
  */
 export const createSimpleScannerURL = (imageUrl, itemName, quotationId) => {
-    const baseUrl = window.location.origin;
+    // Determine the base URL based on environment
+    // IMPORTANT: This fix ensures NEW QR codes use production URLs
+    // EXISTING QR codes with localhost URLs will need to be regenerated
+    let baseUrl;
+    if (typeof window !== 'undefined') {
+        // Check if we're in development or production
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Development environment - use production URL for QR codes
+            // This ensures QR codes generated in dev work in production
+            baseUrl = 'https://fordox.netlify.app';
+        } else {
+            // Production environment - use current origin
+            baseUrl = window.location.origin;
+        }
+    } else {
+        // Server-side or unknown environment - default to production
+        baseUrl = 'https://fordox.netlify.app';
+    }
     
     // For base64 data, create a simple reference
     if (imageUrl.startsWith('data:image/')) {
