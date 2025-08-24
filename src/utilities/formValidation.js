@@ -58,12 +58,6 @@ const formValidation = (objectToValidate, itemsArray, isDraft = false) => {
                 isError = true;
             }
             
-            if (!item.leadTime || item.leadTime === '') {
-                itemError.leadTime = true;
-                messages.push('- Item lead time cannot be empty');
-                isError = true;
-            }
-            
             if (!item.quantity || isNaN(parseFloat(item.quantity))) {
                 itemError.quantity = true;
                 messages.push('- Item quantity must be a number');

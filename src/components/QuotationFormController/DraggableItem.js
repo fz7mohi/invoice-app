@@ -304,18 +304,40 @@ const DraggableItem = ({
                         style={{ marginTop: '8px' }}
                         data-error={errors?.items && errors.items[index]?.leadTime}
                     >
-                        Lead Time *
+                        Lead Time
                     </MinimalLabel>
-                    <MinimalInput
+                    <select
                         id={`item-leadTime-${index}`}
-                        type="text"
                         name="leadTime"
                         value={item.leadTime || ''}
-                        placeholder="e.g., 2-3 weeks, 30 days"
                         data-error={errors?.items && errors.items[index]?.leadTime}
                         onChange={(event) => handleItemChange(event, 'items', null, index)}
-                        required
-                    />
+                        style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            backgroundColor: '#252945',
+                            color: '#FFFFFF',
+                            border: '1px solid #252945',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            transition: 'all 0.2s ease',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <option value="">Select Lead Time</option>
+                        <option value="1-2 Days">1-2 Days</option>
+                        <option value="2-3 Days">2-3 Days</option>
+                        <option value="3-5 Days">3-5 Days</option>
+                        <option value="5-7 Days">5-7 Days</option>
+                        <option value="7-9 Days">7-9 Days</option>
+                        <option value="9-12 Days">9-12 Days</option>
+                        <option value="12-15 Days">12-15 Days</option>
+                        <option value="15-21 Days">15-21 Days</option>
+                        <option value="25-30 Days">25-30 Days</option>
+                        <option value="30-35 Days">30-35 Days</option>
+                        <option value="40-45 Days">40-45 Days</option>
+                        <option value="50+ to be negotiated">50+ to be negotiated</option>
+                    </select>
                 </div>
                 
                 <div>
