@@ -144,6 +144,8 @@ const QRScanner = () => {
         try {
             setLoading(true);
             
+            console.log('Fetching image data for:', { imageRef, itemName, quotationId });
+            
             // Fetch the quotation data from Firestore
             const quotationDoc = await getDoc(doc(db, 'quotations', quotationId));
             
@@ -154,25 +156,55 @@ const QRScanner = () => {
             }
 
             const quotationData = quotationDoc.data();
+            console.log('Quotation data loaded:', quotationData);
             
             // Find the item with the matching reference
+            // Look for items with images (either base64 or Firebase Storage URLs)
             const item = quotationData.items?.find(item => {
-                if (item.imageUrl && item.imageUrl.startsWith('data:image/')) {
-                    // Generate the same reference to match
+                if (item.images && item.images.length > 0) {
+                    // Check if any image in the item matches the reference
+                    return item.images.some(image => {
+                        const itemRef = generateSimpleReference(item.name, quotationId);
+                        return itemRef === imageRef;
+                    });
+                } else if (item.imageUrl) {
+                    // Check the single imageUrl
                     const itemRef = generateSimpleReference(item.name, quotationId);
                     return itemRef === imageRef;
                 }
                 return false;
             });
+            
+            console.log('Found item:', item);
 
-            if (!item || !item.imageUrl) {
+            if (!item) {
+                setError('Item not found. It may have been removed from the quotation.');
+                setLoading(false);
+                return;
+            }
+
+            // Get the image URL from the item
+            let imageUrl = null;
+            if (item.images && item.images.length > 0) {
+                // Use the first image from the images array
+                imageUrl = item.images[0].url || item.images[0].imageUrl;
+                console.log('Using image from images array:', item.images[0]);
+            } else if (item.imageUrl) {
+                // Use the single imageUrl
+                imageUrl = item.imageUrl;
+                console.log('Using single imageUrl:', item.imageUrl);
+            }
+
+            console.log('Final imageUrl:', imageUrl);
+
+            if (!imageUrl) {
                 setError('Image not found. It may have been removed from the quotation.');
                 setLoading(false);
                 return;
             }
 
             setItemData({
-                imageUrl: item.imageUrl,
+                imageUrl: imageUrl,
                 name: item.name || itemName,
                 quotationId: quotationId
             });
@@ -228,11 +260,14 @@ const QRScanner = () => {
                 </ItemInfo>
 
                 <ImageContainer>
-                    <ItemImage 
-                        src={itemData.imageUrl} 
-                        alt={itemData.name}
-                        onError={() => setError('Failed to load image. The image may have been removed or is no longer available.')}
-                    />
+                                    <ItemImage 
+                    src={itemData.imageUrl} 
+                    alt={itemData.name}
+                    onError={(e) => {
+                        console.error('Image load error:', e);
+                        setError('Failed to load image. The image may have been removed or is no longer available. Please check the image URL or regenerate the quotation.');
+                    }}
+                />
                 </ImageContainer>
 
                 <Message>

@@ -172,22 +172,13 @@ export const createSimpleScannerURL = (imageUrl, itemName, quotationId) => {
         baseUrl = 'https://fordox.netlify.app';
     }
     
-    // For base64 data, create a simple reference
-    if (imageUrl.startsWith('data:image/')) {
-        // Create a simple reference using item name and quotation ID
-        const simpleRef = `${itemName.replace(/[^a-zA-Z0-9]/g, '')}_${quotationId}`;
-        const encodedItemName = encodeURIComponent(itemName.substring(0, 30)); // Limit length
-        const encodedQuotationId = encodeURIComponent(quotationId);
-        
-        return `${baseUrl}/qr-scanner?ref=${simpleRef}&item=${encodedItemName}&q=${encodedQuotationId}`;
-    } else {
-        // For regular URLs, use the direct approach
-        const encodedImageUrl = encodeURIComponent(imageUrl);
-        const encodedItemName = encodeURIComponent(itemName.substring(0, 30));
-        const encodedQuotationId = encodeURIComponent(quotationId);
-        
-        return `${baseUrl}/qr-scanner?image=${encodedImageUrl}&item=${encodedItemName}&quotation=${encodedQuotationId}`;
-    }
+    // Always use simple reference approach for better reliability
+    // This avoids issues with long URLs and image access problems
+    const simpleRef = `${itemName.replace(/[^a-zA-Z0-9]/g, '')}_${quotationId}`;
+    const encodedItemName = encodeURIComponent(itemName.substring(0, 30)); // Limit length
+    const encodedQuotationId = encodeURIComponent(quotationId);
+    
+    return `${baseUrl}/qr-scanner?ref=${simpleRef}&item=${encodedItemName}&q=${encodedQuotationId}`;
 };
 
 /**
