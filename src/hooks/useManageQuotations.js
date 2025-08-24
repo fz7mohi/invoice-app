@@ -555,6 +555,53 @@ const useManageQuotations = () => {
                     const quotationRef = doc(db, 'quotations', documentId);
                     await updateDoc(quotationRef, firestoreDoc);
                     
+                    // Regenerate QR codes with the correct quotation ID for updates
+                    if (firestoreDoc.items && firestoreDoc.items.length > 0) {
+                        try {
+                            console.log('Regenerating QR codes for updated quotation:', documentId);
+                            
+                            // Import the QR code generation function
+                            const { generateScannerQRCode } = await import('../../utilities/qrCodeGenerator');
+                            
+                            // Update each item's images with new QR codes
+                            const updatedItems = await Promise.all(
+                                firestoreDoc.items.map(async (item) => {
+                                    if (item.images && item.images.length > 0) {
+                                        const updatedImages = await Promise.all(
+                                            item.images.map(async (image) => {
+                                                if (image.url) {
+                                                    try {
+                                                        const newQrCodeUrl = await generateScannerQRCode(
+                                                            image.url,
+                                                            item.name || 'Item',
+                                                            documentId,
+                                                            100
+                                                        );
+                                                        return { ...image, qrCodeUrl: newQrCodeUrl };
+                                                    } catch (qrError) {
+                                                        console.error('Error regenerating QR code:', qrError);
+                                                        return image;
+                                                    }
+                                                }
+                                                return image;
+                                            })
+                                        );
+                                        return { ...item, images: updatedImages };
+                                    }
+                                    return item;
+                                })
+                            );
+                            
+                            // Update the quotation in Firebase with new QR codes
+                            await updateDoc(quotationRef, { items: updatedItems });
+                            
+                            console.log('QR codes regenerated successfully for update');
+                        } catch (qrError) {
+                            console.error('Error regenerating QR codes for update:', qrError);
+                            // Continue with the process even if QR code regeneration fails
+                        }
+                    }
+                    
                     // Update local state immediately
                     const updatedQuotation = {
                         ...firestoreDoc,
@@ -590,6 +637,54 @@ const useManageQuotations = () => {
                         id: docRef.id,
                         customId: quotationDoc.customId || docRef.id
                     };
+                    
+                    // Regenerate QR codes with the correct quotation ID
+                    if (newQuotation.items && newQuotation.items.length > 0) {
+                        try {
+                            console.log('Regenerating QR codes with correct quotation ID:', docRef.id);
+                            
+                            // Import the QR code generation function
+                            const { generateScannerQRCode } = await import('../../utilities/qrCodeGenerator');
+                            
+                            // Update each item's images with new QR codes
+                            const updatedItems = await Promise.all(
+                                newQuotation.items.map(async (item) => {
+                                    if (item.images && item.images.length > 0) {
+                                        const updatedImages = await Promise.all(
+                                            item.images.map(async (image) => {
+                                                if (image.url) {
+                                                    try {
+                                                        const newQrCodeUrl = await generateScannerQRCode(
+                                                            image.url,
+                                                            item.name || 'Item',
+                                                            docRef.id,
+                                                            100
+                                                        );
+                                                        return { ...image, qrCodeUrl: newQrCodeUrl };
+                                                    } catch (qrError) {
+                                                        console.error('Error regenerating QR code:', qrError);
+                                                        return image;
+                                                    }
+                                                }
+                                                return image;
+                                            })
+                                        );
+                                        return { ...item, images: updatedImages };
+                                    }
+                                    return item;
+                                })
+                            );
+                            
+                            // Update the quotation in Firebase with new QR codes
+                            const updatedQuotation = { ...newQuotation, items: updatedItems };
+                            await updateDoc(docRef, { items: updatedItems });
+                            
+                            console.log('QR codes regenerated successfully');
+                        } catch (qrError) {
+                            console.error('Error regenerating QR codes:', qrError);
+                            // Continue with the process even if QR code regeneration fails
+                        }
+                    }
                     
                     // Update state
                     dispatch(add(newQuotation, state, type));
@@ -669,6 +764,76 @@ const useManageQuotations = () => {
             dispatch({ type: 'DELETE_QUOTATION' });
         } catch (error) {
             // Silent error handling
+        }
+    };
+
+    /**
+     * Function to regenerate QR codes for existing quotations (fixes 'temp' ID issues)
+     * @param    {string} id    String with quotation ID
+     */
+    const regenerateQRCodes = async (id) => {
+        try {
+            const quotation = state.quotations.find(q => q.id === id);
+            if (!quotation) {
+                console.error('Quotation not found for QR code regeneration');
+                return false;
+            }
+
+            if (!quotation.items || quotation.items.length === 0) {
+                console.log('No items found for QR code regeneration');
+                return true;
+            }
+
+            console.log('Regenerating QR codes for existing quotation:', id);
+            
+            // Import the QR code generation function
+            const { generateScannerQRCode } = await import('../../utilities/qrCodeGenerator');
+            
+            // Update each item's images with new QR codes
+            const updatedItems = await Promise.all(
+                quotation.items.map(async (item) => {
+                    if (item.images && item.images.length > 0) {
+                        const updatedImages = await Promise.all(
+                            item.images.map(async (image) => {
+                                if (image.url) {
+                                    try {
+                                        const newQrCodeUrl = await generateScannerQRCode(
+                                            image.url,
+                                            item.name || 'Item',
+                                            id,
+                                            100
+                                        );
+                                        return { ...image, qrCodeUrl: newQrCodeUrl };
+                                    } catch (qrError) {
+                                        console.error('Error regenerating QR code:', qrError);
+                                        return image;
+                                    }
+                                }
+                                return image;
+                            })
+                        );
+                        return { ...item, images: updatedImages };
+                    }
+                    return item;
+                })
+            );
+            
+            // Update the quotation in Firebase with new QR codes
+            const quotationRef = doc(db, 'quotations', id);
+            await updateDoc(quotationRef, { items: updatedItems });
+            
+            // Update local state
+            const updatedQuotation = { ...quotation, items: updatedItems };
+            const updatedQuotations = state.quotations.map(q => 
+                q.id === id ? updatedQuotation : q
+            );
+            dispatch({ type: 'SET_QUOTATIONS', payload: updatedQuotations });
+            
+            console.log('QR codes regenerated successfully for existing quotation');
+            return true;
+        } catch (error) {
+            console.error('Error regenerating QR codes for existing quotation:', error);
+            return false;
         }
     };
 
@@ -915,7 +1080,8 @@ const useManageQuotations = () => {
         addNewItem,
         removeItemAtIndex,
         setItems,
-        triggerMigration
+        triggerMigration,
+        regenerateQRCodes
     };
 };
 
