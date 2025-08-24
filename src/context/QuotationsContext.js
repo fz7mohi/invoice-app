@@ -27,7 +27,8 @@ export const QuotationsProvider = ({ children }) => {
     createQuotation,
     addNewItem,
     removeItemAtIndex,
-    setItems
+    setItems,
+    triggerMigration
   } = useManageQuotations();
 
   // Create a function to ensure quotations are loaded
@@ -62,6 +63,7 @@ export const QuotationsProvider = ({ children }) => {
     removeItemAtIndex,
     setItems,
     ensureQuotationsLoaded,
+    triggerMigration,
   };
 
   // Initial load of quotations

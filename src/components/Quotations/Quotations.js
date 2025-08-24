@@ -24,7 +24,7 @@ const Quotations = () => {
     const [filterType, setFilterType] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const shouldReduceMotion = useReducedMotion();
-    const { windowWidth, quotationState, createQuotation, refreshQuotations } = useGlobalContext();
+    const { windowWidth, quotationState, createQuotation, refreshQuotations, triggerMigration } = useGlobalContext();
     
     const isLoading = quotationState?.isLoading || false;
     const rawQuotations = quotationState?.quotations || [];
@@ -97,6 +97,22 @@ const Quotations = () => {
         setSearchQuery(e.target.value);
     };
 
+    const handleMigration = async () => {
+        try {
+            const result = await triggerMigration();
+            if (result.success) {
+                alert(`Migration completed successfully!\n\n${result.message}`);
+                // Refresh quotations to show updated data
+                refreshQuotations();
+            } else {
+                alert(`Migration failed: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Migration error:', error);
+            alert('Migration failed. Please check the console for details.');
+        }
+    };
+
     return (
         <Container>
             <Header
@@ -136,6 +152,17 @@ const Quotations = () => {
                         disabled={isLoading}
                     >
                         New {isDesktop && 'Quotation'}
+                    </Button>
+                    
+                    <Button 
+                        type="button" 
+                        $secondary 
+                        onClick={handleMigration}
+                        disabled={isLoading}
+                        title="Migrate existing quotations with base64 images to Firebase Storage"
+                    >
+                        <Icon name="refresh" size={14} />
+                        {isDesktop && ' Migrate Images'}
                     </Button>
                 </HeaderTop>
 

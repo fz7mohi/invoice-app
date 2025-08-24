@@ -74,7 +74,8 @@ const AppProvider = ({ children }) => {
         setItems,
         addNewItem,
         removeItemAtIndex,
-        refreshQuotations
+        refreshQuotations,
+        triggerMigration
     } = useManageQuotations();
 
     const {
@@ -205,7 +206,8 @@ const AppProvider = ({ children }) => {
                 createDeliveryOrder,
                 updateDeliveryOrder,
                 fortuneGiftsTheme,
-                createFromInvoice
+                createFromInvoice,
+                triggerMigration
             }}
         >
             <Provider themeColor={theme}>{children}</Provider>

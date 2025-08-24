@@ -1,12 +1,33 @@
-import { useEffect, useState, useRef } from 'react';
-import { useParams, Redirect, useHistory, Link } from 'react-router-dom';
-import { useTheme } from 'styled-components';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useHistory } from 'react-router-dom';
 import { useReducedMotion } from 'framer-motion';
-import Icon from '../shared/Icon/Icon';
-import Status from '../shared/Status/Status';
-import Button from '../shared/Button/Button';
-import { formatDate, formatPrice, formatCurrency } from '../../utilities/helpers';
+import styled, { keyframes } from 'styled-components';
 import { useGlobalContext } from '../App/context';
+import { formatDate, formatPrice } from '../../utilities/helpers';
+import { createQRScannerURL, generateScannerQRCode, generateTextQRCode } from '../../utilities/qrCodeGenerator';
+import Icon from '../shared/Icon/Icon';
+import Button from '../shared/Button/Button';
+import Modal from '../Modal/Modal';
+import ModalDelete from '../Modal/ModalDelete';
+import ModalStatus from '../Modal/ModalStatus';
+import LoadingSpinner from '../shared/LoadingSpinner/LoadingSpinner';
+import RouteError from '../RouteError/RouteError';
+import { 
+    collection, 
+    doc, 
+    getDoc, 
+    getDocs, 
+    addDoc, 
+    updateDoc, 
+    deleteDoc, 
+    query, 
+    where, 
+    orderBy, 
+    Timestamp,
+    onSnapshot
+} from 'firebase/firestore';
+import { db } from '../../firebase/firebase';
+import { message } from 'antd';
 import './QuotationView.css';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -64,13 +85,7 @@ import {
     HeaderTitle,
     ActionButton,
 } from './QuotationViewStyles';
-import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, updateDoc, Timestamp, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
-import { generateEmailTemplate, generateQuotationEmailTemplate } from '../../services/emailService';
-import EmailPreviewModal from '../shared/EmailPreviewModal/EmailPreviewModal';
-import { format } from 'date-fns';
-import { message } from 'antd';
-import styled from 'styled-components';
+import { generateQuotationEmailTemplate } from '../../services/emailService';
 
 // Use same variants as invoices for consistent animations
 const quotationViewVariants = {
@@ -96,9 +111,22 @@ const quotationViewVariants = {
     },
 };
 
+// Loading spinner animation
+const spin = keyframes`
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+`;
+
 const QuotationView = () => {
     const { quotationState, toggleQuotationModal, editQuotation, windowWidth, refreshQuotations } = useGlobalContext();
-    const { colors } = useTheme();
+    const colors = { 
+        text: '#333', 
+        background: '#fff', 
+        border: '#e0e0e0',
+        textTertiary: '#888EB0',
+        purple: '#7C5DFA',
+        backgroundItem: '#f8f9fa'
+    }; // Default colors
     const { id } = useParams();
     const [quotation, setQuotation] = useState(null);
     const [clientData, setClientData] = useState(null);
@@ -126,6 +154,8 @@ const QuotationView = () => {
     const [isTimelineOpen, setIsTimelineOpen] = useState(false);
     const timelineRef = useRef(null);
     const toggleButtonRef = useRef(null);
+    const [qrCodes, setQrCodes] = useState({});
+    const [isGeneratingQR, setIsGeneratingQR] = useState(false);
     
     // Add click outside handler for timeline drawer
     useEffect(() => {
@@ -167,6 +197,60 @@ const QuotationView = () => {
                                  isFetchingInvoice;
         setIsLoading(isCurrentlyLoading);
     }, [quotationState?.isLoading, isDirectlyFetching, isClientFetching, isFetchingInvoice]);
+
+    // Generate QR codes for items with images
+    useEffect(() => {
+        const generateQRCodes = async () => {
+            if (!quotation?.items) return;
+            
+            setIsGeneratingQR(true);
+            const newQRCodes = {};
+            
+            try {
+                for (const item of quotation.items) {
+                    if (item.imageUrl) {
+                        // Use stored QR code if available, otherwise generate new one
+                        if (item.qrCodeUrl) {
+                            console.log('Using stored QR code for item:', item.name);
+                            newQRCodes[item.name] = item.qrCodeUrl;
+                        } else {
+                            console.log('Generating new QR code for item:', item.name);
+                            try {
+                                const qrCode = await generateScannerQRCode(
+                                    item.imageUrl,
+                                    item.name,
+                                    quotation.id,
+                                    60
+                                );
+                                newQRCodes[item.name] = qrCode;
+                                
+                                // Update the quotation with the new QR code for future use
+                                // Note: This is a local update, not persisted to database
+                                // The QR code will be saved when the quotation is next edited
+                            } catch (error) {
+                                console.error('Error generating QR code for item:', item.name, error);
+                                // Try fallback QR code
+                                try {
+                                    const fallbackText = `${item.name} - ${quotation.id}`;
+                                    const fallbackQR = await generateTextQRCode(fallbackText, 60);
+                                    newQRCodes[item.name] = fallbackQR;
+                                } catch (fallbackError) {
+                                    console.error('Fallback QR generation also failed:', fallbackError);
+                                }
+                            }
+                        }
+                    }
+                }
+                setQrCodes(newQRCodes);
+            } catch (error) {
+                console.error('Error processing QR codes:', error);
+            } finally {
+                setIsGeneratingQR(false);
+            }
+        };
+
+        generateQRCodes();
+    }, [quotation]);
 
     // Add subscription to quotation changes
     useEffect(() => {
@@ -462,6 +546,39 @@ const QuotationView = () => {
                 }
                 // Items table (styled like Invoice PDF)
                 const itemsTable = document.createElement('table');
+                
+                // Generate QR codes for items with images before building the table
+                const qrCodePromises = itemChunks[pageIdx].map(async (item) => {
+                    if (item.imageUrl) {
+                        try {
+                            console.log('Generating QR code for PDF item:', item.name);
+                            const qrCode = await generateScannerQRCode(
+                                item.imageUrl,
+                                item.name,
+                                quotation.id,
+                                40
+                            );
+                            console.log('QR code generated successfully for PDF');
+                            return { item, qrCode };
+                        } catch (error) {
+                            console.error('Error generating QR code for PDF:', error);
+                            // Try to generate a simple fallback QR code
+                            try {
+                                const fallbackText = `${item.name} - ${quotation.id}`;
+                                const fallbackQR = await generateTextQRCode(fallbackText, 40);
+                                console.log('Fallback QR code generated for PDF');
+                                return { item, qrCode: fallbackQR };
+                            } catch (fallbackError) {
+                                console.error('Fallback QR generation also failed:', fallbackError);
+                                return { item, qrCode: null };
+                            }
+                        }
+                    }
+                    return { item, qrCode: null };
+                });
+                
+                const itemsWithQRCodes = await Promise.all(qrCodePromises);
+                
                 itemsTable.style.cssText = `
                     width: 100%;
                     border-collapse: separate;
@@ -478,6 +595,7 @@ const QuotationView = () => {
                         <tr style="background: linear-gradient(90deg, #004359 0%, #1976d2 100%); color: #fff;">
                             <th style="padding: 16px 12px; text-align: center; font-size: 17px; font-weight: bold; width: 50px;">S/N</th>
                             <th style="padding: 16px 12px; text-align: left; font-size: 17px; font-weight: bold;">Item Name</th>
+                            <th style="padding: 16px 12px; text-align: center; font-size: 17px; font-weight: bold; width: 120px;">QR Code</th>
                             <th style="padding: 16px 12px; text-align: center; font-size: 17px; font-weight: bold;">QTY.</th>
                             <th style="padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;">Price</th>
                             ${clientHasVAT ? '<th style=\"padding: 16px 12px; text-align: right; font-size: 17px; font-weight: bold;\">VAT (5%)</th>' : ''}
@@ -485,14 +603,49 @@ const QuotationView = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${itemChunks[pageIdx].map((item, idx) => {
+                        ${itemsWithQRCodes.map(({ item, qrCode }, idx) => {
                             const itemVAT = item.vat || 0;
                             const serialNumber = pageIdx * ITEMS_PER_PAGE + idx + 1;
                             const rowBg = (pageIdx * ITEMS_PER_PAGE + idx) % 2 === 0 ? '#f7fafc' : '#e3eaf3';
                             return `
                                 <tr style="background: ${rowBg}; border-bottom: 1px solid #e0e0e0;">
                                     <td style="padding: 14px 10px; text-align: center; color: #222; font-size: 16px; font-weight: bold;">${serialNumber}</td>
-                                    <td style="padding: 14px 10px; color: #222; font-size: 16px; text-align: left;">${item.name}${item.description ? `<div style="font-size: 14px; color: #666; margin-top: 2px;">${item.description}</div>` : ''}${item.leadTime ? `<div style="font-size: 12px; color: #888; margin-top: 2px; font-style: italic;">Lead Time: ${item.leadTime}</div>` : ''}</td>
+                                    <td style="padding: 14px 10px; color: #222; font-size: 16px; text-align: left;">
+                                        <span style="font-weight: 500;">${item.name}</span>
+                                        ${item.description ? `<div style="font-size: 14px; color: #666; margin-top: 2px;">${item.description}</div>` : ''}
+                                        ${item.leadTime ? `<div style="font-size: 12px; color: #888; margin-top: 2px; font-style: italic;">Lead Time: ${item.leadTime}</div>` : ''}
+                                    </td>
+                                    <td style="padding: 14px 10px; text-align: center; color: #222; font-size: 16px;">
+                                        ${item.images && item.images.length > 0 ? `
+                                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                                ${item.images.map((image, imgIndex) => `
+                                                    ${image.qrCodeUrl ? `
+                                                        <div style="width: 90px; height: 90px; border-radius: 8px; overflow: hidden; border: 2px solid #e0e0e0; background: white; display: flex; align-items: center; justify-content: center;">
+                                                            <img src="${image.qrCodeUrl}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;" />
+                                                        </div>
+                                                    ` : `
+                                                        <div style="width: 90px; height: 90px; border-radius: 8px; overflow: hidden; border: 2px solid #e0e0e0; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                                            <div style="font-size: 12px; color: #999; text-align: center; line-height: 1.2;">
+                                                                QR<br/>CODE
+                                                            </div>
+                                                        </div>
+                                                    `}
+                                                `).join('')}
+                                            </div>
+                                        ` : item.imageUrl ? `
+                                            <div style="width: 90px; height: 90px; border-radius: 8px; overflow: hidden; border: 2px solid #e0e0e0; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                                <div style="font-size: 12px; color: #999; text-align: center; line-height: 1.2;">
+                                                    IMAGE<br/>AVAILABLE
+                                                </div>
+                                            </div>
+                                        ` : `
+                                            <div style="width: 90px; height: 90px; border-radius: 8px; border: 2px dashed #e0e0e0; background: #f8f9fa; display: flex: align-items: center; justify-content: center;">
+                                                <div style="font-size: 12px; color: #999; text-align: center; line-height: 1.2;">
+                                                    NO<br/>IMAGE
+                                                </div>
+                                            </div>
+                                        `}
+                                    </td>
                                     <td style="padding: 14px 10px; text-align: center; color: #222; font-size: 16px;">${item.quantity || 0}</td>
                                     <td style="padding: 14px 10px; text-align: right; color: #222; font-size: 16px;">${formatPrice(item.price || 0, quotation.currency)}</td>
                                     ${clientHasVAT ? `<td style="padding: 14px 10px; text-align: right; color: #222; font-size: 16px;">${formatPrice(itemVAT, quotation.currency)}</td>` : ''}
@@ -1282,6 +1435,8 @@ const QuotationView = () => {
         }
     };
 
+
+
     return (
         <StyledQuotationView className="StyledQuotationView">
             <Container>
@@ -1500,7 +1655,356 @@ const QuotationView = () => {
                                         return (
                                             <Item key={index} showVat={clientHasVAT}>
                                                 <div className="item-details">
-                                                    <ItemName>{item.name}</ItemName>
+                                                    <div style={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '12px',
+                                                        marginBottom: '8px'
+                                                    }}>
+                                                        <ItemName>{item.name}</ItemName>
+                                                        {/* Display QR codes inline with item title */}
+                                                        {item.images && item.images.length > 0 && (
+                                                            <div style={{ 
+                                                                display: 'flex', 
+                                                                gap: '6px' 
+                                                            }}>
+                                                                {item.images.map((image, imgIndex) => (
+                                                                    image.qrCodeUrl ? (
+                                                                        <img 
+                                                                            key={image.id || imgIndex}
+                                                                            src={image.qrCodeUrl} 
+                                                                            alt={`QR Code for ${image.name}`}
+                                                                            style={{ 
+                                                                                width: '40px', 
+                                                                                height: '40px',
+                                                                                border: '1px solid #E0E0E0',
+                                                                                borderRadius: '4px',
+                                                                                cursor: 'pointer'
+                                                                            }}
+                                                                            title="Click to open image or scan QR code"
+                                                                            onClick={() => {
+                                                                                // Open image in new browser window
+                                                                                if (image.url) {
+                                                                                    const newWindow = window.open('', '_blank');
+                                                                                    if (newWindow) {
+                                                                                        newWindow.document.write(`
+                                                                                            <!DOCTYPE html>
+                                                                                            <html lang="en">
+                                                                                            <head>
+                                                                                                <meta charset="UTF-8">
+                                                                                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                                                                                <title>${item.name || 'Unknown Item'} - Item Image</title>
+                                                                                                <style>
+                                                                                                    * {
+                                                                                                        margin: 0;
+                                                                                                        padding: 0;
+                                                                                                        box-sizing: border-box;
+                                                                                                    }
+                                                                                                    
+                                                                                                    body {
+                                                                                                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                                                                                                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                                                                                        min-height: 100vh;
+                                                                                                        padding: 20px;
+                                                                                                        color: #333;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .container {
+                                                                                                        max-width: 100%;
+                                                                                                        margin: 0 auto;
+                                                                                                        background: white;
+                                                                                                        border-radius: 20px;
+                                                                                                        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                                                                                                        overflow: hidden;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .header {
+                                                                                                        background: linear-gradient(135deg, #7C5DFA 0%, #6B4CDB 100%);
+                                                                                                        color: white;
+                                                                                                        padding: 25px 20px;
+                                                                                                        text-align: center;
+                                                                                                        position: relative;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .header::before {
+                                                                                                        content: '';
+                                                                                                        position: absolute;
+                                                                                                        top: 0;
+                                                                                                        left: 0;
+                                                                                                        right: 0;
+                                                                                                        bottom: 0;
+                                                                                                        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+                                                                                                        opacity: 0.3;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .header h1 {
+                                                                                                        font-size: 1.5rem;
+                                                                                                        font-weight: 700;
+                                                                                                        margin-bottom: 8px;
+                                                                                                        position: relative;
+                                                                                                        z-index: 1;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .header .subtitle {
+                                                                                                        font-size: 0.9rem;
+                                                                                                        opacity: 0.9;
+                                                                                                        position: relative;
+                                                                                                        z-index: 1;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .content {
+                                                                                                        padding: 25px 20px;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .image-section {
+                                                                                                        text-align: center;
+                                                                                                        margin-bottom: 25px;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .image-container {
+                                                                                                        background: #f8f9fa;
+                                                                                                        border-radius: 15px;
+                                                                                                        padding: 20px;
+                                                                                                        margin-bottom: 20px;
+                                                                                                        border: 2px dashed #e9ecef;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .image-display {
+                                                                                                        max-width: 100%;
+                                                                                                        height: auto;
+                                                                                                        border-radius: 12px;
+                                                                                                        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                                                                                                        transition: transform 0.3s ease;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .image-display:hover {
+                                                                                                        transform: scale(1.02);
+                                                                                                    }
+                                                                                                    
+                                                                                                    .item-info {
+                                                                                                        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                                                                                                        border-radius: 15px;
+                                                                                                        padding: 25px;
+                                                                                                        margin-bottom: 25px;
+                                                                                                        border: 1px solid #e9ecef;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .info-item {
+                                                                                                        display: flex;
+                                                                                                        justify-content: space-between;
+                                                                                                        align-items: center;
+                                                                                                        padding: 16px 20px;
+                                                                                                        background: white;
+                                                                                                        border-radius: 10px;
+                                                                                                        margin-bottom: 12px;
+                                                                                                        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                                                                                                        border-left: 4px solid #7C5DFA;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .info-item:last-child {
+                                                                                                        margin-bottom: 0;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .info-label {
+                                                                                                        font-size: 0.8rem;
+                                                                                                        color: #6c757d;
+                                                                                                        font-weight: 600;
+                                                                                                        text-transform: uppercase;
+                                                                                                        letter-spacing: 0.5px;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .info-value {
+                                                                                                        font-size: 1rem;
+                                                                                                        font-weight: 600;
+                                                                                                        color: #2c3e50;
+                                                                                                        text-align: right;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .metadata {
+                                                                                                        background: #e9ecef;
+                                                                                                        border-radius: 10px;
+                                                                                                        padding: 15px;
+                                                                                                        font-size: 0.8rem;
+                                                                                                        color: #6c757d;
+                                                                                                        text-align: center;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .close-btn {
+                                                                                                        position: fixed;
+                                                                                                        top: 20px;
+                                                                                                        right: 20px;
+                                                                                                        background: rgba(255,255,255,0.2);
+                                                                                                        border: none;
+                                                                                                        color: white;
+                                                                                                        width: 40px;
+                                                                                                        height: 40px;
+                                                                                                        border-radius: 50%;
+                                                                                                        cursor: pointer;
+                                                                                                        font-size: 1.2rem;
+                                                                                                        backdrop-filter: blur(10px);
+                                                                                                        transition: all 0.3s ease;
+                                                                                                    }
+                                                                                                    
+                                                                                                    .close-btn:hover {
+                                                                                                        background: rgba(255,255,255,0.3);
+                                                                                                        transform: scale(1.1);
+                                                                                                    }
+                                                                                                    
+                                                                                                    @media (max-width: 768px) {
+                                                                                                        body {
+                                                                                                            padding: 10px;
+                                                                                                        }
+                                                                                                        
+                                                                                                        .container {
+                                                                                                            border-radius: 15px;
+                                                                                                        }
+                                                                                                        
+                                                                                                        .header {
+                                                                                                            padding: 20px 15px;
+                                                                                                        }
+                                                                                                        
+                                                                                                        .header h1 {
+                                                                                                            font-size: 1.3rem;
+                                                                                                        }
+                                                                                                        
+                                                                                                        .content {
+                                                                                                            padding: 20px 15px;
+                                                                                                        }
+                                                                                                        
+                                                                                                        .info-item {
+                                                                                                            padding: 14px 18px;
+                                                                                                        }
+                                                                                                        
+                                                                                                        .close-btn {
+                                                                                                            top: 15px;
+                                                                                                            right: 15px;
+                                                                                                            width: 35px;
+                                                                                                            height: 35px;
+                                                                                                        }
+                                                                                                    }
+                                                                                                    
+                                                                                                    @media (max-width: 480px) {
+                                                                                                        .header h1 {
+                                                                                                            font-size: 1.1rem;
+                                                                                                        }
+                                                                                                        
+                                                                                                        .content {
+                                                                                                            padding: 15px 10px;
+                                                                                                        }
+                                                                                                        
+                                                                                                        .image-container {
+                                                                                                            padding: 15px;
+                                                                                                        }
+                                                                                                        
+                                                                                                        .item-info {
+                                                                                                            padding: 20px;
+                                                                                                        }
+                                                                                                    }
+                                                                                                </style>
+                                                                                            </head>
+                                                                                            <body>
+                                                                                                <button class="close-btn" onclick="window.close()">×</button>
+                                                                                                <div class="container">
+                                                                                                    <div class="header">
+                                                                                                        <h1>${item.name || 'Unknown Item'}</h1>
+                                                                                                        <div class="subtitle">Item Details & Image</div>
+                                                                                                    </div>
+                                                                                                    
+                                                                                                    <div class="content">
+                                                                                                        <div class="image-section">
+                                                                                                            <div class="image-container">
+                                                                                                                <img src="${image.url}" alt="${image.name}" class="image-display" />
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        
+                                                                                                        <div class="item-info">
+                                                                                                            ${item.name ? `
+                                                                                                            <div class="info-item">
+                                                                                                                <div class="info-label">Item Name</div>
+                                                                                                                <div class="info-value">${item.name}</div>
+                                                                                                            </div>
+                                                                                                            ` : ''}
+                                                                                                            
+                                                                                                            ${item.description ? `
+                                                                                                            <div class="info-item">
+                                                                                                                <div class="info-label">Description</div>
+                                                                                                                <div class="info-value">${item.description}</div>
+                                                                                                            </div>
+                                                                                                            ` : ''}
+                                                                                                            
+                                                                                                            ${item.leadTime ? `
+                                                                                                            <div class="info-item">
+                                                                                                                <div class="info-label">Lead Time</div>
+                                                                                                                <div class="info-value">${item.leadTime}</div>
+                                                                                                            </div>
+                                                                                                            ` : ''}
+                                                                                                            
+                                                                                                            ${item.price ? `
+                                                                                                            <div class="info-item">
+                                                                                                                <div class="info-label">Price</div>
+                                                                                                                <div class="info-value">${item.price} ${quotation.currency || 'USD'}</div>
+                                                                                                            </div>
+                                                                                                            ` : ''}
+                                                                                                            
+                                                                                                            ${item.quantity ? `
+                                                                                                            <div class="info-item">
+                                                                                                                <div class="info-label">Quantity</div>
+                                                                                                                <div class="info-value">${item.quantity}</div>
+                                                                                                            </div>
+                                                                                                            ` : ''}
+                                                                                                            
+                                                                                                            ${item.total ? `
+                                                                                                            <div class="info-item">
+                                                                                                                <div class="info-label">Total</div>
+                                                                                                                <div class="info-value">${item.total} ${quotation.currency || 'USD'}</div>
+                                                                                                            </div>
+                                                                                                            ` : ''}
+                                                                                                        </div>
+                                                                                                        
+                                                                                                        <div class="metadata">
+                                                                                                            <strong>Image:</strong> ${image.name} | 
+                                                                                                            <strong>Quotation ID:</strong> ${quotation.customId || quotation.id || quotationId} | 
+                                                                                                            <strong>Generated:</strong> ${new Date().toLocaleString()}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                
+                                                                                                <script>
+                                                                                                    // Add smooth animations
+                                                                                                    document.addEventListener('DOMContentLoaded', function() {
+                                                                                                        const container = document.querySelector('.container');
+                                                                                                        container.style.opacity = '0';
+                                                                                                        container.style.transform = 'translateY(20px)';
+                                                                                                        
+                                                                                                        setTimeout(() => {
+                                                                                                            container.style.transition = 'all 0.6s ease';
+                                                                                                            container.style.opacity = '1';
+                                                                                                            container.style.transform = 'translateY(0)';
+                                                                                                        }, 100);
+                                                                                                    });
+                                                                                                    
+                                                                                                    // Add keyboard support
+                                                                                                    document.addEventListener('keydown', function(e) {
+                                                                                                        if (e.key === 'Escape') {
+                                                                                                            window.close();
+                                                                                                        }
+                                                                                                    });
+                                                                                                </script>
+                                                                                            </body>
+                                                                                            </html>
+                                                                                        `);
+                                                                                        newWindow.document.close();
+                                                                                    }
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    ) : null
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* Item details below the title and QR codes */}
                                                     {item.description && (
                                                         <ItemDescription>{item.description}</ItemDescription>
                                                     )}
@@ -1514,12 +2018,6 @@ const QuotationView = () => {
                                                             Lead Time: {item.leadTime}
                                                         </div>
                                                     )}
-                                                    <div className="item-mobile-details">
-                                                        <span>
-                                                            {item.quantity || 0} × {formatPrice(item.price || 0, quotation.currency)}
-                                                            {clientHasVAT && ` (+${formatPrice(itemVAT, quotation.currency)} VAT)`}
-                                                        </span>
-                                                    </div>
                                                 </div>
                                                 <ItemQty>{item.quantity || 0}</ItemQty>
                                                 <ItemPrice>

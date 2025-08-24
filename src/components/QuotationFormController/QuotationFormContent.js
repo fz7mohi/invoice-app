@@ -876,15 +876,29 @@ const QuotationFormContent = ({ isEdited }) => {
         }
     }, [quotation?.items]); // Only depend on quotation.items
 
-    // Sync changes from global state to local state
+    // Sync from global state to local state on mount
     useEffect(() => {
-        if (items && items.length > 0) {
-            // Only update if the items are different
-            if (JSON.stringify(items) !== JSON.stringify(localItems)) {
-                setLocalItems(items);
-            }
+        if (items && items.length > 0 && localItems.length === 0) {
+            setLocalItems(items);
         }
-    }, [items]);
+    }, [items, localItems.length]);
+
+    // Sync local items to global state after render is complete
+    useEffect(() => {
+        if (localItems.length > 0 && typeof setItems === 'function') {
+            // Process items to sync with global state
+            const processedItems = localItems.map(item => ({
+                ...item,
+                leadTime: item.leadTime || '',
+                images: item.images || [], // Handle multiple images
+                imageUrl: item.imageUrl || (item.images && item.images.length > 0 ? item.images[0].url : ''), // Backward compatibility
+                qrCodeUrl: item.qrCodeUrl || (item.images && item.images.length > 0 ? item.images[0].qrCodeUrl : '') // Backward compatibility
+            }));
+            
+            // Update global state after render is complete
+            setItems(processedItems);
+        }
+    }, [localItems, setItems]); // Include all dependencies
 
     // Filter clients based on search query
     useEffect(() => {
@@ -900,26 +914,6 @@ const QuotationFormContent = ({ isEdited }) => {
         
         setFilteredClients(filtered);
     }, [clientSearchQuery, clientState.clients]);
-
-    // Sync local items with global state
-    useEffect(() => {
-        if (localItems.length > 0 && typeof setItems === 'function') {
-            const processedItems = localItems.map(item => ({
-                name: item.name || '',
-                description: item.description || '',
-                leadTime: item.leadTime || '',
-                quantity: parseFloat(item.quantity) || 0,
-                price: parseFloat(item.price) || 0,
-                total: parseFloat(item.total) || 0,
-                vat: parseFloat(item.vat) || 0
-            }));
-            
-            // Only update if the processed items are different from the current items
-            if (JSON.stringify(processedItems) !== JSON.stringify(items)) {
-                setItems(processedItems);
-            }
-        }
-    }, [localItems]); // Only depend on localItems
 
     // Close select dropdown when clicking outside
     useEffect(() => {
@@ -1069,6 +1063,11 @@ const QuotationFormContent = ({ isEdited }) => {
                     }
                 }
                 
+                // Handle image-related fields
+                if (name === 'images' || name === 'imageUrl' || name === 'qrCodeUrl') {
+                    processedValue = value;
+                }
+                
                 updatedItems[index] = {
                     ...updatedItems[index],
                     [name]: processedValue
@@ -1198,7 +1197,21 @@ const QuotationFormContent = ({ isEdited }) => {
                 <QuotationSubmitController />
             </Title>
 
-            <StyledForm id="quotation-form" noValidate>
+            <StyledForm 
+                id="quotation-form" 
+                noValidate
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    return false;
+                }}
+                onKeyDown={(e) => {
+                    // Prevent Enter key from submitting the form
+                    if (e.key === 'Enter' && e.target.type !== 'textarea') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }}
+            >
                 <FormSection>
                     <Legend>Bill To</Legend>
                     <InputWrapper>

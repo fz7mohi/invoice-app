@@ -3,6 +3,7 @@ import { quotationsReducer } from '../store/reducers/quotationsReducer';
 import { add, approved, change, create, discard, edit, errors, modal, remove } from '../store/actions/quotationsActions';
 import allowOnlyNumbers from '../utilities/allowOnlyNumbers';
 import formValidation from '../utilities/formValidation';
+import { migrateQuotationItems, needsMigration } from '../utilities/quotationMigration';
 import { 
     collection, 
     addDoc, 
@@ -56,6 +57,8 @@ const initialItems = {
     name: '',
     description: '',
     leadTime: '',
+    images: [], // Array of image objects instead of single imageUrl
+    qrCodeUrl: '', // Keep for backward compatibility
     quantity: 0,
     price: 0,
     total: 0,
@@ -204,6 +207,42 @@ const useManageQuotations = () => {
                     
                     dispatch({ type: 'SET_QUOTATIONS', payload: quotationsList });
                     dispatch({ type: 'SET_FIREBASE_ERROR', payload: false });
+                    
+                    // Check for quotations that need migration from base64 to Firebase Storage
+                    const quotationsNeedingMigration = quotationsList.filter(needsMigration);
+                    if (quotationsNeedingMigration.length > 0) {
+                        console.log(`Found ${quotationsNeedingMigration.length} quotations that need migration from base64 to Firebase Storage`);
+                        
+                        // Migrate quotations in the background
+                        quotationsNeedingMigration.forEach(async (quotation) => {
+                            try {
+                                const migratedItems = await migrateQuotationItems(quotation.items, quotation.id);
+                                
+                                // Update the quotation in Firestore with migrated items
+                                const quotationRef = doc(db, 'quotations', quotation.id);
+                                await updateDoc(quotationRef, {
+                                    items: migratedItems,
+                                    lastMigrated: new Date().toISOString()
+                                });
+                                
+                                console.log(`Successfully migrated quotation ${quotation.id}`);
+                                
+                                // Update local state with migrated items
+                                dispatch({
+                                    type: 'SAVE_QUOTATION_CHANGES',
+                                    payload: {
+                                        quotation: {
+                                            ...quotation,
+                                            items: migratedItems
+                                        }
+                                    }
+                                });
+                                
+                            } catch (migrationError) {
+                                console.error(`Failed to migrate quotation ${quotation.id}:`, migrationError);
+                            }
+                        });
+                    }
                 }
             } catch (error) {
                 // Silent error handling
@@ -419,6 +458,9 @@ const useManageQuotations = () => {
                 name: item.name || '',
                 description: item.description || '',
                 leadTime: item.leadTime || '',
+                images: item.images || [], // Handle multiple images
+                imageUrl: item.imageUrl || (item.images && item.images.length > 0 ? item.images[0].url : ''), // Backward compatibility
+                qrCodeUrl: item.qrCodeUrl || '', // Include QR code URL
                 quantity: parseFloat(item.quantity) || 0,
                 price: parseFloat(item.price) || 0,
                 vat: parseFloat(item.vat) || 0,
@@ -787,6 +829,70 @@ const useManageQuotations = () => {
         }
     };
 
+    /**
+     * Manually trigger migration for existing quotations with base64 images
+     */
+    const triggerMigration = async () => {
+        try {
+            const quotationsNeedingMigration = state.quotations.filter(needsMigration);
+            
+            if (quotationsNeedingMigration.length === 0) {
+                console.log('No quotations need migration');
+                return { success: true, message: 'No quotations need migration' };
+            }
+            
+            console.log(`Starting migration for ${quotationsNeedingMigration.length} quotations`);
+            
+            const results = [];
+            for (const quotation of quotationsNeedingMigration) {
+                try {
+                    const migratedItems = await migrateQuotationItems(quotation.items, quotation.id);
+                    
+                    // Update the quotation in Firestore
+                    const quotationRef = doc(db, 'quotations', quotation.id);
+                    await updateDoc(quotationRef, {
+                        items: migratedItems,
+                        lastMigrated: new Date().toISOString()
+                    });
+                    
+                    results.push({
+                        id: quotation.id,
+                        success: true,
+                        originalSize: JSON.stringify(quotation).length,
+                        newSize: JSON.stringify({ ...quotation, items: migratedItems }).length
+                    });
+                    
+                    console.log(`Successfully migrated quotation ${quotation.id}`);
+                    
+                } catch (error) {
+                    results.push({
+                        id: quotation.id,
+                        success: false,
+                        error: error.message
+                    });
+                    console.error(`Failed to migrate quotation ${quotation.id}:`, error);
+                }
+            }
+            
+            // Refresh quotations after migration
+            await refreshQuotations();
+            
+            return {
+                success: true,
+                results,
+                message: `Migration completed for ${results.filter(r => r.success).length} quotations`
+            };
+            
+        } catch (error) {
+            console.error('Migration failed:', error);
+            return {
+                success: false,
+                error: error.message,
+                message: 'Migration failed'
+            };
+        }
+    };
+
     return {
         state,
         dispatch,
@@ -808,7 +914,8 @@ const useManageQuotations = () => {
         createQuotation,
         addNewItem,
         removeItemAtIndex,
-        setItems
+        setItems,
+        triggerMigration
     };
 };
 

@@ -28,6 +28,7 @@ import MobileTabBar from '../Navigation/MobileTabBar';
 import InstallPrompt from '../InstallPrompt';
 import InternalPOs from '../InternalPOs/InternalPOs';
 import InternalPOView from '../InternalPOs/InternalPOView/InternalPOView';
+import QRScanner from '../QRScanner/QRScanner';
 
 // Create spinner animation keyframes
 const spinnerStyle = document.createElement('style');
@@ -130,6 +131,9 @@ const App = () => {
                         </Route>
                         <Route path="/internal-pos/:id">
                             <InternalPOView />
+                        </Route>
+                        <Route path="/qr-scanner">
+                            <QRScanner />
                         </Route>
                         <Route path="*">
                             <RouteError />

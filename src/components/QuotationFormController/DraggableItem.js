@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import styled from 'styled-components';
 import Icon from '../shared/Icon/Icon';
+import MultipleImageUpload from './MultipleImageUpload';
 
 const DraggableItemCard = styled.div`
     background: rgba(37, 41, 69, 0.3);
@@ -199,6 +200,15 @@ const TotalValue = styled.div`
     }
 `;
 
+const FieldContainer = styled.div`
+    margin-top: 20px;
+    margin-left: 40px;
+    
+    @media (min-width: 768px) {
+        margin-left: 60px;
+    }
+`;
+
 const DeleteButton = styled.button`
     background: none;
     border: none;
@@ -241,6 +251,63 @@ const DraggableItem = ({
     currency = 'USD',
     formatNumber 
 }) => {
+    // Initialize images array from item data or backward compatibility
+    const [images, setImages] = useState(() => {
+        if (item.images && Array.isArray(item.images)) {
+            return item.images;
+        } else if (item.imageUrl) {
+            // Convert old single image to new format for backward compatibility
+            return [{
+                id: `legacy_${Date.now()}`,
+                name: 'Legacy Image',
+                url: item.imageUrl,
+                qrCodeUrl: item.qrCodeUrl || '',
+                size: 0,
+                type: 'image/jpeg',
+                uploadedAt: new Date().toISOString()
+            }];
+        }
+        return [];
+    });
+
+    // Sync images with item data
+    useEffect(() => {
+        if (item.images && Array.isArray(item.images)) {
+            setImages(item.images);
+        }
+    }, [item.images]);
+
+    // Update item when images change
+    const handleImagesChange = (newImages) => {
+        setImages(newImages);
+        
+        // Update the item with new images array
+        handleItemChange({
+            target: {
+                name: 'images',
+                value: newImages
+            }
+        }, 'items', null, index);
+        
+        // Also update imageUrl for backward compatibility (use first image)
+        const firstImageUrl = newImages.length > 0 ? newImages[0].url : '';
+        handleItemChange({
+            target: {
+                name: 'imageUrl',
+                value: firstImageUrl
+            }
+        }, 'items', null, index);
+        
+        // Update qrCodeUrl for backward compatibility (use first image's QR code)
+        const firstQRCode = newImages.length > 0 ? newImages[0].qrCodeUrl : '';
+        handleItemChange({
+            target: {
+                name: 'qrCodeUrl',
+                value: firstQRCode
+            }
+        }, 'items', null, index);
+    };
+
     const {
         attributes,
         listeners,
@@ -255,7 +322,7 @@ const DraggableItem = ({
         transition,
     };
 
-    console.log(`Rendering DraggableItem ${index}`, { item, isDragging });
+    // Component rendering
 
     return (
         <DraggableItemCard
@@ -424,6 +491,23 @@ const DraggableItem = ({
                     </TotalValue>
                 </div>
             </ItemGrid>
+            
+            {/* Replace old image upload with new MultipleImageUpload */}
+            <FieldContainer>
+                <MultipleImageUpload
+                    images={images}
+                    onImagesChange={handleImagesChange}
+                    itemName={item.name}
+                    itemIndex={index}
+                    quotationId={item.quotationId || 'temp'}
+                    itemPrice={item.price}
+                    itemDescription={item.description}
+                    itemLeadTime={item.leadTime}
+                    itemQuantity={item.quantity}
+                    itemTotal={item.total}
+                    currency={currency}
+                />
+            </FieldContainer>
             
             <DeleteButton
                 type="button"
