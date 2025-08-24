@@ -23,6 +23,18 @@ const ContentCard = styled.div`
     max-width: 600px;
     width: 100%;
     text-align: center;
+    
+    @media (max-width: 768px) {
+        padding: 20px;
+        border-radius: 15px;
+        margin: 10px;
+    }
+    
+    @media (max-width: 480px) {
+        padding: 15px;
+        border-radius: 12px;
+        margin: 5px;
+    }
 `;
 
 const Header = styled.h1`
@@ -30,6 +42,16 @@ const Header = styled.h1`
     margin-bottom: 30px;
     font-size: 2.5rem;
     font-weight: 700;
+    
+    @media (max-width: 768px) {
+        font-size: 2rem;
+        margin-bottom: 20px;
+    }
+    
+    @media (max-width: 480px) {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
 `;
 
 const ItemInfo = styled.div`
@@ -59,6 +81,16 @@ const ImageContainer = styled.div`
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    
+    @media (max-width: 768px) {
+        margin: 20px 0;
+        border-radius: 8px;
+    }
+    
+    @media (max-width: 480px) {
+        margin: 15px 0;
+        border-radius: 6px;
+    }
 `;
 
 const ItemImage = styled.img`
@@ -248,6 +280,7 @@ const QRScanner = () => {
                                     imageUrl: imageUrl,
                                     name: item.name || itemName,
                                     quotationId: foundQuotation.id,
+                                    customId: foundQuotation.customId || foundQuotation.id,
                                     description: item.description || '',
                                     leadTime: item.leadTime || '',
                                     price: item.price || 0,
@@ -321,6 +354,7 @@ const QRScanner = () => {
                                 imageUrl: imageUrl,
                                 name: item.name || itemName,
                                 quotationId: quotationId,
+                                customId: quotationData.customId || quotationId,
                                 description: item.description || '',
                                 leadTime: item.leadTime || '',
                                 price: item.price || 0,
@@ -389,234 +423,223 @@ const QRScanner = () => {
                 </ImageContainer>
 
                 {/* Item Information Section - Matching the click view design */}
+                {/* Mobile-friendly grid layout */}
                 <div style={{
                     background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
                     borderRadius: '15px',
-                    padding: '25px',
+                    padding: '20px',
                     marginBottom: '25px',
                     border: '1px solid #e9ecef'
                 }}>
+                    {/* Mobile: Stack vertically, Desktop: Side by side */}
                     <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '16px 20px',
-                        background: 'white',
-                        borderRadius: '10px',
-                        marginBottom: '12px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                        borderLeft: '4px solid #7C5DFA'
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                        gap: '12px'
                     }}>
+                        {/* Item Name */}
                         <div style={{
-                            fontSize: '0.8rem',
-                            color: '#6c757d',
-                            fontWeight: '600',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px'
+                            background: 'white',
+                            borderRadius: '10px',
+                            padding: '16px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            borderLeft: '4px solid #7C5DFA'
                         }}>
-                            Item Name
+                            <div style={{
+                                fontSize: '0.75rem',
+                                color: '#6c757d',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                marginBottom: '8px'
+                            }}>
+                                Item Name
+                            </div>
+                            <div style={{
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                color: '#2c3e50',
+                                wordBreak: 'break-word'
+                            }}>
+                                {itemData.name}
+                            </div>
                         </div>
+                        
+                        {/* Quotation ID */}
                         <div style={{
-                            fontSize: '1rem',
-                            fontWeight: '600',
-                            color: '#2c3e50',
-                            textAlign: 'right'
+                            background: 'white',
+                            borderRadius: '10px',
+                            padding: '16px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            borderLeft: '4px solid #7C5DFA'
                         }}>
-                            {itemData.name}
+                            <div style={{
+                                fontSize: '0.75rem',
+                                color: '#6c757d',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                marginBottom: '8px'
+                            }}>
+                                Quotation ID
+                            </div>
+                            <div style={{
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                color: '#2c3e50',
+                                fontFamily: 'Courier New, monospace',
+                                wordBreak: 'break-all'
+                            }}>
+                                {itemData.customId || itemData.quotationId}
+                            </div>
                         </div>
+                        
+                        {/* Description */}
+                        {itemData.description && (
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '10px',
+                                padding: '16px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                borderLeft: '4px solid #7C5DFA'
+                            }}>
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    color: '#6c757d',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    marginBottom: '8px'
+                                }}>
+                                    Description
+                                </div>
+                                <div style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    color: '#2c3e50',
+                                    wordBreak: 'break-word'
+                                }}>
+                                    {itemData.description}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Lead Time */}
+                        {itemData.leadTime && (
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '10px',
+                                padding: '16px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                borderLeft: '4px solid #7C5DFA'
+                            }}>
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    color: '#6c757d',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    marginBottom: '8px'
+                                }}>
+                                    Lead Time
+                                </div>
+                                <div style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    color: '#2c3e50'
+                                }}>
+                                    {itemData.leadTime}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Price */}
+                        {itemData.price > 0 && (
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '10px',
+                                padding: '16px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                borderLeft: '4px solid #7C5DFA'
+                            }}>
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    color: '#6c757d',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    marginBottom: '8px'
+                                }}>
+                                    Price
+                                </div>
+                                <div style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    color: '#2c3e50'
+                                }}>
+                                    {itemData.price} {itemData.currency}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Quantity */}
+                        {itemData.quantity > 0 && (
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '10px',
+                                padding: '16px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                borderLeft: '4px solid #7C5DFA'
+                            }}>
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    color: '#6c757d',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    marginBottom: '8px'
+                                }}>
+                                    Quantity
+                                </div>
+                                <div style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    color: '#2c3e50'
+                                }}>
+                                    {itemData.quantity}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Total */}
+                        {itemData.total > 0 && (
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '10px',
+                                padding: '16px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                borderLeft: '4px solid #7C5DFA'
+                            }}>
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    color: '#6c757d',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    marginBottom: '8px'
+                                }}>
+                                    Total
+                                </div>
+                                <div style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    color: '#2c3e50'
+                                }}>
+                                    {itemData.total} {itemData.currency}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '16px 20px',
-                        background: 'white',
-                        borderRadius: '10px',
-                        marginBottom: '12px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                        borderLeft: '4px solid #7C5DFA'
-                    }}>
-                        <div style={{
-                            fontSize: '0.8rem',
-                            color: '#6c757d',
-                            fontWeight: '600',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px'
-                        }}>
-                            Quotation ID
-                        </div>
-                        <div style={{
-                            fontSize: '1rem',
-                            fontWeight: '600',
-                            color: '#2c3e50',
-                            textAlign: 'right',
-                            fontFamily: 'Courier New, monospace'
-                        }}>
-                            {itemData.quotationId}
-                        </div>
-                    </div>
-                    
-                    {/* Additional Item Details */}
-                    {itemData.description && (
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '16px 20px',
-                            background: 'white',
-                            borderRadius: '10px',
-                            marginBottom: '12px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                            borderLeft: '4px solid #7C5DFA'
-                        }}>
-                            <div style={{
-                                fontSize: '0.8rem',
-                                color: '#6c757d',
-                                fontWeight: '600',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                            }}>
-                                Description
-                            </div>
-                            <div style={{
-                                fontSize: '1rem',
-                                fontWeight: '600',
-                                color: '#2c3e50',
-                                textAlign: 'right'
-                            }}>
-                                {itemData.description}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {itemData.leadTime && (
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '16px 20px',
-                            background: 'white',
-                            borderRadius: '10px',
-                            marginBottom: '12px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                            borderLeft: '4px solid #7C5DFA'
-                        }}>
-                            <div style={{
-                                fontSize: '0.8rem',
-                                color: '#6c757d',
-                                fontWeight: '600',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                            }}>
-                                Lead Time
-                            </div>
-                            <div style={{
-                                fontSize: '1rem',
-                                fontWeight: '600',
-                                color: '#2c3e50',
-                                textAlign: 'right'
-                            }}>
-                                {itemData.leadTime}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {itemData.price > 0 && (
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '16px 20px',
-                            background: 'white',
-                            borderRadius: '10px',
-                            marginBottom: '12px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                            borderLeft: '4px solid #7C5DFA'
-                        }}>
-                            <div style={{
-                                fontSize: '0.8rem',
-                                color: '#6c757d',
-                                fontWeight: '600',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                            }}>
-                                Price
-                            </div>
-                            <div style={{
-                                fontSize: '1rem',
-                                fontWeight: '600',
-                                color: '#2c3e50',
-                                textAlign: 'right'
-                            }}>
-                                {itemData.price} {itemData.currency}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {itemData.quantity > 0 && (
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '16px 20px',
-                            background: 'white',
-                            borderRadius: '10px',
-                            marginBottom: '12px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                            borderLeft: '4px solid #7C5DFA'
-                        }}>
-                            <div style={{
-                                fontSize: '0.8rem',
-                                color: '#6c757d',
-                                fontWeight: '600',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                            }}>
-                                Quantity
-                            </div>
-                            <div style={{
-                                fontSize: '1rem',
-                                fontWeight: '600',
-                                color: '#2c3e50',
-                                textAlign: 'right'
-                            }}>
-                                {itemData.quantity}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {itemData.total > 0 && (
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '16px 20px',
-                            background: 'white',
-                            borderRadius: '10px',
-                            marginBottom: '12px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                            borderLeft: '4px solid #7C5DFA'
-                        }}>
-                            <div style={{
-                                fontSize: '0.8rem',
-                                color: '#6c757d',
-                                fontWeight: '600',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                            }}>
-                                Total
-                            </div>
-                            <div style={{
-                                fontSize: '1rem',
-                                fontWeight: '600',
-                                color: '#2c3e50',
-                                textAlign: 'right'
-                            }}>
-                                {itemData.total} {itemData.currency}
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* Price Highlight Section - Matching the click view */}
