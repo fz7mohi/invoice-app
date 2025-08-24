@@ -247,7 +247,13 @@ const QRScanner = () => {
                                 setItemData({
                                     imageUrl: imageUrl,
                                     name: item.name || itemName,
-                                    quotationId: foundQuotation.id
+                                    quotationId: foundQuotation.id,
+                                    description: item.description || '',
+                                    leadTime: item.leadTime || '',
+                                    price: item.price || 0,
+                                    quantity: item.quantity || 0,
+                                    total: item.total || 0,
+                                    currency: foundQuotation.currency || 'USD'
                                 });
                                 setLoading(false);
                                 return;
@@ -311,11 +317,17 @@ const QRScanner = () => {
                 return;
             }
 
-            setItemData({
-                imageUrl: imageUrl,
-                name: item.name || itemName,
-                quotationId: quotationId
-            });
+                                        setItemData({
+                                imageUrl: imageUrl,
+                                name: item.name || itemName,
+                                quotationId: quotationId,
+                                description: item.description || '',
+                                leadTime: item.leadTime || '',
+                                price: item.price || 0,
+                                quantity: item.quantity || 0,
+                                total: item.total || 0,
+                                currency: quotationData.currency || 'USD'
+                            });
             
             setLoading(false);
         } catch (error) {
@@ -357,28 +369,297 @@ const QRScanner = () => {
         );
     }
 
-    return (
+        return (
         <ScannerContainer>
             <ContentCard>
-                <Header>Item Details</Header>
+                <Header>{itemData.name}</Header>
+                <div style={{ textAlign: 'center', marginBottom: '20px', color: '#666', fontSize: '1rem' }}>
+                    Item Details & Image
+                </div>
                 
-                <ItemInfo>
-                    <ItemName>{itemData.name}</ItemName>
-                    <QuotationId>Quotation ID: {itemData.quotationId}</QuotationId>
-                </ItemInfo>
-
                 <ImageContainer>
-                                    <ItemImage 
-                    src={itemData.imageUrl} 
-                    alt={itemData.name}
-                    onError={(e) => {
-                        console.error('Image load error:', e);
-                        setError('Failed to load image. The image may have been removed or is no longer available. Please check the image URL or regenerate the quotation.');
-                    }}
-                />
+                    <ItemImage 
+                        src={itemData.imageUrl} 
+                        alt={itemData.name}
+                        onError={(e) => {
+                            console.error('Image load error:', e);
+                            setError('Failed to load image. The image may have been removed or is no longer available. Please check the image URL or regenerate the quotation.');
+                        }}
+                    />
                 </ImageContainer>
 
-                <Message>
+                {/* Item Information Section - Matching the click view design */}
+                <div style={{
+                    background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                    borderRadius: '15px',
+                    padding: '25px',
+                    marginBottom: '25px',
+                    border: '1px solid #e9ecef'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px 20px',
+                        background: 'white',
+                        borderRadius: '10px',
+                        marginBottom: '12px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        borderLeft: '4px solid #7C5DFA'
+                    }}>
+                        <div style={{
+                            fontSize: '0.8rem',
+                            color: '#6c757d',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                        }}>
+                            Item Name
+                        </div>
+                        <div style={{
+                            fontSize: '1rem',
+                            fontWeight: '600',
+                            color: '#2c3e50',
+                            textAlign: 'right'
+                        }}>
+                            {itemData.name}
+                        </div>
+                    </div>
+                    
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px 20px',
+                        background: 'white',
+                        borderRadius: '10px',
+                        marginBottom: '12px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        borderLeft: '4px solid #7C5DFA'
+                    }}>
+                        <div style={{
+                            fontSize: '0.8rem',
+                            color: '#6c757d',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                        }}>
+                            Quotation ID
+                        </div>
+                        <div style={{
+                            fontSize: '1rem',
+                            fontWeight: '600',
+                            color: '#2c3e50',
+                            textAlign: 'right',
+                            fontFamily: 'Courier New, monospace'
+                        }}>
+                            {itemData.quotationId}
+                        </div>
+                    </div>
+                    
+                    {/* Additional Item Details */}
+                    {itemData.description && (
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '16px 20px',
+                            background: 'white',
+                            borderRadius: '10px',
+                            marginBottom: '12px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            borderLeft: '4px solid #7C5DFA'
+                        }}>
+                            <div style={{
+                                fontSize: '0.8rem',
+                                color: '#6c757d',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}>
+                                Description
+                            </div>
+                            <div style={{
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                color: '#2c3e50',
+                                textAlign: 'right'
+                            }}>
+                                {itemData.description}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {itemData.leadTime && (
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '16px 20px',
+                            background: 'white',
+                            borderRadius: '10px',
+                            marginBottom: '12px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            borderLeft: '4px solid #7C5DFA'
+                        }}>
+                            <div style={{
+                                fontSize: '0.8rem',
+                                color: '#6c757d',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}>
+                                Lead Time
+                            </div>
+                            <div style={{
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                color: '#2c3e50',
+                                textAlign: 'right'
+                            }}>
+                                {itemData.leadTime}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {itemData.price > 0 && (
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '16px 20px',
+                            background: 'white',
+                            borderRadius: '10px',
+                            marginBottom: '12px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            borderLeft: '4px solid #7C5DFA'
+                        }}>
+                            <div style={{
+                                fontSize: '0.8rem',
+                                color: '#6c757d',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}>
+                                Price
+                            </div>
+                            <div style={{
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                color: '#2c3e50',
+                                textAlign: 'right'
+                            }}>
+                                {itemData.price} {itemData.currency}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {itemData.quantity > 0 && (
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '16px 20px',
+                            background: 'white',
+                            borderRadius: '10px',
+                            marginBottom: '12px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            borderLeft: '4px solid #7C5DFA'
+                        }}>
+                            <div style={{
+                                fontSize: '0.8rem',
+                                color: '#6c757d',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}>
+                                Quantity
+                            </div>
+                            <div style={{
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                color: '#2c3e50',
+                                textAlign: 'right'
+                            }}>
+                                {itemData.quantity}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {itemData.total > 0 && (
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '16px 20px',
+                            background: 'white',
+                            borderRadius: '10px',
+                            marginBottom: '12px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            borderLeft: '4px solid #7C5DFA'
+                        }}>
+                            <div style={{
+                                fontSize: '0.8rem',
+                                color: '#6c757d',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}>
+                                Total
+                            </div>
+                            <div style={{
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                color: '#2c3e50',
+                                textAlign: 'right'
+                            }}>
+                                {itemData.total} {itemData.currency}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Price Highlight Section - Matching the click view */}
+                {itemData.total > 0 && (
+                    <div style={{
+                        background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                        color: 'white',
+                        padding: '20px',
+                        borderRadius: '15px',
+                        textAlign: 'center',
+                        marginBottom: '25px',
+                        boxShadow: '0 8px 25px rgba(40, 167, 69, 0.3)'
+                    }}>
+                        <div style={{
+                            fontSize: '2.2rem',
+                            fontWeight: '800',
+                            marginBottom: '8px'
+                        }}>
+                            {itemData.total} {itemData.currency}
+                        </div>
+                        <div style={{
+                            fontSize: '0.9rem',
+                            opacity: '0.9',
+                            lineHeight: '1.4'
+                        }}>
+                            Total Amount
+                        </div>
+                    </div>
+                )}
+
+                {/* Metadata Section */}
+                <div style={{
+                    background: '#e9ecef',
+                    borderRadius: '10px',
+                    padding: '15px',
+                    fontSize: '0.8rem',
+                    color: '#6c757d',
+                    textAlign: 'center'
+                }}>
+                    <strong>Generated:</strong> {new Date().toLocaleString()}
+                </div>
+
+                <Message style={{ marginTop: '20px' }}>
                     This is the product image from your quotation. 
                     You can save this image or share it with your team for reference.
                 </Message>
