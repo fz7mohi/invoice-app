@@ -561,7 +561,7 @@ const useManageQuotations = () => {
                             console.log('Regenerating QR codes for updated quotation:', documentId);
                             
                             // Import the QR code generation function
-                            const { generateScannerQRCode } = await import('../../utilities/qrCodeGenerator');
+                            const { generateScannerQRCode } = await import('../utilities/qrCodeGenerator');
                             
                             // Update each item's images with new QR codes
                             const updatedItems = await Promise.all(
@@ -644,7 +644,7 @@ const useManageQuotations = () => {
                             console.log('Regenerating QR codes with correct quotation ID:', docRef.id);
                             
                             // Import the QR code generation function
-                            const { generateScannerQRCode } = await import('../../utilities/qrCodeGenerator');
+                            const { generateScannerQRCode } = await import('../utilities/qrCodeGenerator');
                             
                             // Update each item's images with new QR codes
                             const updatedItems = await Promise.all(
@@ -787,7 +787,7 @@ const useManageQuotations = () => {
             console.log('Regenerating QR codes for existing quotation:', id);
             
             // Import the QR code generation function
-            const { generateScannerQRCode } = await import('../../utilities/qrCodeGenerator');
+            const { generateScannerQRCode } = await import('../utilities/qrCodeGenerator');
             
             // Update each item's images with new QR codes
             const updatedItems = await Promise.all(
