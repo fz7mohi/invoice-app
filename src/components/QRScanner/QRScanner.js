@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 
 const ScannerContainer = styled.div`
@@ -112,6 +112,14 @@ const QRScanner = () => {
         const itemName = searchParams.get('item');
         const quotationId = searchParams.get('quotation') || searchParams.get('q');
 
+        console.log('QR Scanner - URL Parameters:', {
+            imageUrl,
+            imageRef,
+            itemName,
+            quotationId,
+            fullUrl: location.search
+        });
+
         if (!itemName || !quotationId) {
             setError('Missing required parameters. Please scan the QR code again.');
             setLoading(false);
@@ -122,12 +130,33 @@ const QRScanner = () => {
         const decodedItemName = decodeURIComponent(itemName);
         const decodedQuotationId = decodeURIComponent(quotationId);
 
+        // Validate the quotation ID format
+        console.log('Quotation ID validation:', {
+            original: quotationId,
+            decoded: decodedQuotationId,
+            length: decodedQuotationId.length,
+            isValid: decodedQuotationId.length > 0 && decodedQuotationId.length < 100
+        });
+
+        if (decodedQuotationId.length === 0 || decodedQuotationId.length > 100) {
+            setError('Invalid quotation ID format. Please scan the QR code again.');
+            setLoading(false);
+            return;
+        }
+
+        console.log('QR Scanner - Decoded Parameters:', {
+            decodedItemName,
+            decodedQuotationId
+        });
+
         // If we have a reference (base64 image), we need to fetch the image data
         if (imageRef) {
+            console.log('QR Scanner - Using reference approach with:', { imageRef, decodedItemName, decodedQuotationId });
             fetchImageFromReference(imageRef, decodedItemName, decodedQuotationId);
         } else if (imageUrl) {
             // Direct image URL (regular images)
             const decodedImageUrl = decodeURIComponent(imageUrl);
+            console.log('QR Scanner - Using direct image URL approach');
             setItemData({
                 imageUrl: decodedImageUrl,
                 name: decodedItemName,
@@ -145,11 +174,90 @@ const QRScanner = () => {
             setLoading(true);
             
             console.log('Fetching image data for:', { imageRef, itemName, quotationId });
+            console.log('Firebase query details:', { collection: 'quotations', documentId: quotationId });
+            console.log('Firebase db object:', db);
+            
+            // Test Firebase connection first
+            try {
+                console.log('Testing Firebase connection...');
+                const testCollection = collection(db, 'quotations');
+                console.log('Test collection reference created:', testCollection);
+            } catch (firebaseError) {
+                console.error('Firebase connection test failed:', firebaseError);
+                setError('Firebase connection failed. Please check your internet connection and try again.');
+                setLoading(false);
+                return;
+            }
             
             // Fetch the quotation data from Firestore
             const quotationDoc = await getDoc(doc(db, 'quotations', quotationId));
             
+            console.log('Firebase query result:', {
+                exists: quotationDoc.exists(),
+                id: quotationDoc.id,
+                hasData: !!quotationDoc.data()
+            });
+            
             if (!quotationDoc.exists()) {
+                console.error('Quotation document not found in Firebase');
+                
+                // Try to find the quotation by customId if the direct ID doesn't work
+                console.log('Trying to find quotation by customId...');
+                try {
+                    const quotationsRef = collection(db, 'quotations');
+                    const q = query(quotationsRef, where('customId', '==', quotationId));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        console.log('Found quotation by customId:', querySnapshot.docs[0].id);
+                        const foundQuotation = querySnapshot.docs[0];
+                        const quotationData = foundQuotation.data();
+                        
+                        // Continue with the found quotation
+                        console.log('Quotation data loaded by customId:', quotationData);
+                        
+                        // Find the item with the matching reference
+                        const item = quotationData.items?.find(item => {
+                            if (item.images && item.images.length > 0) {
+                                return item.images.some(image => {
+                                    const itemRef = generateSimpleReference(item.name, foundQuotation.id);
+                                    return itemRef === imageRef;
+                                });
+                            } else if (item.imageUrl) {
+                                const itemRef = generateSimpleReference(item.name, foundQuotation.id);
+                                return itemRef === imageRef;
+                            }
+                            return false;
+                        });
+                        
+                        if (item) {
+                            console.log('Found item by customId lookup:', item);
+                            
+                            // Get the image URL from the item
+                            let imageUrl = null;
+                            if (item.images && item.images.length > 0) {
+                                imageUrl = item.images[0].url || item.images[0].imageUrl;
+                                console.log('Using image from images array (customId lookup):', item.images[0]);
+                            } else if (item.imageUrl) {
+                                imageUrl = item.imageUrl;
+                                console.log('Using single imageUrl (customId lookup):', item.imageUrl);
+                            }
+
+                            if (imageUrl) {
+                                setItemData({
+                                    imageUrl: imageUrl,
+                                    name: item.name || itemName,
+                                    quotationId: foundQuotation.id
+                                });
+                                setLoading(false);
+                                return;
+                            }
+                        }
+                    }
+                } catch (customIdError) {
+                    console.error('CustomId lookup failed:', customIdError);
+                }
+                
                 setError('Quotation not found. It may have been deleted or moved.');
                 setLoading(false);
                 return;
