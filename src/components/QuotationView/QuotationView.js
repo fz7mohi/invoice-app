@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useHistory } from 'react-router-dom';
+import { useParams, useHistory, Link } from 'react-router-dom';
 import { useReducedMotion } from 'framer-motion';
 import styled, { keyframes } from 'styled-components';
 import { useGlobalContext } from '../App/context';
@@ -1629,8 +1629,6 @@ const QuotationView = () => {
                             <Details className="Details">
                                 <ItemsHeader className="ItemsHeader" showVat={clientHasVAT} data-show-vat={clientHasVAT}>
                                     <HeaderCell>Item Name</HeaderCell>
-                                    <HeaderCell>QTY.</HeaderCell>
-                                    <HeaderCell>Price</HeaderCell>
                                     {clientHasVAT && <HeaderCell>VAT (5%)</HeaderCell>}
                                     <HeaderCell>Total</HeaderCell>
                                 </ItemsHeader>
@@ -1647,7 +1645,21 @@ const QuotationView = () => {
                                                         gap: '12px',
                                                         marginBottom: '8px'
                                                     }}>
-                                                        <ItemName>{item.name}</ItemName>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            <ItemName>{item.name}</ItemName>
+                                                            <div style={{ 
+                                                                fontSize: '12px', 
+                                                                color: '#666', 
+                                                                fontWeight: '500',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '8px'
+                                                            }}>
+                                                                <span>Qty: {item.quantity || 0}</span>
+                                                                <span>•</span>
+                                                                <span>Price: {formatPrice(item.price || 0, quotation.currency)}</span>
+                                                            </div>
+                                                        </div>
                                                         {/* Display QR codes inline with item title */}
                                                         {item.images && item.images.length > 0 && (
                                                             <div style={{ 
@@ -1665,7 +1677,7 @@ const QuotationView = () => {
                                                                                 height: '40px',
                                                                                 border: '1px solid #E0E0E0',
                                                                                 borderRadius: '4px',
-                                                                                cursor: 'pointer'
+                                                                cursor: 'pointer'
                                                                             }}
                                                                             title="Click to open image or scan QR code"
                                                                             onClick={() => {
@@ -2005,10 +2017,6 @@ const QuotationView = () => {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <ItemQty>{item.quantity || 0}</ItemQty>
-                                                <ItemPrice>
-                                                    {formatPrice(item.price || 0, quotation.currency)}
-                                                </ItemPrice>
                                                 {clientHasVAT && (
                                                     <ItemVat>
                                                         {formatPrice(itemVAT, quotation.currency)}

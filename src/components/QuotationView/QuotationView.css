@@ -21,43 +21,30 @@
 /* Ensure all item fields are visible on mobile */
 @media (max-width: 767px) {
   .Item {
-    grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
     gap: 8px !important;
     align-items: start !important;
   }
   
-  .ItemQty, .ItemPrice, .ItemTotal {
+  .ItemTotal {
     display: block !important;
     font-size: 12px !important;
     text-align: center !important;
     padding: 4px !important;
     margin: 0 !important;
-  }
-  
-  .ItemQty {
-    color: #666 !important;
-    font-weight: 500 !important;
-  }
-  
-  .ItemPrice {
-    color: #666 !important;
-    font-weight: 500 !important;
-  }
-  
-  .ItemTotal {
     color: #333 !important;
     font-weight: 600 !important;
   }
   
   .ItemsHeader {
-    grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
     gap: 8px !important;
     font-size: 10px !important;
     padding: 8px 12px !important;
   }
   
   .ItemsHeader[data-show-vat="true"] {
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
   }
   
   .HeaderCell {
@@ -82,11 +69,11 @@
   
   /* Handle VAT column when disabled */
   .Item:not([data-show-vat="true"]) {
-    grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
   }
   
   .Item[data-show-vat="true"] {
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
   }
 }
 
