@@ -18,6 +18,78 @@
   font-weight: 500;
 }
 
+/* Ensure all item fields are visible on mobile */
+@media (max-width: 767px) {
+  .Item {
+    grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    gap: 8px !important;
+    align-items: start !important;
+  }
+  
+  .ItemQty, .ItemPrice, .ItemTotal {
+    display: block !important;
+    font-size: 12px !important;
+    text-align: center !important;
+    padding: 4px !important;
+    margin: 0 !important;
+  }
+  
+  .ItemQty {
+    color: #666 !important;
+    font-weight: 500 !important;
+  }
+  
+  .ItemPrice {
+    color: #666 !important;
+    font-weight: 500 !important;
+  }
+  
+  .ItemTotal {
+    color: #333 !important;
+    font-weight: 600 !important;
+  }
+  
+  .ItemsHeader {
+    grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    gap: 8px !important;
+    font-size: 10px !important;
+    padding: 8px 12px !important;
+  }
+  
+  .ItemsHeader[data-show-vat="true"] {
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr !important;
+  }
+  
+  .HeaderCell {
+    font-size: 10px !important;
+    text-align: center !important;
+  }
+  
+  .item-details {
+    grid-column: 1 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .ItemName {
+    font-size: 12px !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .ItemDescription {
+    font-size: 11px !important;
+    margin: 2px 0 !important;
+  }
+  
+  /* Handle VAT column when disabled */
+  .Item:not([data-show-vat="true"]) {
+    grid-template-columns: 1fr 1fr 1fr 1fr !important;
+  }
+  
+  .Item[data-show-vat="true"] {
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr !important;
+  }
+}
+
 /* Force Total section to use brand purple background with white text for better contrast */
 .Total {
   background-color: #7C5DFA !important;

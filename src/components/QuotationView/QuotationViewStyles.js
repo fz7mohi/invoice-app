@@ -349,16 +349,20 @@ export const Details = styled.div`
 `;
 
 export const ItemsHeader = styled.div`
-    display: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-column-gap: 16px;
+    padding: 12px 16px;
+    background-color: #004359;
+    color: white;
+    border-radius: 8px 8px 0 0;
+    font-size: 11px;
     
     @media (min-width: 768px) {
-        display: grid;
         grid-template-columns: 2.5fr 0.7fr 1fr ${props => props.showVat ? '1fr' : ''} 1.2fr;
         grid-column-gap: 24px;
         padding: 16px 24px;
-        background-color: #004359;
-        color: white;
-        border-radius: 8px 8px 0 0;
+        font-size: 12px;
     }
 `;
 
@@ -387,7 +391,7 @@ export const Items = styled.div`
 
 export const Item = styled.div`
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 12px;
@@ -442,7 +446,7 @@ export const ItemQty = styled.p`
     font-size: 13px;
     color: ${({ theme }) => theme.colors.textTertiary};
     margin: 0;
-    display: none;
+    display: block;
     
     @media (min-width: 768px) {
         display: block;
@@ -454,7 +458,7 @@ export const ItemPrice = styled.p`
     color: ${({ theme }) => theme.colors.textTertiary};
     margin: 0;
     text-align: left;
-    display: none;
+    display: block;
     
     @media (min-width: 768px) {
         display: block;

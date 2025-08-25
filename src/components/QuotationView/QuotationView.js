@@ -623,28 +623,14 @@ const QuotationView = () => {
                                                         <div style="width: 90px; height: 90px; border-radius: 8px; overflow: hidden; border: 2px solid #e0e0e0; background: white; display: flex; align-items: center; justify-content: center;">
                                                             <img src="${image.qrCodeUrl}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;" />
                                                         </div>
-                                                    ` : `
-                                                        <div style="width: 90px; height: 90px; border-radius: 8px; overflow: hidden; border: 2px solid #e0e0e0; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                                            <div style="font-size: 12px; color: #999; text-align: center; line-height: 1.2;">
-                                                                QR<br/>CODE
-                                                            </div>
-                                                        </div>
-                                                    `}
+                                                    ` : ''}
                                                 `).join('')}
                                             </div>
-                                        ` : item.imageUrl ? `
-                                            <div style="width: 90px; height: 90px; border-radius: 8px; overflow: hidden; border: 2px solid #e0e0e0; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                                <div style="font-size: 12px; color: #999; text-align: center; line-height: 1.2;">
-                                                    IMAGE<br/>AVAILABLE
-                                                </div>
+                                        ` : item.imageUrl && item.qrCodeUrl ? `
+                                            <div style="width: 90px; height: 90px; border-radius: 8px; overflow: hidden; border: 2px solid #e0e0e0; background: white; display: flex; align-items: center; justify-content: center;">
+                                                <img src="${item.qrCodeUrl}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;" />
                                             </div>
-                                        ` : `
-                                            <div style="width: 90px; height: 90px; border-radius: 8px; border: 2px dashed #e0e0e0; background: #f8f9fa; display: flex: align-items: center; justify-content: center;">
-                                                <div style="font-size: 12px; color: #999; text-align: center; line-height: 1.2;">
-                                                    NO<br/>IMAGE
-                                                </div>
-                                            </div>
-                                        `}
+                                        ` : ''}
                                     </td>
                                     <td style="padding: 14px 10px; text-align: center; color: #222; font-size: 16px;">${item.quantity || 0}</td>
                                     <td style="padding: 14px 10px; text-align: right; color: #222; font-size: 16px;">${formatPrice(item.price || 0, quotation.currency)}</td>
@@ -1641,7 +1627,7 @@ const QuotationView = () => {
                             
                             {/* Items section */}
                             <Details className="Details">
-                                <ItemsHeader className="ItemsHeader" showVat={clientHasVAT}>
+                                <ItemsHeader className="ItemsHeader" showVat={clientHasVAT} data-show-vat={clientHasVAT}>
                                     <HeaderCell>Item Name</HeaderCell>
                                     <HeaderCell>QTY.</HeaderCell>
                                     <HeaderCell>Price</HeaderCell>
@@ -1653,7 +1639,7 @@ const QuotationView = () => {
                                     {quotation.items && quotation.items.map((item, index) => {
                                         const itemVAT = item.vat || 0;
                                         return (
-                                            <Item key={index} showVat={clientHasVAT}>
+                                            <Item key={index} showVat={clientHasVAT} data-show-vat={clientHasVAT}>
                                                 <div className="item-details">
                                                     <div style={{ 
                                                         display: 'flex', 
