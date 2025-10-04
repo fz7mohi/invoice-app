@@ -83,6 +83,7 @@ export const invoicesReducer = (state, action) => {
                 status: false,
                 name: '',
             },
+            currInvoiceIndex: null,
         };
     }
 

@@ -24,6 +24,8 @@ export const Item = styled(motion.li)`
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     overflow: hidden;
+    display: flex;
+    align-items: center;
     
     &:hover {
         transform: translateY(-2px);
@@ -33,7 +35,7 @@ export const Item = styled(motion.li)`
 
 export const Link = styled(RouterLink)`
     display: grid;
-    grid-template-columns: 1fr auto;
+    flex: 1;
     gap: 24px;
     padding: 24px;
     border: 1px solid transparent;
@@ -58,17 +60,18 @@ export const Link = styled(RouterLink)`
         grid-template-areas: "date client project id price status arrow";
         grid-template-columns: 100px 130px 130px 90px 130px 90px 20px;
         align-items: center;
-        padding: 20px 32px;
+        padding: 20px 16px 20px 32px;
         gap: 16px;
     }
 
     @media (min-width: 1024px) {
         grid-template-columns: 110px 160px 160px 100px 150px 120px 20px;
-        padding: 20px 32px;
+        padding: 20px 16px 20px 32px;
     }
 
     @media (min-width: 1440px) {
         grid-template-columns: 120px 180px 180px 120px 160px 140px 20px;
+        padding: 20px 16px 20px 32px;
     }
 
     &:focus {
@@ -283,4 +286,67 @@ export const StatusDot = styled.div`
                 return 'rgba(223, 227, 250, 0.3)';
         }
     }};
+`;
+
+export const ActionButtons = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    
+    @media (max-width: 767px) {
+        padding: 0 12px;
+    }
+`;
+
+export const ActionButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: ${({ theme, $edit, $delete }) => {
+        if ($edit) return 'rgba(124, 93, 250, 0.1)';
+        if ($delete) return 'rgba(236, 87, 87, 0.1)';
+        return 'rgba(223, 227, 250, 0.1)';
+    }};
+    color: ${({ theme, $edit, $delete }) => {
+        if ($edit) return theme.colors.purple;
+        if ($delete) return '#EC5757';
+        return theme.colors.textSecondary;
+    }};
+    
+    &:hover {
+        background-color: ${({ theme, $edit, $delete }) => {
+            if ($edit) return 'rgba(124, 93, 250, 0.2)';
+            if ($delete) return 'rgba(236, 87, 87, 0.2)';
+            return 'rgba(223, 227, 250, 0.2)';
+        }};
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:active {
+        transform: translateY(0);
+    }
+    
+    &:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px ${({ theme, $edit, $delete }) => {
+            if ($edit) return 'rgba(124, 93, 250, 0.3)';
+            if ($delete) return 'rgba(236, 87, 87, 0.3)';
+            return 'rgba(223, 227, 250, 0.3)';
+        }};
+    }
+    
+    @media (max-width: 767px) {
+        width: 28px;
+        height: 28px;
+    }
 `;

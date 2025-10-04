@@ -2,14 +2,42 @@ import Button from '../shared/Button/Button';
 import { useGlobalContext } from '../App/context';
 import { useHistory } from 'react-router-dom';
 import { Container, Title, Text, CtaGroup } from './ModalStyles';
+import { useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase/firebase';
 
 const ModalDelete = ({ variants }) => {
-    const { state, toggleModal, deleteInvoice } = useGlobalContext();
+    const { invoiceState, toggleModal, handleDelete } = useGlobalContext();
     const history = useHistory();
+    const [invoiceData, setInvoiceData] = useState(null);
 
-    const routeChange = () => {
-        let path = `/`;
-        history.push(path);
+    // Fetch invoice data to get the customId
+    useEffect(() => {
+        const fetchInvoiceData = async () => {
+            if (invoiceState?.currInvoiceIndex) {
+                try {
+                    const invoiceRef = doc(db, 'invoices', invoiceState.currInvoiceIndex);
+                    const invoiceSnap = await getDoc(invoiceRef);
+                    if (invoiceSnap.exists()) {
+                        setInvoiceData(invoiceSnap.data());
+                    }
+                } catch (error) {
+                    console.error('Error fetching invoice data:', error);
+                }
+            }
+        };
+
+        fetchInvoiceData();
+    }, [invoiceState?.currInvoiceIndex]);
+
+    const handleDeleteAndClose = async () => {
+        try {
+            await handleDelete();
+            // Navigate to invoices list instead of home
+            history.push('/invoices');
+        } catch (error) {
+            console.error('Error deleting invoice:', error);
+        }
     };
 
     return (
@@ -17,7 +45,7 @@ const ModalDelete = ({ variants }) => {
             <Title>Confirm Deletion</Title>
             <Text>
                 Are you sure you want to delete invoice #
-                {state.currInvoiceIndex}? This action cannot be undone.
+                {invoiceData?.customId || invoiceState?.currInvoiceIndex}? This action cannot be undone.
             </Text>
             <CtaGroup>
                 <Button type="button" $secondary onClick={toggleModal}>
@@ -26,9 +54,7 @@ const ModalDelete = ({ variants }) => {
                 <Button
                     type="button"
                     $delete
-                    onClick={() => {
-                        deleteInvoice(), routeChange();
-                    }}
+                    onClick={handleDeleteAndClose}
                 >
                     Delete
                 </Button>

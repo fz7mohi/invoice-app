@@ -195,6 +195,8 @@ const List = ({ quotations, isLoading, variant }) => {
                 return 'Pending';
             case 'invoiced':
                 return 'Invoiced';
+            case 'invoice deleted':
+                return 'Invoice Deleted';
             case 'draft':
                 return 'Draft';
             default:

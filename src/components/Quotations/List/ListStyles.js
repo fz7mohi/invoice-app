@@ -160,6 +160,8 @@ export const StatusBadge = styled.div`
                 return 'rgba(255, 143, 0, 0.1)';
             case 'invoiced':
                 return 'rgba(51, 214, 159, 0.1)';
+            case 'invoice deleted':
+                return 'rgba(236, 87, 87, 0.1)';
             case 'draft':
                 return 'rgba(223, 227, 250, 0.1)';
             default:
@@ -172,6 +174,8 @@ export const StatusBadge = styled.div`
                 return '#FF8F00';
             case 'invoiced':
                 return '#33D69F';
+            case 'invoice deleted':
+                return '#EC5757';
             case 'draft':
                 return '#DFE3FA';
             default:
@@ -199,6 +203,8 @@ export const StatusDot = styled.div`
                 return '#FF8F00';
             case 'invoiced':
                 return '#33D69F';
+            case 'invoice deleted':
+                return '#EC5757';
             case 'draft':
                 return '#DFE3FA';
             default:

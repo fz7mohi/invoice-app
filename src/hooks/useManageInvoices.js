@@ -9,6 +9,7 @@ import {
     updateDoc, 
     deleteDoc, 
     getDocs, 
+    getDoc,
     doc, 
     orderBy, 
     query,
@@ -528,11 +529,39 @@ const useManageInvoices = () => {
             
             const invoiceId = state.currInvoiceIndex;
             
+            // Get the invoice data first to check if it has a related quotation
+            let quotationId = null;
+            if (!state.firebaseError) {
+                try {
+                    const invoiceRef = doc(db, 'invoices', invoiceId);
+                    const invoiceSnap = await getDoc(invoiceRef);
+                    if (invoiceSnap.exists()) {
+                        quotationId = invoiceSnap.data().quotationId;
+                    }
+                } catch (error) {
+                    console.error('Error fetching invoice data:', error);
+                }
+            }
+            
             // Try to delete from Firebase if not in error state
             if (!state.firebaseError) {
                 try {
                     const invoiceRef = doc(db, 'invoices', invoiceId);
                     await deleteDoc(invoiceRef);
+                    
+                    // If this invoice was created from a quotation, update the quotation status
+                    if (quotationId) {
+                        try {
+                            const quotationRef = doc(db, 'quotations', quotationId);
+                            await updateDoc(quotationRef, {
+                                status: 'invoice deleted',
+                                convertedToInvoice: null
+                            });
+                            console.log('Updated quotation status to "invoice deleted"');
+                        } catch (quotationError) {
+                            console.error('Error updating quotation status:', quotationError);
+                        }
+                    }
                 } catch (firebaseError) {
                     console.error('Firebase delete error:', firebaseError);
                     dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });

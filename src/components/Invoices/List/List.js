@@ -19,9 +19,12 @@ import {
     TotalPrice,
     Description,
     StatusBadge,
-    StatusDot
+    StatusDot,
+    ActionButtons,
+    ActionButton
 } from './ListStyles';
 import styled from 'styled-components';
+import Button from '../../shared/Button/Button';
 
 // Add a header component
 const ListHeader = styled.div`
@@ -152,7 +155,7 @@ const EmptyContainer = styled.div`
 
 const List = ({ invoices, isLoading, variant }) => {
     const { colors } = useTheme();
-    const { windowWidth } = useGlobalContext();
+    const { windowWidth, handleDelete, toggleModal } = useGlobalContext();
     const isDesktop = windowWidth >= 768;
     
     // Check for empty invoices
@@ -271,6 +274,13 @@ const List = ({ invoices, isLoading, variant }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Handle delete invoice
+    const handleDeleteClick = (e, invoiceId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleModal(invoiceId, 'delete');
     };
 
     if (isLoading) {
@@ -434,6 +444,15 @@ const List = ({ invoices, isLoading, variant }) => {
                                 />
                             )}
                         </Link>
+                        <ActionButtons>
+                            <ActionButton 
+                                onClick={(e) => handleDeleteClick(e, invoice.id)}
+                                title="Delete Invoice"
+                                $delete
+                            >
+                                <Icon name="delete" size={14} />
+                            </ActionButton>
+                        </ActionButtons>
                     </Item>
                 ))}
             </StyledList>

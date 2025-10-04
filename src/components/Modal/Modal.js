@@ -11,15 +11,15 @@ import { StyledModal } from './ModalStyles';
 
 const Modal = () => {
     const { 
-        state, 
+        invoiceState, 
         toggleModal,
         quotationState,
         toggleQuotationModal 
     } = useGlobalContext();
     
     // Simplified conditions
-    const isDeleteModal = state.isModalOpen.name === 'delete';
-    const isStatusModal = state.isModalOpen.name === 'status';
+    const isDeleteModal = invoiceState?.isModalOpen?.name === 'delete';
+    const isStatusModal = invoiceState?.isModalOpen?.name === 'status';
     const isQuotationModal = quotationState?.form?.isCreating === true || quotationState?.form?.isEditing === true;
     const isQuotationDeleteModal = quotationState?.modal?.isOpen && quotationState?.modal?.name === 'delete';
     
