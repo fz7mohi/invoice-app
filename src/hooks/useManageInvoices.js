@@ -14,7 +14,8 @@ import {
     orderBy, 
     query,
     where,
-    Timestamp 
+    Timestamp,
+    limit
 } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 
@@ -115,6 +116,18 @@ const useManageInvoices = () => {
         const fetchInvoices = async () => {
             if (!isMounted) return;
             
+            // Check if we already have invoices loaded
+            if (state.invoices && state.invoices.length > 0) {
+                console.log('Invoices already loaded, skipping fetch');
+                return;
+            }
+
+            // Check if already loading to prevent duplicate calls
+            if (state.isLoading) {
+                console.log('Invoices already loading, skipping duplicate fetch');
+                return;
+            }
+            
             try {
                 dispatch({ type: 'SET_LOADING', payload: true });
                 
@@ -123,7 +136,8 @@ const useManageInvoices = () => {
                     const invoicesCollection = collection(db, 'invoices');
                     const invoicesQuery = query(
                         invoicesCollection,
-                        orderBy('createdAt', 'desc') // Sort by creation date in descending order
+                        orderBy('createdAt', 'desc'), // Sort by creation date in descending order
+                        limit(100) // Limit to 100 most recent invoices for better performance
                     );
                     const querySnapshot = await getDocs(invoicesQuery);
                     
@@ -171,7 +185,7 @@ const useManageInvoices = () => {
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [state.invoices]);
     
     // Save to localStorage as a backup when invoices change
     useEffect(() => {
@@ -521,6 +535,56 @@ const useManageInvoices = () => {
     };
 
     /**
+     * Function to refresh invoices from Firestore
+     */
+    const refreshInvoices = async (forceRefresh = false) => {
+        try {
+            // Check if we already have data and don't need to refresh
+            if (!forceRefresh && state.invoices && state.invoices.length > 0) {
+                console.log('Invoices already loaded, skipping refresh');
+                return;
+            }
+
+            // Check if already loading to prevent duplicate calls
+            if (state.isLoading) {
+                console.log('Invoices already loading, skipping duplicate call');
+                return;
+            }
+
+            dispatch({ type: 'SET_LOADING', payload: true });
+            
+            const invoicesCollection = collection(db, 'invoices');
+            const invoicesQuery = query(
+                invoicesCollection,
+                orderBy('createdAt', 'desc'),
+                limit(100) // Limit to 100 most recent invoices for better performance
+            );
+            const querySnapshot = await getDocs(invoicesQuery);
+            
+            const invoicesList = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                const createdAt = data.createdAt?.toDate() || new Date();
+                const paymentDue = data.paymentDue?.toDate() || new Date();
+                
+                return {
+                    id: doc.id,
+                    ...data,
+                    createdAt,
+                    paymentDue
+                };
+            });
+            
+            dispatch({ type: 'SET_INVOICES', payload: invoicesList });
+            dispatch({ type: 'SET_FIREBASE_ERROR', payload: false });
+        } catch (error) {
+            console.error('Error refreshing invoices:', error);
+            dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: false });
+        }
+    };
+
+    /**
      * Function to delete invoice.
      */
     const deleteInvoice = async () => {
@@ -650,6 +714,7 @@ const useManageInvoices = () => {
         editInvoice,
         deleteInvoice,
         markInvoiceAsPaid,
+        refreshInvoices,
         createInvoice,
         discardChanges,
         toggleModal,

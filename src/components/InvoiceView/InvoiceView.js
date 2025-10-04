@@ -5,6 +5,7 @@ import { useReducedMotion } from 'framer-motion';
 import { useGlobalContext } from '../App/context';
 import Icon from '../shared/Icon/Icon';
 import Button from '../shared/Button/Button';
+import LoadingPage from '../shared/LoadingPage/LoadingPage';
 import { formatDate, formatPrice, formatCurrency } from '../../utilities/helpers';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
@@ -2277,18 +2278,11 @@ All prices are in local currency and include VAT where applicable.`;
                         Go back
                     </Link>
                     
-                    <Controller
-                        variants={variant('controller')}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        className="Controller"
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <Text>Loading invoice...</Text>
-                            <div style={{ marginLeft: 16, width: 16, height: 16 }} className="loading-spinner"></div>
-                        </div>
-                    </Controller>
+                    <LoadingPage 
+                        title="Loading Invoice"
+                        subtitle="Fetching invoice details from the server"
+                        showProgress={true}
+                    />
                 </Container>
             </StyledInvoiceView>
         );

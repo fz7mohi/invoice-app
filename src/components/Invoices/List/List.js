@@ -6,8 +6,6 @@ import Status from '../../shared/Status/Status';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import { formatDate, formatPrice } from '../../../utilities/helpers';
 import { useGlobalContext } from '../../App/context';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../../../firebase/firebase';
 import {
     StyledList,
     Item,
@@ -161,9 +159,7 @@ const List = ({ invoices, isLoading, variant }) => {
     // Check for empty invoices
     const isEmpty = !invoices || invoices.length === 0;
     
-    // State for direct Firebase data
-    const [directData, setDirectData] = useState([]);
-    const [loading, setLoading] = useState(false);
+    // State for sorting
     const [sortConfig, setSortConfig] = useState({
         key: 'createdAt',
         direction: 'desc'
@@ -236,44 +232,6 @@ const List = ({ invoices, isLoading, variant }) => {
     const generateCustomId = () => {
         const randomNum = Math.floor(1000 + Math.random() * 9000);
         return `FTIN${randomNum}`;
-    };
-    
-    // Function to fetch directly from Firebase
-    const fetchDirectly = async () => {
-        setLoading(true);
-        try {
-            const invoicesCollection = collection(db, 'invoices');
-            const invoicesQuery = query(
-                invoicesCollection,
-                orderBy('createdAt', 'desc') // Sort by creation date in descending order
-            );
-            const querySnapshot = await getDocs(invoicesQuery);
-            
-            const invoicesList = querySnapshot.docs.map(doc => {
-                const data = doc.data();
-                const customId = data.customId || generateCustomId();
-                const currency = data.currency || 'USD';
-                
-                return {
-                    ...data,
-                    id: doc.id,
-                    customId: customId,
-                    clientName: data.clientName || 'Unnamed Client',
-                    description: data.description || 'No description',
-                    status: data.status || 'draft',
-                    total: data.total || 0,
-                    currency: currency,
-                    paymentDue: data.paymentDue || new Date(),
-                    createdAt: data.createdAt || new Date()
-                };
-            });
-            
-            setDirectData(invoicesList);
-        } catch (error) {
-            console.error('Error fetching invoices:', error);
-        } finally {
-            setLoading(false);
-        }
     };
 
     // Handle delete invoice

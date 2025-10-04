@@ -11,6 +11,7 @@ import Modal from '../Modal/Modal';
 import ModalDelete from '../Modal/ModalDelete';
 import ModalStatus from '../Modal/ModalStatus';
 import LoadingSpinner from '../shared/LoadingSpinner/LoadingSpinner';
+import LoadingPage from '../shared/LoadingPage/LoadingPage';
 import RouteError from '../RouteError/RouteError';
 import { 
     collection, 
@@ -1290,26 +1291,16 @@ const QuotationView = () => {
                         <HeaderTitle>Quotation</HeaderTitle>
                     </HeaderSection>
                     
-                    <Controller
-                        variants={variant('controller')}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        className="Controller"
-                    >
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                            <Text>Loading quotation...</Text>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: 16, height: 16 }} className="loading-spinner"></div>
-                                <Text style={{ fontSize: '13px', color: colors.textTertiary }}>
-                                    {isDirectlyFetching ? 'Fetching quotation data...' :
-                                     isClientFetching ? 'Loading client information...' :
-                                     isFetchingInvoice ? 'Loading invoice details...' :
-                                     'Preparing view...'}
-                                </Text>
-                            </div>
-                        </div>
-                    </Controller>
+                    <LoadingPage 
+                        title="Loading Quotation"
+                        subtitle={
+                            isDirectlyFetching ? 'Fetching quotation data...' :
+                            isClientFetching ? 'Loading client information...' :
+                            isFetchingInvoice ? 'Loading invoice details...' :
+                            'Preparing view...'
+                        }
+                        showProgress={true}
+                    />
                 </Container>
             </StyledQuotationView>
         );

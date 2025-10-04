@@ -35,6 +35,7 @@ const AppProvider = ({ children }) => {
         markInvoiceAsPaid,
         deleteInvoice,
         editInvoice,
+        refreshInvoices,
         discardChanges,
         toggleModal,
         createInvoice,
@@ -120,11 +121,8 @@ const AppProvider = ({ children }) => {
         setWindowWidth(window.innerWidth);
     };
 
-    useEffect(() => {
-        if (typeof refreshQuotations === 'function') {
-            refreshQuotations();
-        }
-    }, []);
+    // Remove this useEffect to prevent duplicate calls
+    // The quotations will be loaded by the Quotations component itself
 
     // Add effect to track quotationState changes
     useEffect(() => {
@@ -153,6 +151,7 @@ const AppProvider = ({ children }) => {
                 handleMarkAsPaid: markInvoiceAsPaid,
                 handleDelete: deleteInvoice,
                 editInvoice,
+                refreshInvoices,
                 discardChanges,
                 toggleModal,
                 createInvoice,

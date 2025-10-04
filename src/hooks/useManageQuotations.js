@@ -344,13 +344,29 @@ const useManageQuotations = () => {
     /**
      * Function to forcefully refresh quotations list from Firestore
      */
-    const refreshQuotations = async () => {
+    const refreshQuotations = async (forceRefresh = false) => {
         try {
+            // Check if we already have data and don't need to refresh
+            if (!forceRefresh && state.quotations && state.quotations.length > 0) {
+                console.log('Quotations already loaded, skipping refresh');
+                return;
+            }
+
+            // Check if already loading to prevent duplicate calls
+            if (state.isLoading) {
+                console.log('Quotations already loading, skipping duplicate call');
+                return;
+            }
+
             dispatch({ type: 'SET_LOADING', payload: true });
             
-            // Get data directly from Firestore
+            // Get data directly from Firestore with limit for better performance
             const quotationsCollection = collection(db, 'quotations');
-            const quotationsQuery = query(quotationsCollection);
+            const quotationsQuery = query(
+                quotationsCollection, 
+                orderBy('createdAt', 'desc'),
+                limit(100) // Limit to 100 most recent quotations for better performance
+            );
             const querySnapshot = await getDocs(quotationsQuery);
             
             const quotationsList = querySnapshot.docs.map(doc => {

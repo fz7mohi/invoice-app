@@ -5,6 +5,7 @@ import Filter from './Filter/Filter';
 import List from './List/List';
 import Button from '../shared/Button/Button';
 import Icon from '../shared/Icon/Icon';
+import LoadingPage from '../shared/LoadingPage/LoadingPage';
 import quotationsLengthMessage from '../../utilities/quotationsLengthMessage';
 import { quotationsVariants } from '../../utilities/framerVariants';
 import { 
@@ -33,13 +34,12 @@ const Quotations = () => {
     // Define searchable fields
     const searchableFields = ['customId', 'id', 'clientName', 'description'];
 
-    // Force a refresh of quotations data on component mount, only once
+    // Only refresh quotations if we don't have any data yet and not already loading
     useEffect(() => {
-        // Only refresh if we don't have quotations yet
-        if (!rawQuotations || rawQuotations.length === 0) {
+        if ((!rawQuotations || rawQuotations.length === 0) && !isLoading) {
             refreshQuotations();
         }
-    }, []);
+    }, [rawQuotations, isLoading]);
 
     // Filter quotations based on status and search query
     const filteredQuotations = useMemo(() => {
@@ -112,6 +112,17 @@ const Quotations = () => {
             alert('Migration failed. Please check the console for details.');
         }
     };
+
+    // Show loading page while data is being fetched
+    if (isLoading && (!rawQuotations || rawQuotations.length === 0)) {
+        return (
+            <LoadingPage 
+                title="Loading Quotations"
+                subtitle="Fetching your quotation data from the server"
+                showProgress={true}
+            />
+        );
+    }
 
     return (
         <Container>

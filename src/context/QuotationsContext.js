@@ -66,11 +66,8 @@ export const QuotationsProvider = ({ children }) => {
     triggerMigration,
   };
 
-  // Initial load of quotations
-  useEffect(() => {
-    console.log('QuotationsProvider: Initial load - calling refreshQuotations');
-    refreshQuotations();
-  }, []);
+  // Remove this useEffect to prevent duplicate calls
+  // The quotations will be loaded by the Quotations component itself
 
   return (
     <QuotationsContext.Provider value={contextValue}>

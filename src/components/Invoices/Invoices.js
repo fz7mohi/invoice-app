@@ -5,6 +5,7 @@ import Filter from './Filter/Filter';
 import List from './List/List';
 import Button from '../shared/Button/Button';
 import Icon from '../shared/Icon/Icon';
+import LoadingPage from '../shared/LoadingPage/LoadingPage';
 import invoicesLengthMessage from '../../utilities/invoicesLengthMessage';
 import { invoicesVariants } from '../../utilities/framerVariants';
 import { 
@@ -25,11 +26,18 @@ const Invoices = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState({ startDate: '', endDate: '', month: '', year: '' });
     const shouldReduceMotion = useReducedMotion();
-    const { windowWidth, invoiceState, createInvoice } = useGlobalContext();
+    const { windowWidth, invoiceState, createInvoice, refreshInvoices } = useGlobalContext();
     
     const isLoading = invoiceState?.isLoading || false;
     const rawInvoices = invoiceState?.invoices || [];
     const isDesktop = windowWidth >= 768;
+
+    // Load invoices if we don't have any data yet and not already loading
+    useEffect(() => {
+        if ((!rawInvoices || rawInvoices.length === 0) && !isLoading) {
+            refreshInvoices();
+        }
+    }, [rawInvoices, isLoading]);
 
     // Define searchable fields
     const searchableFields = ['customId', 'id', 'clientName', 'description'];
@@ -111,6 +119,17 @@ const Invoices = () => {
     const handleSearch = (e) => {
         setSearchQuery(e.target.value);
     };
+
+    // Show loading page while data is being fetched
+    if (isLoading && (!rawInvoices || rawInvoices.length === 0)) {
+        return (
+            <LoadingPage 
+                title="Loading Invoices"
+                subtitle="Fetching your invoice data from the server"
+                showProgress={true}
+            />
+        );
+    }
 
     return (
         <Container>
