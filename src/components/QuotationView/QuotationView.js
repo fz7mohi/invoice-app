@@ -321,6 +321,39 @@ const QuotationView = () => {
             setIsDirectlyFetching(true);
             setIsClientFetching(true);
             
+            // Try to load from cache first
+            try {
+                const cached = localStorage.getItem(`quotation_${quotationId}`);
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    // Use cache if it's less than 5 minutes old
+                    if (Date.now() - timestamp < 5 * 60 * 1000) {
+                        console.log(`Loading quotation ${quotationId} from cache`);
+                        setQuotation(data);
+                        
+                        // Fetch client data if needed
+                        if (data.clientId) {
+                            const clientDoc = await getDoc(doc(db, 'clients', data.clientId));
+                            if (clientDoc.exists()) {
+                                const clientData = clientDoc.data();
+                                setClientData(clientData);
+                                setClientHasVAT(clientData.hasVAT || false);
+                            }
+                        }
+                        
+                        // If quotation was converted to invoice, fetch that data
+                        if (data.invoiceId) {
+                            fetchInvoiceData(data.invoiceId);
+                        }
+                        
+                        setIsLoading(false);
+                        return true;
+                    }
+                }
+            } catch (cacheError) {
+                console.warn('Failed to load quotation from cache:', cacheError);
+            }
+            
             // First fetch the quotation
             const quotationDoc = await getDoc(doc(db, 'quotations', quotationId));
             
@@ -350,6 +383,16 @@ const QuotationView = () => {
                 };
                 
                 setQuotation(fetchedQuotation);
+                
+                // Cache the fresh data
+                try {
+                    localStorage.setItem(`quotation_${quotationId}`, JSON.stringify({
+                        data: fetchedQuotation,
+                        timestamp: Date.now()
+                    }));
+                } catch (cacheError) {
+                    console.warn('Failed to cache quotation:', cacheError);
+                }
                 
                 // Now that we have the quotation data, fetch the client data if we have a clientId
                 if (fetchedQuotation.clientId) {
@@ -381,36 +424,55 @@ const QuotationView = () => {
     // Trigger fetch of all data
     useEffect(() => {
         if (id && !quotation && !isDirectlyFetching) {
-            fetchAllData(id);
-        }
-    }, [id, quotation, isDirectlyFetching]);
-
-    // Lookup in state logic
-    useEffect(() => {
-        if (!quotationState) {
-            return;
-        }
-        
-        // Get quotations from state
-        const quotations = quotationState.quotations || [];
-        
-        if (quotations.length > 0 && !isDeleting && !quotation) {
-            // First try to find by direct ID match
-            let foundQuotation = quotations.find(q => q.id === id);
+            // Set a timeout to prevent infinite loading
+            const timeoutId = setTimeout(() => {
+                console.warn(`Quotation ${id} loading timeout - forcing loading state to false`);
+                setIsDirectlyFetching(false);
+                setIsClientFetching(false);
+                setIsLoading(false);
+            }, 10000); // 10 second timeout
             
-            // If not found, try matching by customId (in case IDs are stored differently)
-            if (!foundQuotation) {
-                foundQuotation = quotations.find(q => q.customId === id);
-            }
+            // First try to find in the global state (from cached list)
+            const cachedQuotations = quotationState?.quotations || [];
+            const foundQuotation = cachedQuotations.find(q => q.id === id);
             
             if (foundQuotation) {
+                console.log(`Found quotation ${id} in global state, using cached data`);
+                clearTimeout(timeoutId); // Clear timeout since we found the quotation
                 setQuotation(foundQuotation);
+                setIsLoading(false);
                 
-                // After setting quotation, fetch client data
-                fetchAllData(foundQuotation.id);
+                // Fetch client data if needed
+                if (foundQuotation.clientId) {
+                    getDoc(doc(db, 'clients', foundQuotation.clientId)).then(clientDoc => {
+                        if (clientDoc.exists()) {
+                            const clientData = clientDoc.data();
+                            setClientData(clientData);
+                            setClientHasVAT(clientData.hasVAT || false);
+                        }
+                    }).catch(error => {
+                        console.warn('Error fetching client data:', error);
+                    });
+                }
+                
+                // If quotation was converted to invoice, fetch that data
+                if (foundQuotation.invoiceId) {
+                    fetchInvoiceData(foundQuotation.invoiceId);
+                }
+            } else {
+                console.log(`Quotation ${id} not found in global state, fetching from Firebase`);
+                // Fall back to direct Firebase fetch
+                fetchAllData(id).finally(() => {
+                    clearTimeout(timeoutId); // Clear timeout when fetch completes
+                });
             }
+            
+            // Cleanup timeout on unmount or dependency change
+            return () => clearTimeout(timeoutId);
         }
-    }, [quotationState?.quotations, id, isDeleting]);
+    }, [id, quotation, isDirectlyFetching, quotationState?.quotations]);
+
+    // Remove this duplicate useEffect as it conflicts with the main data fetching logic above
 
     // SessionStorage check
     useEffect(() => {
@@ -1269,8 +1331,8 @@ const QuotationView = () => {
         }
     ];
 
-    // Show loading state
-    if (isLoading || !quotation) {
+    // Show loading state only when actually loading, not when quotation is not found
+    if (isLoading) {
         return (
             <StyledQuotationView className="StyledQuotationView">
                 <Container>
@@ -1301,6 +1363,49 @@ const QuotationView = () => {
                         }
                         showProgress={true}
                     />
+                </Container>
+            </StyledQuotationView>
+        );
+    }
+
+    // Show not found state
+    if (!quotation) {
+        return (
+            <StyledQuotationView className="StyledQuotationView">
+                <Container>
+                    <MotionLink
+                        to="/quotations"
+                        variants={variant('link')}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        className="Link"
+                        style={{ marginBottom: '28px' }}
+                    >
+                        <Icon name={'arrow-left'} size={10} color={colors.purple} />
+                        Go back
+                    </MotionLink>
+                    
+                    <div style={{ 
+                        textAlign: 'center', 
+                        padding: '60px 20px',
+                        backgroundColor: colors.backgroundItem,
+                        borderRadius: '12px',
+                        border: `1px solid ${colors.borders}`
+                    }}>
+                        <h2 style={{ color: colors.textPrimary, marginBottom: '16px' }}>
+                            Quotation Not Found
+                        </h2>
+                        <p style={{ color: colors.textSecondary, marginBottom: '24px' }}>
+                            The quotation you're looking for doesn't exist or has been deleted.
+                        </p>
+                        <Button 
+                            $primary 
+                            onClick={() => history.push('/quotations')}
+                        >
+                            Back to Quotations
+                        </Button>
+                    </div>
                 </Container>
             </StyledQuotationView>
         );

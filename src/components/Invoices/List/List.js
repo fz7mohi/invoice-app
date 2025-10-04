@@ -6,6 +6,8 @@ import Status from '../../shared/Status/Status';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import { formatDate, formatPrice } from '../../../utilities/helpers';
 import { useGlobalContext } from '../../App/context';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../firebase/firebase';
 import {
     StyledList,
     Item,
@@ -155,6 +157,49 @@ const List = ({ invoices, isLoading, variant }) => {
     const { colors } = useTheme();
     const { windowWidth, handleDelete, toggleModal } = useGlobalContext();
     const isDesktop = windowWidth >= 768;
+    
+    // Preload function for invoice data
+    const preloadInvoice = async (invoiceId) => {
+        try {
+            // Check if already cached
+            const cached = localStorage.getItem(`invoice_${invoiceId}`);
+            if (cached) {
+                const { timestamp } = JSON.parse(cached);
+                if (Date.now() - timestamp < 5 * 60 * 1000) {
+                    return; // Already cached and fresh
+                }
+            }
+            
+            // Preload the invoice data
+            const invoiceRef = doc(db, 'invoices', invoiceId);
+            const docSnap = await getDoc(invoiceRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const createdAt = data.createdAt?.toDate() || new Date();
+                const paymentDue = data.paymentDue?.toDate() || new Date();
+                
+                const invoiceData = {
+                    ...data,
+                    id: docSnap.id,
+                    customId: data.customId || `FTIN${Math.floor(1000 + Math.random() * 9000)}`,
+                    createdAt,
+                    paymentDue,
+                    items: Array.isArray(data.items) ? data.items : [],
+                    currency: data.currency || 'USD'
+                };
+                
+                // Cache the preloaded data
+                localStorage.setItem(`invoice_${invoiceId}`, JSON.stringify({
+                    data: invoiceData,
+                    timestamp: Date.now()
+                }));
+            }
+        } catch (error) {
+            // Silent fail for preloading
+            console.warn('Preload failed:', error);
+        }
+    };
     
     // Check for empty invoices
     const isEmpty = !invoices || invoices.length === 0;
@@ -377,7 +422,10 @@ const List = ({ invoices, isLoading, variant }) => {
                             delay: index * 0.03
                         }}
                     >
-                        <Link to={`/invoice/${invoice.id}`}>
+                        <Link 
+                            to={`/invoice/${invoice.id}`}
+                            onMouseEnter={() => preloadInvoice(invoice.id)}
+                        >
                             <PaymentDue>
                                 {formatDate(invoice.createdAt)}
                             </PaymentDue>

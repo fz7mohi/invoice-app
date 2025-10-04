@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { useGlobalContext } from '../App/context';
 import Filter from './Filter/Filter';
@@ -28,8 +28,10 @@ const Invoices = () => {
     const shouldReduceMotion = useReducedMotion();
     const { windowWidth, invoiceState, createInvoice, refreshInvoices } = useGlobalContext();
     
-    const isLoading = invoiceState?.isLoading || false;
+    // Force loading to false if we have invoices data
     const rawInvoices = invoiceState?.invoices || [];
+    const hasInvoices = rawInvoices && rawInvoices.length > 0;
+    const isLoading = hasInvoices ? false : (invoiceState?.isLoading || false);
     const isDesktop = windowWidth >= 768;
 
     // Load invoices if we don't have any data yet and not already loading
@@ -37,7 +39,7 @@ const Invoices = () => {
         if ((!rawInvoices || rawInvoices.length === 0) && !isLoading) {
             refreshInvoices();
         }
-    }, [rawInvoices, isLoading]);
+    }, [rawInvoices, isLoading, refreshInvoices]);
 
     // Define searchable fields
     const searchableFields = ['customId', 'id', 'clientName', 'description'];
@@ -180,4 +182,4 @@ const Invoices = () => {
     );
 };
 
-export default Invoices;
+export default memo(Invoices);

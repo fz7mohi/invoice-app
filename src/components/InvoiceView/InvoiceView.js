@@ -243,8 +243,57 @@ const InvoiceView = () => {
     const [showVoidModal, setShowVoidModal] = useState(false);
     const [voidReason, setVoidReason] = useState('');
     const [isVoiding, setIsVoiding] = useState(false);
-    const isLoading = invoiceState?.isLoading || isDirectlyFetching || isClientFetching;
+    // Force loading to false if we have invoice data or if invoices are loaded in global state
+    const forceLoadingFalse = (invoiceState?.invoices && invoiceState.invoices.length > 0) || invoice;
+    const isLoading = forceLoadingFalse ? false : (invoiceState?.isLoading || isDirectlyFetching || isClientFetching);
     const invoiceNotFound = !isLoading && !invoice;
+    
+    // TEMPORARY FIX: Force loading to false if we have global invoices data
+    const shouldShowLoading = isLoading && !(invoiceState?.invoices && invoiceState.invoices.length > 0);
+    
+    
+    
+    // Trigger fetch of invoice data
+    useEffect(() => {
+        if (id && !invoice && !isDirectlyFetching) {
+            // Set a timeout to prevent infinite loading
+            const timeoutId = setTimeout(() => {
+                setIsDirectlyFetching(false);
+                setIsClientFetching(false);
+            }, 10000); // 10 second timeout
+            
+            // First try to find in the global state (from cached list)
+            const cachedInvoices = invoiceState?.invoices || [];
+            const foundInvoice = cachedInvoices.find(inv => inv.id === id);
+            
+            if (foundInvoice) {
+                clearTimeout(timeoutId); // Clear timeout since we found the invoice
+                setInvoice(foundInvoice);
+                
+                // Fetch client data if needed
+                if (foundInvoice.clientId) {
+                    const clientRef = doc(db, 'clients', foundInvoice.clientId);
+                    getDoc(clientRef).then(clientSnap => {
+                        if (clientSnap.exists()) {
+                            const clientData = clientSnap.data();
+                            setClientData(clientData);
+                            setClientHasVAT(clientData.hasVAT || false);
+                        }
+                    }).catch(error => {
+                        console.warn('Error fetching client data:', error);
+                    });
+                }
+            } else {
+                // Fall back to direct Firebase fetch
+                fetchDirectlyFromFirebase(id).finally(() => {
+                    clearTimeout(timeoutId); // Clear timeout when fetch completes
+                });
+            }
+            
+            // Cleanup timeout on unmount or dependency change
+            return () => clearTimeout(timeoutId);
+        }
+    }, [id, invoice, isDirectlyFetching, invoiceState?.invoices]);
     const isPending = invoice?.status === 'pending';
     const isPartiallyPaid = invoice?.status === 'partially_paid';
     const isPaid = invoice?.status === 'paid';
@@ -463,14 +512,60 @@ All prices are in local currency and include VAT where applicable.`;
 
     // Add a function to fetch directly from Firebase if needed
     const fetchDirectlyFromFirebase = async (invoiceId) => {
+        console.log(`fetchDirectlyFromFirebase called for invoiceId: ${invoiceId}`);
         try {
             setIsDirectlyFetching(true);
+            console.log('Set isDirectlyFetching to true');
             
+            // Try to load from cache first
+            try {
+                const cached = localStorage.getItem(`invoice_${invoiceId}`);
+                console.log('Checking localStorage cache:', { cached: !!cached, invoiceId });
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    console.log('Cache data found:', { timestamp, age: Date.now() - timestamp });
+                    // Use cache if it's less than 5 minutes old
+                    if (Date.now() - timestamp < 5 * 60 * 1000) {
+                        console.log(`Loading invoice ${invoiceId} from cache:`, data);
+                        setInvoice(data);
+                        
+                        // Fetch client data if needed (but don't block on it)
+                        if (data.clientId) {
+                            console.log(`Fetching client data for cached invoice: ${data.clientId}`);
+                            getDoc(doc(db, 'clients', data.clientId)).then(clientSnap => {
+                                if (clientSnap.exists()) {
+                                    const clientData = clientSnap.data();
+                                    setClientData(clientData);
+                                    setClientHasVAT(clientData.hasVAT || false);
+                                }
+                            }).catch(error => {
+                                console.warn('Error fetching client data from cache:', error);
+                            });
+                        }
+                        
+                        // Make sure to set loading to false when using cache
+                        setIsDirectlyFetching(false);
+                        console.log('Set isDirectlyFetching to false (from cache)');
+                        return true;
+                    } else {
+                        console.log('Cache expired, fetching from Firebase');
+                    }
+                } else {
+                    console.log('No cache found, fetching from Firebase');
+                }
+            } catch (cacheError) {
+                console.warn('Failed to load invoice from cache:', cacheError);
+            }
+            
+            console.log(`Fetching invoice ${invoiceId} directly from Firebase`);
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const docSnap = await getDoc(invoiceRef);
+            console.log('Firebase response:', { exists: docSnap.exists(), id: docSnap.id });
             
             if (docSnap.exists()) {
+                console.log('Invoice document exists, processing data');
                 const data = docSnap.data();
+                console.log('Raw invoice data:', data);
                 
                 // Convert Firestore Timestamp back to Date object safely
                 let createdAt = new Date();
@@ -480,7 +575,7 @@ All prices are in local currency and include VAT where applicable.`;
                     createdAt = data.createdAt?.toDate() || new Date();
                     paymentDue = data.paymentDue?.toDate() || new Date();
                 } catch (dateError) {
-                    // Handle date error silently
+                    console.warn('Date conversion error:', dateError);
                 }
                 
                 // Create a complete invoice object
@@ -493,6 +588,7 @@ All prices are in local currency and include VAT where applicable.`;
                 } else {
                     invoiceItems = [];
                 }
+                
                 const fetchedInvoice = {
                     ...data,
                     id: docSnap.id,
@@ -508,68 +604,124 @@ All prices are in local currency and include VAT where applicable.`;
                     grandTotal: data.grandTotal || (data.totalVat ? data.totalVat + (data.total || 0) : data.total || 0)
                 };
                 
+                console.log('Processed invoice data:', fetchedInvoice);
                 setInvoice(fetchedInvoice);
+                console.log('Invoice state set successfully');
+                
+                // Cache the fresh data
+                try {
+                    localStorage.setItem(`invoice_${invoiceId}`, JSON.stringify({
+                        data: fetchedInvoice,
+                        timestamp: Date.now()
+                    }));
+                    console.log('Invoice cached successfully');
+                } catch (cacheError) {
+                    console.warn('Failed to cache invoice:', cacheError);
+                }
                 
                 // Fetch client data from the clients collection
                 if (data.clientId) {
+                    console.log(`Fetching client data for clientId: ${data.clientId}`);
                     const clientRef = doc(db, 'clients', data.clientId);
                     const clientSnap = await getDoc(clientRef);
                     
                     if (clientSnap.exists()) {
                         const clientData = clientSnap.data();
+                        console.log('Client data found:', clientData);
                         setClientData(clientData);
                         setClientHasVAT(clientData.hasVAT || false);
                     } else {
+                        console.warn('Client not found, trying to fetch by name:', data.clientName);
                         // If no client found, try to find by name
                         await fetchClientData(null, data.clientName);
                     }
                 } else {
+                    console.log('No clientId, trying to fetch by name:', data.clientName);
                     // If no client ID, try to find by name
                     await fetchClientData(null, data.clientName);
                 }
                 
+                console.log('fetchDirectlyFromFirebase completed successfully');
                 return true;
             } else {
+                console.warn(`Invoice document ${invoiceId} does not exist in Firebase`);
                 return false;
             }
         } catch (error) {
             console.error('Error fetching invoice data:', error);
             return false;
         } finally {
+            console.log('fetchDirectlyFromFirebase finally block - setting isDirectlyFetching to false');
             setIsDirectlyFetching(false);
         }
     };
     
     // Trigger fetch of invoice data
     useEffect(() => {
-        // This will try to fetch directly from Firebase as soon as we have an ID
+        console.log('InvoiceView useEffect triggered:', {
+            id,
+            hasInvoice: !!invoice,
+            isDirectlyFetching,
+            cachedInvoicesCount: invoiceState?.invoices?.length || 0
+        });
+        
         if (id && !invoice && !isDirectlyFetching) {
-            fetchDirectlyFromFirebase(id);
-        }
-    }, [id, invoice, isDirectlyFetching]);
-
-    // Lookup in state logic
-    useEffect(() => {
-        if (!invoiceState) {
-            return;
-        }
-        // Get invoices from state
-        const invoices = invoiceState.invoices || [];
-        if (invoices.length > 0 && !isDeleting && !invoice) {
-            // First try to find by direct ID match
-            let foundInvoice = invoices.find(inv => inv.id === id);
-            // If not found, try matching by customId (in case IDs are stored differently)
-            if (!foundInvoice) {
-                foundInvoice = invoices.find(inv => inv.customId === id);
-            }
-            // Only set invoice if it has a non-empty items array
-            if (foundInvoice && Array.isArray(foundInvoice.items) && foundInvoice.items.length > 0) {
+            console.log(`Starting data fetch for invoice ${id}`);
+            
+            // Set a timeout to prevent infinite loading
+            const timeoutId = setTimeout(() => {
+                console.warn(`Invoice ${id} loading timeout - forcing loading state to false`);
+                setIsDirectlyFetching(false);
+                setIsClientFetching(false);
+            }, 10000); // 10 second timeout
+            
+            // First try to find in the global state (from cached list)
+            const cachedInvoices = invoiceState?.invoices || [];
+            const foundInvoice = cachedInvoices.find(inv => inv.id === id);
+            
+            console.log('Checking cached invoices:', {
+                totalCached: cachedInvoices.length,
+                foundInvoice: !!foundInvoice,
+                searchedId: id,
+                cachedIds: cachedInvoices.map(inv => inv.id).slice(0, 5) // Show first 5 IDs
+            });
+            
+            if (foundInvoice) {
+                console.log(`Found invoice ${id} in global state, using cached data:`, foundInvoice);
+                clearTimeout(timeoutId); // Clear timeout since we found the invoice
                 setInvoice(foundInvoice);
-                // After setting invoice, fetch client data
-                fetchClientData(foundInvoice.clientId, foundInvoice.clientName);
+                
+                // Fetch client data if needed
+                if (foundInvoice.clientId) {
+                    console.log(`Fetching client data for clientId: ${foundInvoice.clientId}`);
+                    const clientRef = doc(db, 'clients', foundInvoice.clientId);
+                    getDoc(clientRef).then(clientSnap => {
+                        if (clientSnap.exists()) {
+                            const clientData = clientSnap.data();
+                            console.log('Client data fetched:', clientData);
+                            setClientData(clientData);
+                            setClientHasVAT(clientData.hasVAT || false);
+                        } else {
+                            console.warn('Client not found for clientId:', foundInvoice.clientId);
+                        }
+                    }).catch(error => {
+                        console.warn('Error fetching client data:', error);
+                    });
+                }
+            } else {
+                console.log(`Invoice ${id} not found in global state, fetching from Firebase`);
+                // Fall back to direct Firebase fetch
+                fetchDirectlyFromFirebase(id).finally(() => {
+                    clearTimeout(timeoutId); // Clear timeout when fetch completes
+                });
             }
+            
+            // Cleanup timeout on unmount or dependency change
+            return () => clearTimeout(timeoutId);
         }
-    }, [invoiceState?.invoices, id, isDeleting, invoice]);
+    }, [id, invoice, isDirectlyFetching, invoiceState?.invoices]);
+
+    // Remove this duplicate useEffect as it conflicts with the main data fetching logic above
 
     // Handle invoice deletion
     const handleDeleteClick = () => {
@@ -2260,8 +2412,8 @@ All prices are in local currency and include VAT where applicable.`;
         }
     };
 
-    // Show loading state
-    if (isLoading || !invoice) {
+    // Show loading state only when actually loading, not when invoice is not found
+    if (shouldShowLoading) {
         return (
             <StyledInvoiceView className="StyledInvoiceView">
                 <Container>
@@ -2283,6 +2435,49 @@ All prices are in local currency and include VAT where applicable.`;
                         subtitle="Fetching invoice details from the server"
                         showProgress={true}
                     />
+                </Container>
+            </StyledInvoiceView>
+        );
+    }
+
+    // Show not found state
+    if (!invoice) {
+        return (
+            <StyledInvoiceView className="StyledInvoiceView">
+                <Container>
+                    <Link
+                        to="/invoices"
+                        variants={variant('link')}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        className="Link"
+                        style={{ marginBottom: '28px' }}
+                    >
+                        <Icon name={'arrow-left'} size={10} color={colors.purple} />
+                        Go back
+                    </Link>
+                    
+                    <div style={{ 
+                        textAlign: 'center', 
+                        padding: '60px 20px',
+                        backgroundColor: colors.backgroundItem,
+                        borderRadius: '12px',
+                        border: `1px solid ${colors.borders}`
+                    }}>
+                        <h2 style={{ color: colors.textPrimary, marginBottom: '16px' }}>
+                            Invoice Not Found
+                        </h2>
+                        <p style={{ color: colors.textSecondary, marginBottom: '24px' }}>
+                            The invoice you're looking for doesn't exist or has been deleted.
+                        </p>
+                        <Button 
+                            $primary 
+                            onClick={() => history.push('/invoices')}
+                        >
+                            Back to Invoices
+                        </Button>
+                    </div>
                 </Container>
             </StyledInvoiceView>
         );

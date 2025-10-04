@@ -1,4 +1,4 @@
-import { useState, useEffect, useReducer } from 'react';
+import { useState, useEffect, useReducer, useCallback } from 'react';
 import { invoicesReducer } from '../store/reducers/invoicesReducer';
 import * as ACTIONS from '../store/actions/invoicesActions';
 import allowOnlyNumbers from '../utilities/allowOnlyNumbers';
@@ -159,6 +159,16 @@ const useManageInvoices = () => {
                     
                     dispatch({ type: 'SET_INVOICES', payload: invoicesList });
                     dispatch({ type: 'SET_FIREBASE_ERROR', payload: false });
+                    
+                    // Cache the data in localStorage for faster subsequent loads
+                    try {
+                        localStorage.setItem('invoices_cache', JSON.stringify({
+                            data: invoicesList,
+                            timestamp: Date.now()
+                        }));
+                    } catch (cacheError) {
+                        console.warn('Failed to cache invoices:', cacheError);
+                    }
                 } catch (firebaseError) {
                     console.error('Firebase error, falling back to localStorage:', firebaseError);
                     
@@ -537,11 +547,16 @@ const useManageInvoices = () => {
     /**
      * Function to refresh invoices from Firestore
      */
-    const refreshInvoices = async (forceRefresh = false) => {
+    const refreshInvoices = useCallback(async (forceRefresh = false) => {
         try {
             // Check if we already have data and don't need to refresh
             if (!forceRefresh && state.invoices && state.invoices.length > 0) {
                 console.log('Invoices already loaded, skipping refresh');
+                // Make sure loading state is false when data is already available
+                if (state.isLoading) {
+                    console.log('Setting loading to false since invoices are already loaded');
+                    dispatch({ type: 'SET_LOADING', payload: false });
+                }
                 return;
             }
 
@@ -549,6 +564,25 @@ const useManageInvoices = () => {
             if (state.isLoading) {
                 console.log('Invoices already loading, skipping duplicate call');
                 return;
+            }
+
+            // Try to load from cache first if not forcing refresh
+            if (!forceRefresh) {
+                try {
+                    const cached = localStorage.getItem('invoices_cache');
+                    if (cached) {
+                        const { data, timestamp } = JSON.parse(cached);
+                        // Use cache if it's less than 5 minutes old
+                        if (Date.now() - timestamp < 5 * 60 * 1000) {
+                            console.log('Loading invoices from cache');
+                            dispatch({ type: 'SET_INVOICES', payload: data });
+                            dispatch({ type: 'SET_LOADING', payload: false });
+                            return;
+                        }
+                    }
+                } catch (cacheError) {
+                    console.warn('Failed to load from cache:', cacheError);
+                }
             }
 
             dispatch({ type: 'SET_LOADING', payload: true });
@@ -576,13 +610,23 @@ const useManageInvoices = () => {
             
             dispatch({ type: 'SET_INVOICES', payload: invoicesList });
             dispatch({ type: 'SET_FIREBASE_ERROR', payload: false });
+            
+            // Cache the fresh data
+            try {
+                localStorage.setItem('invoices_cache', JSON.stringify({
+                    data: invoicesList,
+                    timestamp: Date.now()
+                }));
+            } catch (cacheError) {
+                console.warn('Failed to cache fresh invoices:', cacheError);
+            }
         } catch (error) {
             console.error('Error refreshing invoices:', error);
             dispatch({ type: 'SET_FIREBASE_ERROR', payload: true });
         } finally {
             dispatch({ type: 'SET_LOADING', payload: false });
         }
-    };
+    }, [state.invoices, state.isLoading]);
 
     /**
      * Function to delete invoice.

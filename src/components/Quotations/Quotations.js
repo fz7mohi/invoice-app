@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { useGlobalContext } from '../App/context';
 import Filter from './Filter/Filter';
@@ -39,7 +39,7 @@ const Quotations = () => {
         if ((!rawQuotations || rawQuotations.length === 0) && !isLoading) {
             refreshQuotations();
         }
-    }, [rawQuotations, isLoading]);
+    }, [rawQuotations, isLoading, refreshQuotations]);
 
     // Filter quotations based on status and search query
     const filteredQuotations = useMemo(() => {
@@ -203,4 +203,4 @@ const Quotations = () => {
     );
 };
 
-export default Quotations; 
+export default memo(Quotations); 

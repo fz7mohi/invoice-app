@@ -1,4 +1,4 @@
-import { useState, useEffect, useReducer } from 'react';
+import { useState, useEffect, useReducer, useCallback } from 'react';
 import { quotationsReducer } from '../store/reducers/quotationsReducer';
 import { add, approved, change, create, discard, edit, errors, modal, remove } from '../store/actions/quotationsActions';
 import allowOnlyNumbers from '../utilities/allowOnlyNumbers';
@@ -344,11 +344,16 @@ const useManageQuotations = () => {
     /**
      * Function to forcefully refresh quotations list from Firestore
      */
-    const refreshQuotations = async (forceRefresh = false) => {
+    const refreshQuotations = useCallback(async (forceRefresh = false) => {
         try {
             // Check if we already have data and don't need to refresh
             if (!forceRefresh && state.quotations && state.quotations.length > 0) {
                 console.log('Quotations already loaded, skipping refresh');
+                // Make sure loading state is false when data is already available
+                if (state.isLoading) {
+                    console.log('Setting loading to false since quotations are already loaded');
+                    dispatch({ type: 'SET_LOADING', payload: false });
+                }
                 return;
             }
 
@@ -356,6 +361,24 @@ const useManageQuotations = () => {
             if (state.isLoading) {
                 console.log('Quotations already loading, skipping duplicate call');
                 return;
+            }
+
+            // Try to load from cache first if not forcing refresh
+            if (!forceRefresh) {
+                try {
+                    const cached = localStorage.getItem('quotations_cache');
+                    if (cached) {
+                        const { data, timestamp } = JSON.parse(cached);
+                        // Use cache if it's less than 5 minutes old
+                        if (Date.now() - timestamp < 5 * 60 * 1000) {
+                            console.log('Loading quotations from cache');
+                            dispatch({ type: 'SET_QUOTATIONS', payload: data });
+                            return;
+                        }
+                    }
+                } catch (cacheError) {
+                    console.warn('Failed to load from cache:', cacheError);
+                }
             }
 
             dispatch({ type: 'SET_LOADING', payload: true });
@@ -439,6 +462,16 @@ const useManageQuotations = () => {
                     payload: quotationsList 
                 });
                 
+                // Cache the fresh data
+                try {
+                    localStorage.setItem('quotations_cache', JSON.stringify({
+                        data: quotationsList,
+                        timestamp: Date.now()
+                    }));
+                } catch (cacheError) {
+                    console.warn('Failed to cache fresh quotations:', cacheError);
+                }
+                
                 // Set loading to false after a short delay to ensure the state update is processed
                 setTimeout(() => {
                     dispatch({ type: 'SET_LOADING', payload: false });
@@ -452,7 +485,7 @@ const useManageQuotations = () => {
             });
             dispatch({ type: 'SET_LOADING', payload: false });
         }
-    };
+    }, [state.quotations, state.isLoading]);
 
     /**
      * Form submission handler for creating or updating quotations.

@@ -5,7 +5,7 @@ import Icon from '../../shared/Icon/Icon';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import { formatDate, formatPrice } from '../../../utilities/helpers';
 import { useGlobalContext } from '../../App/context';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../firebase/firebase';
 import {
     StyledList,
@@ -125,6 +125,49 @@ const List = ({ quotations, isLoading, variant }) => {
     const { colors } = useTheme();
     const { windowWidth } = useGlobalContext();
     const isDesktop = windowWidth >= 768;
+    
+    // Preload function for quotation data
+    const preloadQuotation = async (quotationId) => {
+        try {
+            // Check if already cached
+            const cached = localStorage.getItem(`quotation_${quotationId}`);
+            if (cached) {
+                const { timestamp } = JSON.parse(cached);
+                if (Date.now() - timestamp < 5 * 60 * 1000) {
+                    return; // Already cached and fresh
+                }
+            }
+            
+            // Preload the quotation data
+            const quotationRef = doc(db, 'quotations', quotationId);
+            const docSnap = await getDoc(quotationRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const createdAt = data.createdAt?.toDate() || new Date();
+                const paymentDue = data.paymentDue?.toDate() || new Date();
+                
+                const quotationData = {
+                    ...data,
+                    id: docSnap.id,
+                    customId: data.customId || docSnap.id,
+                    createdAt,
+                    paymentDue,
+                    items: Array.isArray(data.items) ? data.items : [],
+                    currency: data.currency || 'USD'
+                };
+                
+                // Cache the preloaded data
+                localStorage.setItem(`quotation_${quotationId}`, JSON.stringify({
+                    data: quotationData,
+                    timestamp: Date.now()
+                }));
+            }
+        } catch (error) {
+            // Silent fail for preloading
+            console.warn('Preload failed:', error);
+        }
+    };
     
     // Check for empty quotations
     const isEmpty = !quotations || quotations.length === 0;
@@ -388,6 +431,7 @@ const List = ({ quotations, isLoading, variant }) => {
                     >
                         <RouterLink 
                             to={`/quotation/${quotation.id}`}
+                            onMouseEnter={() => preloadQuotation(quotation.id)}
                             style={{ 
                                 textDecoration: 'none',
                                 display: 'flex',
