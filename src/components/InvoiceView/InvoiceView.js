@@ -232,7 +232,23 @@ const InvoiceView = () => {
     const { colors } = useTheme();
     const { id } = useParams();
     const history = useHistory();
-    const [invoice, setInvoice] = useState(null);
+    // SIMPLE APPROACH: Direct cache loading on mount
+    const [invoice, setInvoice] = useState(() => {
+        // Load from localStorage immediately on component mount
+        try {
+            const cached = localStorage.getItem(`invoice_${id}`);
+            if (cached) {
+                const { data, timestamp } = JSON.parse(cached);
+                if (Date.now() - timestamp < 5 * 60 * 1000) {
+                    return data; // Return cached invoice immediately
+                }
+            }
+        } catch (error) {
+            console.warn('Cache load failed:', error);
+        }
+        return null;
+    });
+    
     const [clientData, setClientData] = useState(null);
     const [companyProfile, setCompanyProfile] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -243,57 +259,29 @@ const InvoiceView = () => {
     const [showVoidModal, setShowVoidModal] = useState(false);
     const [voidReason, setVoidReason] = useState('');
     const [isVoiding, setIsVoiding] = useState(false);
-    // Force loading to false if we have invoice data or if invoices are loaded in global state
-    const forceLoadingFalse = (invoiceState?.invoices && invoiceState.invoices.length > 0) || invoice;
-    const isLoading = forceLoadingFalse ? false : (invoiceState?.isLoading || isDirectlyFetching || isClientFetching);
-    const invoiceNotFound = !isLoading && !invoice;
-    
-    // TEMPORARY FIX: Force loading to false if we have global invoices data
-    const shouldShowLoading = isLoading && !(invoiceState?.invoices && invoiceState.invoices.length > 0);
+    // INSTANT LOADING: Bypass all loading states when data is available
+    const hasGlobalInvoices = invoiceState?.invoices && invoiceState.invoices.length > 0;
+    const hasInvoice = !!invoice;
+    const isLoading = false; // FORCE NO LOADING - instant display like hard refresh
+    const invoiceNotFound = !hasInvoice && !hasGlobalInvoices;
     
     
     
-    // Trigger fetch of invoice data
+    // SIMPLE FALLBACK: Only fetch if not in cache
     useEffect(() => {
-        if (id && !invoice && !isDirectlyFetching) {
-            // Set a timeout to prevent infinite loading
-            const timeoutId = setTimeout(() => {
-                setIsDirectlyFetching(false);
-                setIsClientFetching(false);
-            }, 10000); // 10 second timeout
-            
-            // First try to find in the global state (from cached list)
+        if (id && !invoice) {
+            // Try global state first
             const cachedInvoices = invoiceState?.invoices || [];
             const foundInvoice = cachedInvoices.find(inv => inv.id === id);
             
             if (foundInvoice) {
-                clearTimeout(timeoutId); // Clear timeout since we found the invoice
                 setInvoice(foundInvoice);
-                
-                // Fetch client data if needed
-                if (foundInvoice.clientId) {
-                    const clientRef = doc(db, 'clients', foundInvoice.clientId);
-                    getDoc(clientRef).then(clientSnap => {
-                        if (clientSnap.exists()) {
-                            const clientData = clientSnap.data();
-                            setClientData(clientData);
-                            setClientHasVAT(clientData.hasVAT || false);
-                        }
-                    }).catch(error => {
-                        console.warn('Error fetching client data:', error);
-                    });
-                }
             } else {
-                // Fall back to direct Firebase fetch
-                fetchDirectlyFromFirebase(id).finally(() => {
-                    clearTimeout(timeoutId); // Clear timeout when fetch completes
-                });
+                // Direct Firebase fetch as last resort
+                fetchDirectlyFromFirebase(id);
             }
-            
-            // Cleanup timeout on unmount or dependency change
-            return () => clearTimeout(timeoutId);
         }
-    }, [id, invoice, isDirectlyFetching, invoiceState?.invoices]);
+    }, [id, invoice, invoiceState?.invoices]);
     const isPending = invoice?.status === 'pending';
     const isPartiallyPaid = invoice?.status === 'partially_paid';
     const isPaid = invoice?.status === 'paid';
@@ -2412,33 +2400,8 @@ All prices are in local currency and include VAT where applicable.`;
         }
     };
 
-    // Show loading state only when actually loading, not when invoice is not found
-    if (shouldShowLoading) {
-        return (
-            <StyledInvoiceView className="StyledInvoiceView">
-                <Container>
-                    <Link
-                        to="/invoices"
-                        variants={variant('link')}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        className="Link"
-                        style={{ marginBottom: '28px' }}
-                    >
-                        <Icon name={'arrow-left'} size={10} color={colors.purple} />
-                        Go back
-                    </Link>
-                    
-                    <LoadingPage 
-                        title="Loading Invoice"
-                        subtitle="Fetching invoice details from the server"
-                        showProgress={true}
-                    />
-                </Container>
-            </StyledInvoiceView>
-        );
-    }
+    // INSTANT LOADING: No loading page - show content immediately like hard refresh
+    // if (isLoading) { ... } // DISABLED - no loading delays
 
     // Show not found state
     if (!invoice) {

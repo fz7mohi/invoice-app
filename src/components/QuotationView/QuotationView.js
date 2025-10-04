@@ -129,7 +129,23 @@ const QuotationView = () => {
         backgroundItem: '#f8f9fa'
     }; // Default colors
     const { id } = useParams();
-    const [quotation, setQuotation] = useState(null);
+    // SIMPLE APPROACH: Direct cache loading on mount
+    const [quotation, setQuotation] = useState(() => {
+        // Load from localStorage immediately on component mount
+        try {
+            const cached = localStorage.getItem(`quotation_${id}`);
+            if (cached) {
+                const { data, timestamp } = JSON.parse(cached);
+                if (Date.now() - timestamp < 5 * 60 * 1000) {
+                    return data; // Return cached quotation immediately
+                }
+            }
+        } catch (error) {
+            console.warn('Cache load failed:', error);
+        }
+        return null;
+    });
+    
     const [clientData, setClientData] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDirectlyFetching, setIsDirectlyFetching] = useState(false);
@@ -140,12 +156,17 @@ const QuotationView = () => {
     const [isConverting, setIsConverting] = useState(false);
     const [invoiceData, setInvoiceData] = useState(null);
     const [isFetchingInvoice, setIsFetchingInvoice] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false); // Start with false since we load from cache
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [emailData, setEmailData] = useState(null);
     const [pdfData, setPdfData] = useState(null);
     const [isSending, setIsSending] = useState(false);
-    const quotationNotFound = !isLoading && !quotation;
+    
+    // INSTANT LOADING: Bypass all loading states when data is available
+    const hasGlobalQuotations = quotationState?.quotations && quotationState.quotations.length > 0;
+    const hasQuotation = !!quotation;
+    const shouldShowLoading = false; // FORCE NO LOADING - instant display like hard refresh
+    const quotationNotFound = !hasQuotation && !hasGlobalQuotations;
     const isPending = quotation?.status === 'pending';
     const isDraft = quotation?.status === 'draft';
     const isApproved = quotation?.status === 'approved';
@@ -421,56 +442,21 @@ const QuotationView = () => {
         }
     };
 
-    // Trigger fetch of all data
+    // SIMPLE FALLBACK: Only fetch if not in cache
     useEffect(() => {
-        if (id && !quotation && !isDirectlyFetching) {
-            // Set a timeout to prevent infinite loading
-            const timeoutId = setTimeout(() => {
-                console.warn(`Quotation ${id} loading timeout - forcing loading state to false`);
-                setIsDirectlyFetching(false);
-                setIsClientFetching(false);
-                setIsLoading(false);
-            }, 10000); // 10 second timeout
-            
-            // First try to find in the global state (from cached list)
+        if (id && !quotation) {
+            // Try global state first
             const cachedQuotations = quotationState?.quotations || [];
             const foundQuotation = cachedQuotations.find(q => q.id === id);
             
             if (foundQuotation) {
-                console.log(`Found quotation ${id} in global state, using cached data`);
-                clearTimeout(timeoutId); // Clear timeout since we found the quotation
                 setQuotation(foundQuotation);
-                setIsLoading(false);
-                
-                // Fetch client data if needed
-                if (foundQuotation.clientId) {
-                    getDoc(doc(db, 'clients', foundQuotation.clientId)).then(clientDoc => {
-                        if (clientDoc.exists()) {
-                            const clientData = clientDoc.data();
-                            setClientData(clientData);
-                            setClientHasVAT(clientData.hasVAT || false);
-                        }
-                    }).catch(error => {
-                        console.warn('Error fetching client data:', error);
-                    });
-                }
-                
-                // If quotation was converted to invoice, fetch that data
-                if (foundQuotation.invoiceId) {
-                    fetchInvoiceData(foundQuotation.invoiceId);
-                }
             } else {
-                console.log(`Quotation ${id} not found in global state, fetching from Firebase`);
-                // Fall back to direct Firebase fetch
-                fetchAllData(id).finally(() => {
-                    clearTimeout(timeoutId); // Clear timeout when fetch completes
-                });
+                // Direct Firebase fetch as last resort
+                fetchAllData(id);
             }
-            
-            // Cleanup timeout on unmount or dependency change
-            return () => clearTimeout(timeoutId);
         }
-    }, [id, quotation, isDirectlyFetching, quotationState?.quotations]);
+    }, [id, quotation, quotationState?.quotations]);
 
     // Remove this duplicate useEffect as it conflicts with the main data fetching logic above
 
@@ -1331,42 +1317,8 @@ const QuotationView = () => {
         }
     ];
 
-    // Show loading state only when actually loading, not when quotation is not found
-    if (isLoading) {
-        return (
-            <StyledQuotationView className="StyledQuotationView">
-                <Container>
-                    <MotionLink
-                        to="/quotations"
-                        variants={variant('link')}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        className="MotionLink"
-                        style={{ marginBottom: '28px' }}
-                    >
-                        <Icon name={'arrow-left'} size={10} color={colors.purple} />
-                        Go back
-                    </MotionLink>
-                    
-                    <HeaderSection>
-                        <HeaderTitle>Quotation</HeaderTitle>
-                    </HeaderSection>
-                    
-                    <LoadingPage 
-                        title="Loading Quotation"
-                        subtitle={
-                            isDirectlyFetching ? 'Fetching quotation data...' :
-                            isClientFetching ? 'Loading client information...' :
-                            isFetchingInvoice ? 'Loading invoice details...' :
-                            'Preparing view...'
-                        }
-                        showProgress={true}
-                    />
-                </Container>
-            </StyledQuotationView>
-        );
-    }
+    // INSTANT LOADING: No loading page - show content immediately like hard refresh
+    // if (shouldShowLoading) { ... } // DISABLED - no loading delays
 
     // Show not found state
     if (!quotation) {
